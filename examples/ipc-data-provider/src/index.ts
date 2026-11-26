@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import { BindingScopes } from '@venizia/ignis-inversion';
+import { BindingScopes, getError } from '@venizia/ignis-inversion';
 
 import {
   BaseArdorApplication,
@@ -10,6 +10,8 @@ import {
   type IApplicationInfo,
   type IDataProvider,
   type INetworkResponse,
+  type IResponseSchema,
+  NetworkResponseReader,
   type IRestDataProviderOptions,
   type ISendParams,
   provide,
@@ -42,27 +44,79 @@ const COMMANDS: Record<string, TCommand> = {
   }),
 };
 
-const invoke = <TResponse>(opts: {
-  command: string;
-  payload: ISendParams;
-}): Promise<INetworkResponse<TResponse>> => {
+const invoke = (opts: { command: string; payload: ISendParams }): Promise<INetworkResponse> => {
   const handler = COMMANDS[opts.command];
 
   if (!handler) {
     return Promise.reject({ message: `[ipc] unknown command ${opts.command}`, statusCode: 404 });
   }
 
-  return Promise.resolve({ data: handler(opts.payload) as TResponse });
+  return Promise.resolve({ data: handler(opts.payload) });
 };
+
+// --- the schemas: `send` types the data a schema checked, and a zod schema would do the same.
+interface IDrink {
+  id: number;
+  name: string;
+}
+
+const isDrink = (value: unknown): value is IDrink =>
+  typeof value === 'object' &&
+  value !== null &&
+  'id' in value &&
+  typeof value.id === 'number' &&
+  'name' in value &&
+  typeof value.name === 'string';
+
+const isDrinkList = (value: unknown): value is IDrink[] =>
+  Array.isArray(value) && value.every(isDrink);
+
+const isSession = (value: unknown): value is { userId: number } =>
+  typeof value === 'object' &&
+  value !== null &&
+  'userId' in value &&
+  typeof value.userId === 'number';
+
+const schemaOf = <TValue>(opts: {
+  name: string;
+  isValid: (value: unknown) => value is TValue;
+}): IResponseSchema<TValue> => ({
+  parse: (data) => {
+    if (!opts.isValid(data)) {
+      throw getError({ message: `[ipc] the answer is not a ${opts.name}` });
+    }
+
+    return data;
+  },
+});
 
 // --- the provider: only `send` changes; the react-admin methods, the filter mapping and `value()`
 // come from the base class. A shell with no HTTP at all overrides those too, in the same shape.
 export class IpcDataProvider extends DefaultRestDataProvider {
-  override send<TResponse = unknown>(opts: {
+  override send<TResult>(opts: {
     resource: string;
     params: ISendParams;
-  }): Promise<INetworkResponse<TResponse>> {
-    return invoke<TResponse>({ command: opts.resource, payload: opts.params });
+    schema: IResponseSchema<TResult>;
+  }): Promise<INetworkResponse<TResult>>;
+  /** As above with no schema: the data is unknown. */
+  override send(opts: {
+    resource: string;
+    params: ISendParams;
+    schema?: IResponseSchema;
+  }): Promise<INetworkResponse>;
+  override send(opts: {
+    resource: string;
+    params: ISendParams;
+    schema?: IResponseSchema;
+  }): Promise<INetworkResponse> {
+    const { resource, params, schema } = opts;
+    const answered = invoke({ command: resource, payload: params });
+
+    if (!schema) {
+      return answered;
+    }
+
+    return answered.then((response) => NetworkResponseReader.checkData({ response, schema }));
   }
 }
 
@@ -102,17 +156,20 @@ const dataProvider = application.get<IDataProvider>({
   key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
 });
 
-const list = await dataProvider.send<{ id: number; name: string }[]>({
+const list = await dataProvider.send({
   resource: 'products',
   params: { method: RequestMethods.GET },
+  schema: schemaOf({ name: 'drink list', isValid: isDrinkList }),
 });
-const one = await dataProvider.send<{ id: number; name: string }>({
+const one = await dataProvider.send({
   resource: 'products',
   params: { method: RequestMethods.GET, query: { id: 2 } },
+  schema: schemaOf({ name: 'drink', isValid: isDrink }),
 });
-const login = await dataProvider.send<{ userId: number }>({
+const login = await dataProvider.send({
   resource: 'auth/login',
   params: { method: RequestMethods.POST, body: { username: 'barista' } },
+  schema: schemaOf({ name: 'session', isValid: isSession }),
 });
 
 console.log(

@@ -276,6 +276,14 @@ export interface IDataSourceAuth {
   errorRootKey: string;
 }
 
+/**
+ * A schema that checks the data of a response: `parse` answers the checked value and throws what it
+ * refuses. A zod schema is one.
+ */
+export interface IResponseSchema<TResult = unknown> {
+  parse(data: unknown): TResult;
+}
+
 /** What `DefaultNetworkRequestService.doRequest` answers. */
 export interface INetworkResponse<TResult = unknown> {
   /** The response body, or its rows for a list. */

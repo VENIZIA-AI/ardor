@@ -94,7 +94,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
   };
 
   const getItems = (service: DefaultNetworkRequestService) => {
-    return service.doRequest<{ data: string }>({
+    return service.doRequest({
       paths: ['items'],
       method: RequestMethods.GET,
       type: RequestTypes.GET_ONE,

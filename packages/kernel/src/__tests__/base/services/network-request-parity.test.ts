@@ -397,7 +397,7 @@ describe('the query a request carries', () => {
 
 describe('the totals and counts of a response', () => {
   const getList = (opts: { requestCountData?: string } = {}) => {
-    return createService({ isOpen: true }).doRequest<Array<{ id: number }>>({
+    return createService({ isOpen: true }).doRequest({
       paths: ['items'],
       method: RequestMethods.GET,
       type: RequestTypes.GET_LIST,

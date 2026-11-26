@@ -30,12 +30,15 @@ You have an application whose container class extends `BaseArdorApplication` (`A
 Every react-admin method in `DefaultRestDataProvider`, and `send()`, ends in one protected call:
 
 ```ts
-import { type INetworkResponse, type IRestRequestOptions } from '@venizia/ardor';
+import { type INetworkResponse, type IResponseSchema, type IRestRequestOptions } from '@venizia/ardor';
 
 declare class DefaultRestDataProvider<TResource extends string = string> {
-  protected request<TResult = unknown>(
-    opts: IRestRequestOptions<TResource>,
+  protected request<TResult>(
+    opts: IRestRequestOptions<TResource> & { schema: IResponseSchema<TResult> },
   ): Promise<INetworkResponse<TResult>>;
+  protected request(
+    opts: IRestRequestOptions<TResource> & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse>;
 }
 ```
 
@@ -74,11 +77,11 @@ export interface ITransportRequest {
   signal?: AbortSignal;
 }
 
-export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
+export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;
 
-// A transport answers parsed JSON, as a server does: `JSON.parse` is the typed boundary.
-const reply = <TResult>(opts: { data: unknown; total?: number }): INetworkResponse<TResult> => {
-  return { data: JSON.parse(JSON.stringify(opts.data)), total: opts.total };
+// A transport answers parsed JSON, as a server does; its `data` is `unknown` until a schema checks it.
+const reply = async (opts: { data: unknown; total?: number }): Promise<INetworkResponse> => {
+  return { data: opts.data, total: opts.total };
 };
 
 // An in-memory transport, useful in tests.
@@ -115,8 +118,10 @@ import {
   type IApplicationInfo,
   inject,
   type INetworkResponse,
+  type IResponseSchema,
   type IRestDataProviderOptions,
   type IRestRequestOptions,
+  NetworkResponseReader,
   type TRequestMethod,
   type TRequestType,
 } from '@venizia/ardor';
@@ -134,7 +139,7 @@ export interface ITransportRequest {
   signal?: AbortSignal;
 }
 
-export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
+export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;
 
 // A key for a value with no class: the transport function.
 export class TransportBindings {
@@ -156,10 +161,18 @@ export class TransportDataProvider<
   }
 
   // getList, getOne, ..., send: every method has already mapped its params by the time it calls this.
-  protected override request<TResult = unknown>(
-    opts: IRestRequestOptions<TResource>,
-  ): Promise<INetworkResponse<TResult>> {
+  protected override request<TResult>(
+    opts: IRestRequestOptions<TResource> & { schema: IResponseSchema<TResult> },
+  ): Promise<INetworkResponse<TResult>>;
+  /** With no schema the data is unknown. */
+  protected override request(
+    opts: IRestRequestOptions<TResource> & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse>;
+  protected override request(
+    opts: IRestRequestOptions<TResource> & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse> {
     const {
+      schema,
       resource,
       type,
       method,
@@ -184,7 +197,7 @@ export class TransportDataProvider<
       applicationInfo: this.applicationInfo,
     });
 
-    return this.transport({
+    const answered = this.transport({
       type,
       method,
       paths,
@@ -198,6 +211,13 @@ export class TransportDataProvider<
       body: props.body,
       signal,
     });
+
+    // The transport answers unchecked data; a schema checks and types it. `checkData` sees the data only: refuse an empty answer in the transport.
+    if (!schema) {
+      return answered;
+    }
+
+    return answered.then((response) => NetworkResponseReader.checkData({ response, schema }));
   }
 }
 ```
@@ -241,7 +261,7 @@ interface ITransportRequest {
   method: TRequestMethod;
   paths: string[];
 }
-type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
+type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;
 declare const memoryTransport: TTransport;
 declare class TransportDataProvider extends DefaultRestDataProvider {}
 declare class TransportBindings {

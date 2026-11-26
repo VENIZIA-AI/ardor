@@ -17,6 +17,7 @@ import type {
   IDataSourceAuth,
   INetworkResponse,
   ISendParams,
+  IResponseSchema,
   RequestCountData,
   TConstValue,
   TRequestMethod,
@@ -69,6 +70,22 @@ export type IReactAdminDataProvider<TResource extends string = string> = Pick<
   | 'deleteMany'
 >;
 
+/** The two shapes of `IDataProvider.send`. */
+export interface ISendRequest<TResource extends string = string> {
+  /** With a `schema`, `data` is what it checked and typed; what it refuses throws a `FetchSchemaError` (502). */
+  <TResult>(opts: {
+    resource: TResource;
+    params: ISendParams;
+    schema: IResponseSchema<TResult>;
+  }): Promise<INetworkResponse<TResult>>;
+  /** With no schema, the `data` of the response is `unknown`. */
+  (opts: {
+    resource: TResource;
+    params: ISendParams;
+    schema?: IResponseSchema;
+  }): Promise<INetworkResponse>;
+}
+
 /** react-admin's data provider with a free-form `send` and access to the network service and its auth. */
 export interface IDataProvider<
   TResource extends string = string,
@@ -80,10 +97,7 @@ export interface IDataProvider<
   supportAbortSignal?: boolean;
 
   /** A request outside react-admin's methods: the same headers and auth, the method and body of `params`. */
-  send: <TResult = unknown>(opts: {
-    resource: TResource;
-    params: ISendParams;
-  }) => Promise<INetworkResponse<TResult>>;
+  send: ISendRequest<TResource>;
 
   /** The network service every request goes through. */
   getNetworkService(): DefaultNetworkRequestService;

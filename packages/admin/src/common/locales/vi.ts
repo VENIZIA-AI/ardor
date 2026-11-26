@@ -221,4 +221,10 @@ export const vietnameseMessages: TranslationMessages = {
       home: 'Về trang chủ',
     },
   },
+  // The code of the error a response schema throws, so `useNotifyError` has a text for it.
+  core: {
+    fetch: {
+      schema_mismatch: 'Máy chủ trả về dữ liệu không đúng định dạng.',
+    },
+  },
 };

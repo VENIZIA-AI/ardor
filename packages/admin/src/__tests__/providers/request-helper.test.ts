@@ -1,6 +1,16 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
-import { RequestMethods, RequestTypes, type IApplicationInfo } from '@venizia/ardor-kernel';
+import {
+  type IApplicationInfo,
+  type INetworkResponse,
+  type IResponseSchema,
+  RequestMethods,
+  RequestTypes,
+} from '@venizia/ardor-kernel';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
+import { FetchSchemaError } from '@venizia/ignis-helpers/core';
+import { Container, getError } from '@venizia/ignis-inversion';
 import type { RaRecord } from 'ra-core';
+import type { IRestRequestOptions } from '@/common';
 import { CountRestDataProvider } from '@/providers/count-rest-data';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
@@ -13,10 +23,17 @@ interface IRecorded {
 }
 
 class ExposedProvider extends DefaultRestDataProvider {
-  public override request<TResult = unknown>(
-    opts: Parameters<DefaultRestDataProvider['request']>[0],
-  ) {
-    return super.request<TResult>(opts);
+  public override request<TResult>(
+    opts: IRestRequestOptions & { schema: IResponseSchema<TResult> },
+  ): Promise<INetworkResponse<TResult>>;
+  /** As above with no schema: the data is unknown. */
+  public override request(
+    opts: IRestRequestOptions & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse>;
+  public override request(
+    opts: IRestRequestOptions & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse> {
+    return super.request(opts);
   }
 
   public override requestList<TRecord extends RaRecord = RaRecord>(
@@ -81,7 +98,7 @@ const create = () => new ExposedProvider({ url: baseUrl, noAuthPathRegex: /./ },
 
 describe('request', () => {
   test('sends the method, the path, the query and the JSON body, and answers the data', async () => {
-    const result = await create().request<{ ok: boolean }>({
+    const result = await create().request({
       resource: 'posts',
       type: RequestTypes.CREATE,
       method: RequestMethods.POST,
@@ -138,6 +155,47 @@ describe('request', () => {
 
     expect(recorded[0].headers.get('x-request-channel')).toBe('custom');
     expect(recorded[0].headers.get('x-tenant')).toBe('t1');
+  });
+});
+
+describe('send with a schema', () => {
+  const send = (schema: IResponseSchema<string>) => {
+    return create().send({ resource: 'posts', params: { method: RequestMethods.POST }, schema });
+  };
+
+  test('answers the value the schema returns', async () => {
+    const result = await send({
+      parse: (data) => {
+        expect(data).toEqual({ ok: true });
+
+        return 'checked';
+      },
+    });
+
+    expect(result.data).toBe('checked');
+  });
+
+  test('is checked through the send react-admin holds too', async () => {
+    const provider = create().value(new Container());
+    const result = await provider.send({
+      resource: 'posts',
+      params: { method: RequestMethods.POST },
+      schema: { parse: () => 'checked' },
+    });
+
+    expect(result.data).toBe('checked');
+  });
+
+  test('rejects with a FetchSchemaError when the schema refuses', async () => {
+    const error = await RejectionUtility.rejectionOf({
+      task: send({
+        parse: () => {
+          throw getError({ message: 'refused' });
+        },
+      }),
+    });
+
+    expect(FetchSchemaError.is(error)).toBe(true);
   });
 });
 

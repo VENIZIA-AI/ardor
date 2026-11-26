@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (102)
+### `@venizia/ardor-kernel` (103)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -63,6 +63,7 @@ generated:
 - `injectable` const
 - `INoAuthOptions` interface
 - `IPermissionProvider` interface
+- `IResponseSchema` interface
 - `IRestDataProviderOptions` interface
 - `IRolePermissionProviderOptions` interface
 - `IScopedKeys` interface
@@ -203,7 +204,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (50)
+### `@venizia/ardor-admin` (51)
 
 - `AccessDeniedPage` const
 - `ApplicationProviders` class
@@ -228,6 +229,7 @@ generated:
 - `IReactAdminDataProvider` type
 - `IRestRequestOptions` interface
 - `IRouteAccess` interface
+- `ISendRequest` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
@@ -258,7 +260,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (203)
+### `@venizia/ardor` (205)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -336,12 +338,14 @@ generated:
 - `IPermissionProvider` interface
 - `IReactAdminAuthProvider` type
 - `IReactAdminDataProvider` type
+- `IResponseSchema` interface
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
 - `IRolePermissionProviderOptions` interface
 - `IRouteAccess` interface
 - `IScopedKeys` interface
 - `ISendParams` interface
+- `ISendRequest` interface
 - `ISignInSession` interface
 - `IStorageChange` interface
 - `IStorageCodec` interface

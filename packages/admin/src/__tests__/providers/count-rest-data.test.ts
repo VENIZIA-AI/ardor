@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 import type { IApplicationInfo, IRestDataProviderOptions } from '@venizia/ardor-kernel';
 import { getError } from '@venizia/ignis-inversion';
 import type { RaRecord } from 'ra-core';
@@ -91,6 +91,21 @@ const ensureFound = <T>(opts: { value: T | undefined; message: string }): T => {
   return value;
 };
 
+/** What the count route answers, by its path. */
+const COUNT_ANSWERS = new Map<string, { count?: unknown }>([
+  ['/journals/count', { count: '5' }],
+  ['/letters/count', {}],
+  ['/lists/count', { count: null }],
+  ['/ledgers/count', { count: 'many' }],
+  ['/leaflets/count', { count: ' ' }],
+  ['/logbooks/count', { count: [3] }],
+  ['/lessons/count', { count: -1 }],
+  ['/labels/count', { count: 2.5 }],
+  ['/lanes/count', { count: '0x10' }],
+  ['/leases/count', { count: '-1' }],
+  ['/levels/count', { count: '2.5' }],
+]);
+
 const createProvider = (opts: { baseUrl: string }): CountRestDataProvider => {
   const { baseUrl } = opts;
   const restDataProviderOptions: IRestDataProviderOptions = {
@@ -156,6 +171,16 @@ describe('CountRestDataProvider getList', () => {
           return createJsonResponse({
             data: [{ id: 'm-1', title: 'Tech Monthly', category: 'technology' }],
           });
+        }
+
+        const counted = COUNT_ANSWERS.get(url.pathname);
+
+        if (counted) {
+          return createJsonResponse({ data: counted });
+        }
+
+        if (COUNT_ANSWERS.has(`${url.pathname}/count`)) {
+          return createJsonResponse({ data: [] });
         }
 
         return new Response('Not Found', { status: 404 });
@@ -255,6 +280,56 @@ describe('CountRestDataProvider getList', () => {
     });
     expect(countRequest.method).toBe('GET');
   });
+
+  const readTotal = async (resource: string) => {
+    const provider = createProvider({ baseUrl });
+    const warn = spyOn(provider.logger, 'warn').mockImplementation(() => undefined);
+    const result = await provider.getList({
+      resource,
+      params: {
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+      },
+    });
+
+    const warnings = [...warn.mock.calls];
+
+    // The logger is shared by every provider of this scope.
+    warn.mockRestore();
+
+    return { total: result.total, warnings };
+  };
+
+  test('reads a count sent as a numeric string', async () => {
+    const result2 = await readTotal('journals');
+    expect(result2).toEqual({ total: 5, warnings: [] });
+  });
+
+  test.each(['letters', 'lists'])(
+    'returns 0 with no warning for an answer with no count or a null one: %s',
+    async (resource) => {
+      const result = await readTotal(resource);
+
+      expect(result).toEqual({ total: 0, warnings: [] });
+    },
+  );
+
+  test.each(['ledgers', 'leaflets', 'logbooks', 'lessons', 'labels', 'lanes', 'leases', 'levels'])(
+    'returns 0 and warns with the route and the value for a count that is no whole number: %s',
+    async (resource) => {
+      const { total, warnings } = await readTotal(resource);
+
+      expect(total).toBe(0);
+      expect(warnings).toEqual([
+        [
+          expect.stringContaining('The count is no non-negative integer'),
+          `/${resource}/count`,
+          COUNT_ANSWERS.get(`/${resource}/count`)?.count,
+        ],
+      ]);
+    },
+  );
 
   test('forwards existing filter where clause to count request and returns total from count', async () => {
     const provider = createProvider({ baseUrl });

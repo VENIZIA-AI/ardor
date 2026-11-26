@@ -62,18 +62,24 @@ describe('provider types', () => {
     expect(typeof good).toBe('function');
   });
 
-  test('send answers unknown data until the caller names a type', () => {
-    type TData = Awaited<ReturnType<IDataProvider['send']>>['data'];
+  test('send answers unknown data unless a schema checks it', () => {
+    const read = async (provider: IDataProvider) => {
+      const plain = await provider.send({ resource: 'a', params: { method: 'GET' } });
+      const checked = await provider.send({
+        resource: 'a',
+        params: { method: 'GET' },
+        schema: { parse: () => ({ name: 'x' }) },
+      });
+      const name: string = checked.data.name;
+      // @ts-expect-error - `data` is unknown: narrow it, or pass a schema
+      const unchecked: string = plain.data.name;
+      // @ts-expect-error - a type argument needs the schema that checks it
+      await provider.send<{ name: string }>({ resource: 'a', params: { method: 'GET' } });
 
-    const read = (data: TData) => {
-      // @ts-expect-error - `data` is unknown: narrow it, or name the type with send<T>()
-      return data.name;
+      return { name, unchecked, total: plain.total };
     };
 
-    const named = (data: Awaited<ReturnType<IDataProvider['send']>>) => data.total;
-
     expect(typeof read).toBe('function');
-    expect(typeof named).toBe('function');
   });
 
   test('translate takes the typed keys only, and returns a string', () => {

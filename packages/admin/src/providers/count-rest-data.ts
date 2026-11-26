@@ -1,20 +1,31 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import type { RaRecord } from 'ra-core';
 
-import { RequestMethods, RequestTypes, type TRequestType } from '@venizia/ardor-kernel';
+import {
+  NetworkResponseReader,
+  RequestMethods,
+  RequestTypes,
+  type TRequestType,
+} from '@venizia/ardor-kernel';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IListFilter } from './list-filter';
 import { DefaultRestDataProvider } from './rest-data';
 
 /**
- * A `DefaultRestDataProvider` whose list reads take their `total` from the count route
- * (`GET /{resource}/count` with the same `where`) instead of the `Content-Range` header.
+ * For a backend whose list routes send no `Content-Range`: the list reads take their `total` from
+ * a count route (`GET /{resource}/count` with the same `where`), a second request per list.
+ *
+ * Keep the default, `DefaultRestDataProvider`, otherwise: it reads the total from the
+ * `Content-Range` that the list routes of an IGNIS CRUD controller send. A browser on another origin
+ * sees that header only when the server exposes it (CORS `Access-Control-Expose-Headers`).
  */
 export class CountRestDataProvider<
   TResource extends string = string,
 > extends DefaultRestDataProvider<TResource> {
   /**
-   * Sends the list GET and the count GET together; `total` is the count's `count`, or `0` when the
-   * count answers none. Rejects when either request rejects.
+   * Sends the list GET and the count GET together; `total` is the count's `count`, a non-negative
+   * integer or a string of digits, or `0` when the count answers none. Any other gives `0` and a warning.
+   * Rejects when either request rejects.
    */
   protected override requestList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
@@ -30,7 +41,7 @@ export class CountRestDataProvider<
     const list = super.requestList<RecordType>(opts);
 
     // The count route has no extras: its request carries none.
-    const count = this.request<{ count?: number }>({
+    const count = this.request({
       resource,
       type: RequestTypes.SEND,
       method: RequestMethods.GET,
@@ -40,11 +51,36 @@ export class CountRestDataProvider<
     });
 
     return Promise.all([list, count]).then(([listResult, countResult]) => {
+      const counted = RecordUtility.read({ value: countResult.data, path: ['count'] });
+
       return {
         data: listResult.data,
-        total: countResult?.data?.count ?? 0,
+        total: this.toTotal({ counted, resource }),
         ...('meta' in listResult && listResult.meta ? { meta: listResult.meta } : {}),
       };
     });
+  }
+
+  /** The `count` of a count answer as a total. */
+  private toTotal(opts: { counted: unknown; resource: TResource }): number {
+    const { counted, resource } = opts;
+
+    if (counted === undefined || counted === null) {
+      return 0;
+    }
+
+    const total = NetworkResponseReader.parseCount({ count: counted });
+
+    if (total !== undefined) {
+      return total;
+    }
+
+    this.logger.warn(
+      '[requestList] The count is no non-negative integer, total is 0 | route: %s | count: %o',
+      `/${resource}/count`,
+      counted,
+    );
+
+    return 0;
   }
 }

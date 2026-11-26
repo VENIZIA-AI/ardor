@@ -448,3 +448,33 @@ auth-provider-resource-generic-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-12 or earlier. A class with no type argument compiles there too.
   data: Nothing stored changes. Only what TypeScript accepts changes.
+
+unchecked-response-types-removed:
+  symbols:
+    [
+      IDataProvider,
+      DefaultRestDataProvider,
+      DefaultNetworkRequestService,
+      NetworkResponseReader,
+      IResponseSchema,
+      CountRestDataProvider,
+      RequestCountData,
+    ]
+  upgrade:
+    steps:
+      - 'Run `bun check` to see every place to change. "Expected 0 type arguments" and "Property ''schema'' is missing" mark each `send`, `doRequest`, `request`, `read` or `convertResponse` that named a type nothing checked; an error on the use of `data` marks one whose type came from the code around it.'
+      - 'At each place, drop the type argument and pass a `schema`: a zod schema, or an object whose `parse` returns the checked value and throws otherwise. Without a schema, narrow `data` before you use it.'
+      - 'In a subclass that overrides `send` or `request`, declare the two overloads, and hand an answer your own transport built to `NetworkResponseReader.checkData` when a schema is given.'
+      - 'Pass a schema only to a route that answers JSON or a file. With one, plain text that is no JSON, broken JSON, an empty body and a 204 are refused (`invalid_json`). A route that answers either one of those or JSON needs two code paths, or no schema and your own check.'
+      - 'Make a count route, and the body of a `DATA_WITH_COUNT` list, send `count` as a non-negative integer or a string of digits. Any other value now gives 0 and a warning, where it was passed on before.'
+      - 'If you use `CountRestDataProvider` and your list routes send `Content-Range`, as IGNIS CRUD routes do, remove the binding: the default provider reads the total from the header, with one request per list.'
+      - "With `RequestCountData.DATA_WITH_COUNT` on a request that is no list, code that read another key of the body than `data`, `count` or `total` from the answer passes `headers: { 'x-request-count': RequestCountData.DATA_WITH_COUNT }` in place of `requestCountData`, so the server is asked the same, and reads the body from `data`."
+      - 'An `IDataProvider` written as an object literal, a test fake included, needs a `send` that is a function with both overload declarations (`schema` required, answering `INetworkResponse<TResult>`; `schema` optional, answering `INetworkResponse`) and one implementation that hands its answer to `NetworkResponseReader.checkData` when a schema is given. An arrow function cannot declare both; no cast is needed.'
+    before: |-
+      const response = await dataProvider.send<{ message: string }>({ resource: 'hello', params: { method: 'GET' } });
+    after: |-
+      const response = await dataProvider.send({ resource: 'hello', params: { method: 'GET' }, schema: helloSchema });
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-12 or earlier, remove each `schema` property and name the type with a type argument again.'
+  data: Nothing stored or sent changes. A response that does not fit its schema is now refused where it passed through before.

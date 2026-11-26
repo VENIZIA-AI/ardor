@@ -35,6 +35,7 @@ import {
   type IRestDataProviderOptions,
   ValueUtility,
   type ISendParams,
+  type IResponseSchema,
   RequestCountData,
   RequestMethods,
   RequestTypes,
@@ -176,9 +177,16 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    * `doRequest`. `paths` default to `[resource]`; headers in `headers` win over the computed
    * ones, because a caller that names a header means it.
    */
-  protected request<TResult = unknown>(
-    opts: IRestRequestOptions<TResource>,
-  ): Promise<INetworkResponse<TResult>> {
+  protected request<TResult>(
+    opts: IRestRequestOptions<TResource> & { schema: IResponseSchema<TResult> },
+  ): Promise<INetworkResponse<TResult>>;
+  /** As above with no schema: the `data` of the response is `unknown`. */
+  protected request(
+    opts: IRestRequestOptions<TResource> & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse>;
+  protected request(
+    opts: IRestRequestOptions<TResource> & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse> {
     const {
       resource,
       type,
@@ -191,6 +199,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       headers,
       requestCountData = RequestCountData.DATA_ONLY,
       signal,
+      schema,
     } = opts;
 
     const props = this.networkService.getRequestProps({
@@ -203,7 +212,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       extra,
     });
 
-    return this.networkService.doRequest<TResult>({
+    return this.networkService.doRequest({
+      schema,
       requestCountData,
       type,
       method,
@@ -222,6 +232,17 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }
 
   /**
+   * The answer as the record type react-admin's caller names. Nothing checks it: a data provider
+   * method has no schema for a type its caller picks. Use `send` with a schema for a checked answer.
+   */
+  private adoptRecords<TResult>(opts: {
+    response: Promise<INetworkResponse>;
+  }): Promise<INetworkResponse<TResult>> {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- ra-core's caller picks RecordType, which nothing here can check
+    return opts.response as Promise<INetworkResponse<TResult>>;
+  }
+
+  /**
    * The list GET: the filter in the query, and the extras a route answered as the result's
    * `meta.extra`. Override it to change how a list is read (`CountRestDataProvider` adds the total).
    */
@@ -235,14 +256,16 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }) {
     const { resource, type, queryKey, filter, extra, signal } = opts;
 
-    return this.request<RecordType[]>({
+    const response = this.request({
       resource,
       type,
       method: RequestMethods.GET,
       query: { ...queryKey, filter },
       extra,
       signal,
-    }).then(({ extra: answered, ...rest }) => {
+    });
+
+    return this.adoptRecords<RecordType[]>({ response }).then(({ extra: answered, ...rest }) => {
       return answered ? { ...rest, meta: { extra: answered } } : rest;
     });
   }
@@ -283,13 +306,15 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     const { params: filterParams, ...filter } = params?.meta?.filter ?? {};
     const queryKey = ListFilterBuilder.extractQueryParams({ params: filterParams });
 
-    return this.request<RecordType>({
-      resource,
-      type: RequestTypes.GET_ONE,
-      method: RequestMethods.GET,
-      paths: recordPaths({ resource, id: params.id }),
-      query: { ...queryKey, filter },
-      signal: params.signal,
+    return this.adoptRecords<RecordType>({
+      response: this.request({
+        resource,
+        type: RequestTypes.GET_ONE,
+        method: RequestMethods.GET,
+        paths: recordPaths({ resource, id: params.id }),
+        query: { ...queryKey, filter },
+        signal: params.signal,
+      }),
     });
   }
 
@@ -308,18 +333,20 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
 
     // Always the GET, under the controller's own `find()`, so its scoping applies. A very long id
     // list answers 414/431.
-    return this.request<RecordType[]>({
-      resource,
-      type: RequestTypes.GET_MANY,
-      method: RequestMethods.GET,
-      query: {
-        ...queryKey,
-        filter: {
-          ...filter,
-          where: { ...filter?.where, id: { inq: params.ids } },
+    return this.adoptRecords<RecordType[]>({
+      response: this.request({
+        resource,
+        type: RequestTypes.GET_MANY,
+        method: RequestMethods.GET,
+        query: {
+          ...queryKey,
+          filter: {
+            ...filter,
+            where: { ...filter?.where, id: { inq: params.ids } },
+          },
         },
-      },
-      signal: params.signal,
+        signal: params.signal,
+      }),
     });
   }
 
@@ -354,12 +381,14 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<UpdateResult<RecordType>> {
     const { resource, params } = opts;
 
-    return this.request<RecordType>({
-      resource,
-      type: RequestTypes.UPDATE,
-      method: RequestMethods.PATCH,
-      paths: recordPaths({ resource, id: params.id }),
-      body: params.data,
+    return this.adoptRecords<RecordType>({
+      response: this.request({
+        resource,
+        type: RequestTypes.UPDATE,
+        method: RequestMethods.PATCH,
+        paths: recordPaths({ resource, id: params.id }),
+        body: params.data,
+      }),
     });
   }
 
@@ -388,7 +417,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     }
 
     // The selector goes in the body: an id list in the URL hits 431 at ~400 UUIDs.
-    return this.request<Array<RecordType>>({
+    return this.request({
       resource,
       type: RequestTypes.UPDATE_MANY,
       method: RequestMethods.PATCH,
@@ -405,11 +434,13 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   >(opts: { resource: TResource; params: CreateParams }): Promise<CreateResult<ResultRecordType>> {
     const { resource, params } = opts;
 
-    return this.request<ResultRecordType>({
-      resource,
-      type: RequestTypes.CREATE,
-      method: RequestMethods.POST,
-      body: params.data,
+    return this.adoptRecords<ResultRecordType>({
+      response: this.request({
+        resource,
+        type: RequestTypes.CREATE,
+        method: RequestMethods.POST,
+        body: params.data,
+      }),
     });
   }
 
@@ -420,11 +451,13 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<DeleteResult<RecordType>> {
     const { resource, params } = opts;
 
-    return this.request<RecordType>({
-      resource,
-      type: RequestTypes.DELETE,
-      method: RequestMethods.DELETE,
-      paths: recordPaths({ resource, id: params.id }),
+    return this.adoptRecords<RecordType>({
+      response: this.request({
+        resource,
+        type: RequestTypes.DELETE,
+        method: RequestMethods.DELETE,
+        paths: recordPaths({ resource, id: params.id }),
+      }),
     });
   }
 
@@ -446,7 +479,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     }
 
     // One atomic request with the selector in the body, as in `updateMany`.
-    return this.request<Array<RecordType>>({
+    return this.request({
       resource,
       type: RequestTypes.DELETE_MANY,
       method: RequestMethods.DELETE,
@@ -459,13 +492,26 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   /**
    * Sends `params.method` to `/{resource}` with the provider's headers and auth; `requestType`
    * defaults to `RequestTypes.SEND`. Resolves the response read by that type. Rejects when
-   * `params.method` is missing, before any request.
+   * `params.method` is missing, before any request. With a `schema`, `data` is what it checked and
+   * typed; what it refuses, an empty answer included, throws a `FetchSchemaError` (502).
    */
-  async send<TResult = unknown>(opts: {
+  send<TResult>(opts: {
     resource: TResource;
     params: ISendParams;
-  }): Promise<INetworkResponse<TResult>> {
-    const { resource, params } = opts;
+    schema: IResponseSchema<TResult>;
+  }): Promise<INetworkResponse<TResult>>;
+  /** As above with no schema: the `data` of the response is `unknown`. */
+  send(opts: {
+    resource: TResource;
+    params: ISendParams;
+    schema?: IResponseSchema;
+  }): Promise<INetworkResponse>;
+  async send(opts: {
+    resource: TResource;
+    params: ISendParams;
+    schema?: IResponseSchema;
+  }): Promise<INetworkResponse> {
+    const { resource, params, schema } = opts;
 
     if (!params?.method) {
       throw getError({
@@ -486,7 +532,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         ]),
       );
 
-    return this.request<TResult>({
+    return this.request({
+      schema,
       resource,
       type: requestType ?? RequestTypes.SEND,
       method,
@@ -540,9 +587,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       deleteMany: (resource, params) => {
         return this.deleteMany({ resource, params });
       },
-      send: (opts: { resource: TResource; params: ISendParams }) => {
-        return this.send(opts);
-      },
+      // Bound, so both shapes of `send` stay on the provider react-admin and the app see.
+      send: this.send.bind(this),
       getNetworkService: () => {
         return this.getNetworkService();
       },
