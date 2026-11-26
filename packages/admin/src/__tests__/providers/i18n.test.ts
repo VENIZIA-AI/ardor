@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
 import { CoreBindings, LocalStorageKeys } from '@venizia/ardor-kernel';
@@ -127,6 +128,33 @@ describe('DefaultI18nProvider hooks', () => {
     }).value(new Container());
 
     expect(i18n.getLocale()).toBe('vi');
+  });
+
+  test.each([
+    ['an array over a message', { ra: { action: { add: ['a', 'b'] } } }, 'ra.action.add', 'Add'],
+    ['a number over a message', { ra: { action: { add: 7 } } }, 'ra.action.add', 'Add'],
+    ['null over a message', { ra: { action: { add: null } } }, 'ra.action.add', 'Add'],
+    ['an object over a message', { ra: { action: { add: { one: 'x' } } } }, 'ra.action.add', 'Add'],
+    ['a message over a group', { ra: { action: 'gone' } }, 'ra.action.add', 'Add'],
+    ['an array under a new key', { app: { list: ['a'] } }, 'app.list', 'app.list'],
+    ['a number under a new key', { app: { count: 3 } }, 'app.count', 'app.count'],
+  ])('a source of the wrong shape (%s) does not reach the messages', (_name, wrong, key, text) => {
+    const warn = spyOn(LoggerFactory.getLogger(['DefaultI18nProvider']), 'warn').mockImplementation(
+      () => undefined,
+    );
+
+    try {
+      const i18n = new DefaultI18nProvider({ i18nSources: { en: wrong } }).value(new Container());
+
+      expect(i18n.translate(key, { _: text === key ? key : 'missing' })).toBe(text);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('[composeMessages] Messages of the wrong shape are left out'),
+        'en',
+        expect.stringContaining(key.split('.').slice(0, 2).join('.')),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   test('composeMessages decides the messages of a locale', () => {
