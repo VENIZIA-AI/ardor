@@ -1,4 +1,0 @@
-[
-  { "rule": "mixed-folder", "path": "packages/ardor/src" },
-  { "rule": "mixed-folder", "path": "packages/kernel/src" }
-]

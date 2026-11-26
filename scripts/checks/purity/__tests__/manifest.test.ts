@@ -146,11 +146,11 @@ describe('PURITY_MANIFEST derivation', () => {
     expect(entries).toEqual([
       'packages/admin/dist/index.js',
       'packages/ardor/dist/index.js',
-      'packages/ardor/dist/repository.js',
-      'packages/ardor/dist/testing.js',
+      'packages/ardor/dist/repository/index.js',
+      'packages/ardor/dist/testing/index.js',
       'packages/kernel/dist/base/repositories/index.js',
       'packages/kernel/dist/index.js',
-      'packages/kernel/dist/testing.js',
+      'packages/kernel/dist/testing/index.js',
       'packages/react/dist/index.js',
     ]);
   });

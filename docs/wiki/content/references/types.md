@@ -110,7 +110,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 
 ### Repositories (@venizia/ardor/repository)
 
-Source files: `packages/ardor/src/repository.ts` and `packages/kernel/src/base/repositories/index.ts`.
+Source files: `packages/ardor/src/repository/index.ts` and `packages/kernel/src/base/repositories/index.ts`.
 
 | Type | Kind | Definition and usage | Shape |
 |---|---|---|---|

@@ -26,7 +26,7 @@ const hooksOf = (source: object): string[] =>
 
 describe('Ardor', () => {
   test('gathers every hook the package exports, and nothing else', () => {
-    // A new hook in react or admin that is not listed in ardor.ts fails here.
+    // A new hook in react or admin that is not listed in ardor/index.ts fails here.
     expect(hooksOf(Ardor)).toEqual(hooksOf(umbrella));
     expect(Object.keys(Ardor)).toHaveLength(33);
   });

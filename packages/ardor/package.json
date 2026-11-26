@@ -55,14 +55,14 @@
       "default": "./dist/index.js"
     },
     "./repository": {
-      "types": "./dist/repository.d.ts",
-      "import": "./dist/repository.js",
-      "default": "./dist/repository.js"
+      "types": "./dist/repository/index.d.ts",
+      "import": "./dist/repository/index.js",
+      "default": "./dist/repository/index.js"
     },
     "./testing": {
-      "types": "./dist/testing.d.ts",
-      "import": "./dist/testing.js",
-      "default": "./dist/testing.js"
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
+      "default": "./dist/testing/index.js"
     },
     "./package.json": "./package.json",
     "./vite": {
@@ -156,7 +156,7 @@
       "limit": "760 B"
     },
     {
-      "path": "dist/testing.js",
+      "path": "dist/testing/index.js",
       "import": "*",
       "ignore": [
         "@reduxjs/toolkit",

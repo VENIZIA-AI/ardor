@@ -10,7 +10,7 @@ import {
 } from '@/base/services/network-request';
 import { RequestMethods, RequestTypes, type TRequestTimeoutOptions } from '@/common';
 import { FakeStorage } from '@/testing';
-import { LogWatch } from '../../log-watch';
+import { LogWatch } from '@/__tests__/support/log-watch';
 
 afterEach(() => LogWatch.restore());
 

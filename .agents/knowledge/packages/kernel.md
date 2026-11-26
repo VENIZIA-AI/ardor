@@ -39,7 +39,7 @@ Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/i
 
 ## The testing entry
 
-`@venizia/ardor-kernel/testing` (`src/testing.ts`, outside the root barrel) holds the fakes of the browser APIs that ARDOR's hooks and helpers read: `FakeResizeObserver`, `FakeIntersectionObserver`, `FakeMatchMedia`, `FakeStorage` and `FakeClipboard`. `@venizia/ardor/testing` re-exports them, and the React and admin tests import them from the kernel (react depends on the kernel, so there is no cycle). How each is installed and driven is in `docs/wiki/content/references/testing.md`. The entry uses only globals, so the purity gate claims it like the root; its size budget is its entry of the `size-limit` block of `packages/kernel/package.json`.
+`@venizia/ardor-kernel/testing` (`src/testing/index.ts`, outside the root barrel) holds the fakes of the browser APIs that ARDOR's hooks and helpers read: `FakeResizeObserver`, `FakeIntersectionObserver`, `FakeMatchMedia`, `FakeStorage` and `FakeClipboard`. `@venizia/ardor/testing` re-exports them, and the React and admin tests import them from the kernel (react depends on the kernel, so there is no cycle). How each is installed and driven is in `docs/wiki/content/references/testing.md`. The entry uses only globals, so the purity gate claims it like the root; its size budget is its entry of the `size-limit` block of `packages/kernel/package.json`.
 
 ## Build, test, size
 
