@@ -22,7 +22,7 @@ import {
   type TRequestMethod,
 } from '@/common';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
-import { LogWatch } from '../../log-watch';
+import { LogWatch } from '@/__tests__/support/log-watch';
 
 afterEach(() => LogWatch.restore());
 

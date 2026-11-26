@@ -39,7 +39,7 @@ Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/i
 
 ## The testing entry
 
-`@venizia/ardor-kernel/testing` (`src/testing.ts`, outside the root barrel) holds the fakes of the browser APIs that ARDOR's hooks and helpers read: `FakeResizeObserver`, `FakeIntersectionObserver`, `FakeMatchMedia`, `FakeStorage` and `FakeClipboard`. `@venizia/ardor/testing` re-exports them, and the React and admin tests import them from the kernel (react depends on the kernel, so there is no cycle). How each is installed and driven is in `docs/wiki/content/references/testing.md`. The entry uses only globals, so the purity gate claims it like the root; its size budget is its entry of the `size-limit` block of `packages/kernel/package.json`.
+`@venizia/ardor-kernel/testing` (`src/testing/index.ts`, outside the root barrel) holds the fakes of the browser APIs that ARDOR's hooks and helpers read: `FakeResizeObserver`, `FakeIntersectionObserver`, `FakeMatchMedia`, `FakeStorage` and `FakeClipboard`. `@venizia/ardor/testing` re-exports them, and the React and admin tests import them from the kernel (react depends on the kernel, so there is no cycle). How each is installed and driven is in `docs/wiki/content/references/testing.md`. The entry uses only globals, so the purity gate claims it like the root; its size budget is its entry of the `size-limit` block of `packages/kernel/package.json`.
 
 ## Build, test, size
 
@@ -47,7 +47,7 @@ Scripts follow the standard package layout described in [Build/run/test](/overvi
 
 - `make kernel` - typecheck, clean, then `tsc -p .configs/builders/tsconfig.build.json` and `tsc-alias`
 - `make -C packages/kernel typecheck` - `tsconfig.json` (src and tests), then the build program
-- `make test-kernel` (`bun test` with `NODE_ENV=test` and the `src/__tests__/setup.ts` preload) - see [testing conventions](/conventions/testing-conventions.md) and [testing process](/process/testing.md)
+- `make test-kernel` (`bun test` with `NODE_ENV=test` and the `src/__tests__/setup/index.ts` preload) - see [testing conventions](/conventions/testing-conventions.md) and [testing process](/process/testing.md)
 - `make -C packages/kernel size` - runs `size-limit`
 
 The package enforces a size budget via `size-limit`: `dist/index.js` (importing everything, with all peer/runtime deps ignored from the measurement) must stay under the limit in the `size-limit` block of `packages/kernel/package.json`, which is the one place the number is written. This budget is a hard constraint on kernel growth - anything bulky belongs in a higher package, not in the isomorphic core. The limit is the measured size plus 2%, rounded up to the next 10 B (see [Gotchas](/conventions/gotchas.md)). It is a ceiling, not a target.

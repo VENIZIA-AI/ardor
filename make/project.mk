@@ -67,7 +67,7 @@ BUN_TEST_FLAGS ?=
 TEST_PATHS ?=
 
 test:
-	@NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS) $(TEST_PATHS)
+	@NODE_ENV=test bun test --preload ./src/__tests__/setup $(BUN_TEST_FLAGS) $(TEST_PATHS)
 
 # Bundle budget from the package.json "size-limit" block, brotlied, every third-party peer external.
 size:

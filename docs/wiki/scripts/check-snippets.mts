@@ -166,8 +166,8 @@ const compilerOptions: ts.CompilerOptions = {
   // would fail with TS2307 while the import resolves perfectly at runtime.
   paths: {
     '@venizia/ardor': [join(REPO, 'packages/ardor/dist/index.d.ts')],
-    '@venizia/ardor/repository': [join(REPO, 'packages/ardor/dist/repository.d.ts')],
-    '@venizia/ardor/testing': [join(REPO, 'packages/ardor/dist/testing.d.ts')],
+    '@venizia/ardor/repository': [join(REPO, 'packages/ardor/dist/repository/index.d.ts')],
+    '@venizia/ardor/testing': [join(REPO, 'packages/ardor/dist/testing/index.d.ts')],
     '@venizia/ardor/vite': [join(REPO, 'packages/ardor/dist/vite/index.d.ts')],
     vite: [join(REPO, 'packages/ardor/node_modules/vite/dist/node/index.d.ts')],
     '@venizia/ardor-kernel': [join(REPO, 'packages/kernel/dist/index.d.ts')],

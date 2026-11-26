@@ -57,9 +57,9 @@
       "default": "./dist/base/repositories/index.js"
     },
     "./testing": {
-      "types": "./dist/testing.d.ts",
-      "import": "./dist/testing.js",
-      "default": "./dist/testing.js"
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
+      "default": "./dist/testing/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -111,7 +111,7 @@
       "limit": "11300 B"
     },
     {
-      "path": "dist/testing.js",
+      "path": "dist/testing/index.js",
       "import": "*",
       "limit": "1640 B"
     }

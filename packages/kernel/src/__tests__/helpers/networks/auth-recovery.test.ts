@@ -1,6 +1,6 @@
 import { describe, expect, mock, test, afterEach } from 'bun:test';
 import { AuthRecoveryHelper } from '@/helpers';
-import { LogWatch } from '../../log-watch';
+import { LogWatch } from '@/__tests__/support/log-watch';
 
 afterEach(() => LogWatch.restore());
 
