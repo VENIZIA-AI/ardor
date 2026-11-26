@@ -67,9 +67,11 @@ export const assertEveryPackageClaimed = (opts: {
 }): void => {
   for (const directory of opts.directories) {
     const manifest = readPackageManifest({ package: directory });
+
     if (manifest.private) {
       continue;
     }
+
     if (!opts.claims.some((claim) => claim.package === directory)) {
       throw new Error(`[clean-install][manifest] '${manifest.name}' is published but has no claim`);
     }
@@ -97,6 +99,7 @@ export const deriveInstallRows = (opts: { claims: IInstallClaim[] }): IInstallRo
           `[clean-install][manifest] '${manifest.name}' grants '${subpath}', which its exports map does not publish`,
         );
       }
+
       for (const extra of extras) {
         if (!(extra in peers)) {
           throw new Error(
@@ -110,12 +113,15 @@ export const deriveInstallRows = (opts: { claims: IInstallClaim[] }): IInstallRo
       if (!isCodeSubpath(subpath)) {
         continue;
       }
+
       const file = importTarget(target);
+
       if (!file) {
         throw new Error(
           `[clean-install][manifest] '${manifest.name}' ${subpath} has no import target`,
         );
       }
+
       rows.push({
         package: claim.package,
         name: manifest.name,
@@ -140,19 +146,23 @@ export const findLockMismatches = (opts: {
   sandboxed: string;
 }): string[] => {
   const mismatches: string[] = [];
+
   for (const [name, file] of opts.tarballs) {
     const escaped = name.replace(/[/.-]/g, '\\$&');
     const pattern = new RegExp(`"(?:[^"]*/)?${escaped}": \\["${escaped}@([^"]+)"`, 'g');
     const matches = [...opts.lock.matchAll(pattern)];
+
     if (name === opts.sandboxed && matches.length === 0) {
       mismatches.push(`${name} is missing from the lock`);
     }
+
     for (const match of matches) {
       if (!match[1].includes(file)) {
         mismatches.push(`${name} resolves to '${match[1]}', not the packed tarball`);
       }
     }
   }
+
   return mismatches;
 };
 
@@ -196,11 +206,13 @@ export const findDuplicateCopies = (opts: { lock: string }): string[] => {
   for (const match of opts.lock.matchAll(/"[^"]*": \["([^"]+)"/g)) {
     const spec = match[1];
     const at = spec.indexOf('@', 1);
+
     if (at < 0) {
       continue;
     }
 
     const name = spec.slice(0, at);
+
     if (!isSingleCopy({ name })) {
       continue;
     }
@@ -224,19 +236,23 @@ export const peerIdentityHolders = (opts: { name: string }): string[] => {
   const byName = new Map(
     listPackageDirectories().map((directory) => {
       const manifest = readPackageManifest({ package: directory });
+
       return [manifest.name, manifest] as const;
     }),
   );
 
   const holders = new Set<string>();
   const queue = [opts.name];
+
   while (queue.length > 0) {
     const name = queue.shift() as string;
+
     if (holders.has(name)) {
       continue;
     }
 
     holders.add(name);
+
     for (const dependency of Object.keys(byName.get(name)?.dependencies ?? {})) {
       if (byName.has(dependency)) {
         queue.push(dependency);

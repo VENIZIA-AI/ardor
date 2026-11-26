@@ -37,9 +37,11 @@ const versionOf = new Map(manifests.map((manifest) => [manifest.name, manifest.v
 
 const versionFor = (name: string): string => {
   const version = versionOf.get(name);
+
   if (!version) {
     throw new Error(`no sibling named ${name}`);
   }
+
   return version;
 };
 
@@ -102,6 +104,7 @@ describe('the packed manifest of each package', () => {
       stderr: 'pipe',
     });
     const exitCode = await proc.exited;
+
     if (exitCode !== 0) {
       const stderrResponse = new Response(proc.stderr);
       const stderr = await stderrResponse.text();
@@ -110,6 +113,7 @@ describe('the packed manifest of each package', () => {
     }
 
     const tarball = readdirSync(out).find((file) => file.endsWith('.tgz'));
+
     if (!tarball) {
       throw new Error(`bun pm pack made no tarball in ${opts.dir}`);
     }
@@ -119,6 +123,7 @@ describe('the packed manifest of each package', () => {
     });
     const tarResponse = new Response(tar.stdout);
     const result = await tarResponse.text();
+
     return JSON.parse(result) as TManifest;
   };
 
@@ -127,6 +132,7 @@ describe('the packed manifest of each package', () => {
       const manifest = JSON.parse(
         readFileSync(join(PACKAGES_DIR, dir, 'package.json'), 'utf8'),
       ) as TManifest;
+
       if (!manifest.private) {
         const result = await pack({ dir });
         packed.set(manifest.name, result);

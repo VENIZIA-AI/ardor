@@ -181,11 +181,13 @@ const main = (): void => {
     }
 
     console.log(target);
+
     return;
   }
 
   if (command === 'tag') {
     console.log(npmTagFor({ target: rest[0] ?? '' }));
+
     return;
   }
 

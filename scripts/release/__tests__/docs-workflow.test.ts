@@ -122,6 +122,7 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
       })
         .stdout.toString()
         .trim();
+
     const commit = (file: string, message: string): string => {
       mkdirSync(join(root, file, '..'), { recursive: true });
       writeFileSync(join(root, file), `${message}\n`);

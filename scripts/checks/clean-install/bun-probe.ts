@@ -15,6 +15,7 @@ await import(Bun.resolveSync(process.argv[2], sandbox));
 
 const outside = Object.keys(require.cache).filter((file) => {
   const real = realpathSync(file);
+
   return real !== sandbox && !real.startsWith(sandbox + sep);
 });
 

@@ -47,13 +47,16 @@ let buffer = '';
 const readMessage = async (): Promise<Record<string, unknown>> => {
   for (;;) {
     const newline = buffer.indexOf('\n');
+
     if (newline === -1) {
       const { value, done } = await reader.read();
+
       if (done) {
         const stderrResponse = new Response(server.stderr);
         const stderr = await stderrResponse.text();
         throw new Error(`atlas exited: ${stderr}`);
       }
+
       buffer += decoder.decode(value);
       continue;
     }
@@ -61,6 +64,7 @@ const readMessage = async (): Promise<Record<string, unknown>> => {
     const line = buffer.slice(0, newline).trim();
     buffer = buffer.slice(newline + 1);
     const message: unknown = line.length > 0 ? JSON.parse(line) : null;
+
     if (isRecord(message)) {
       return message;
     }
@@ -68,11 +72,14 @@ const readMessage = async (): Promise<Record<string, unknown>> => {
 };
 
 let nextId = 1;
+
 const call = async (opts: { method: string; params: Record<string, unknown> }) => {
   const id = nextId++;
   server.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, ...opts })}\n`);
+
   for (;;) {
     const message = await readMessage();
+
     if (message.id === id) {
       return message;
     }
@@ -80,11 +87,14 @@ const call = async (opts: { method: string; params: Record<string, unknown> }) =
 };
 
 const failures: string[] = [];
+
 const check = (label: string, condition: boolean, detail: unknown) => {
   if (!condition) {
     failures.push(`${label} | ${JSON.stringify(detail).slice(0, 300)}`);
+
     return;
   }
+
   console.log(`ok   | ${label}`);
 };
 
@@ -117,6 +127,7 @@ if (failures.length > 0) {
   console.error(`atlas smoke FAILED:\n  ${failures.join('\n  ')}`);
   process.exit(1);
 }
+
 console.log(`atlas smoke OK - ${serverName} serves this checkout`);
 
 export {};

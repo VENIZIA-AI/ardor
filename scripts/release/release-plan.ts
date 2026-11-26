@@ -139,6 +139,7 @@ export class ReleasePlan {
     }
 
     const unknown = packages.filter((name) => !order.includes(name));
+
     if (unknown.length > 0) {
       throw new Error(
         `[ReleasePlan.validate] unknown package(s): ${unknown.join(', ')} | known: ${order.join(', ')}`,
@@ -146,6 +147,7 @@ export class ReleasePlan {
     }
 
     const repeated = packages.filter((name, index) => packages.indexOf(name) !== index);
+
     if (repeated.length > 0) {
       throw new Error(
         `[ReleasePlan.validate] repeated package(s): ${[...new Set(repeated)].join(', ')}`,
@@ -153,6 +155,7 @@ export class ReleasePlan {
     }
 
     const positions = packages.map((name) => order.indexOf(name));
+
     if (positions.some((position, index) => index > 0 && position < (positions[index - 1] ?? 0))) {
       throw new Error(
         `[ReleasePlan.validate] ${packages.join(',')} is not in dependency order | expected: ${order.join(',')}`,
@@ -162,6 +165,7 @@ export class ReleasePlan {
 
   private static parse(opts: { version: string }): IParsedVersion {
     const match = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(opts.version);
+
     if (!match) {
       throw new Error(
         `[ReleasePlan.increment] '${opts.version}' is not a version without build metadata (x.y.z or x.y.z-pre)`,
@@ -183,6 +187,7 @@ export class ReleasePlan {
    */
   static increment(opts: { current: string; mode: string }): string {
     const { current, mode } = opts;
+
     if (!isReleaseMode({ value: mode })) {
       throw new Error(`[ReleasePlan.increment] unknown mode '${mode}'`);
     }
@@ -201,6 +206,7 @@ export class ReleasePlan {
         if (!hasPrerelease) {
           patch += 1;
         }
+
         prerelease = [];
         break;
       }
@@ -208,6 +214,7 @@ export class ReleasePlan {
         if (patch !== 0 || !hasPrerelease) {
           minor += 1;
         }
+
         patch = 0;
         prerelease = [];
         break;
@@ -216,6 +223,7 @@ export class ReleasePlan {
         if (minor !== 0 || patch !== 0 || !hasPrerelease) {
           major += 1;
         }
+
         minor = 0;
         patch = 0;
         prerelease = [];
@@ -277,6 +285,7 @@ export class ReleasePlan {
       const above = packages.filter(
         (planned) => Bun.semver.order(planned.localVersion, target) > 0,
       );
+
       if (above.length > 0) {
         throw new Error(
           `[ReleasePlan.resolveVersion] ${above.map((planned) => `${planned.name} is at ${planned.localVersion}`).join(', ')}, above ${target}`,
@@ -286,6 +295,7 @@ export class ReleasePlan {
       const below = packages.filter(
         (planned) => Bun.semver.order(planned.localVersion, target) < 0,
       );
+
       return {
         version: target,
         plan: below.map((planned) => planned.name),
@@ -296,6 +306,7 @@ export class ReleasePlan {
     }
 
     const versions = [...new Set(packages.map((planned) => planned.localVersion))];
+
     if (versions.length > 1) {
       const listed = packages
         .map((planned) => `${planned.name} ${planned.localVersion}`)
@@ -306,6 +317,7 @@ export class ReleasePlan {
     }
 
     const [current] = versions;
+
     if (current === undefined) {
       throw new Error('[ReleasePlan.resolveVersion] no package to release');
     }
@@ -321,10 +333,13 @@ export class ReleasePlan {
   static resolveFromManifests(opts: { argv: string[]; root?: string }): string {
     const { argv } = opts;
     const root = opts.root ?? '.';
+
     const flag = (name: string): string | undefined => {
       const index = argv.indexOf(name);
+
       return index === -1 ? undefined : argv[index + 1];
     };
+
     const names = (flag('--packages') ?? '').split(',').filter(Boolean);
     ReleasePlan.validate({ packages: names });
 
@@ -398,6 +413,7 @@ export class ReleasePlan {
     packages: readonly IPlannedPackage[];
   }): string[] {
     const { target, kind, packages } = opts;
+
     if (kind !== ReleaseKinds.STABLE) {
       return [];
     }
@@ -449,6 +465,7 @@ export class ReleasePlan {
     }
 
     let resolved: IResolvedRun;
+
     try {
       resolved = ReleasePlan.resolveVersion({ target, packages });
     } catch (error) {
@@ -526,6 +543,7 @@ export class ReleasePlan {
     latestOf: (opts: { name: string }) => Promise<string | undefined>;
   }): Promise<string[]> {
     const builtOn = ReleasePlan.parseBuiltOn({ message: opts.message ?? '' });
+
     if (builtOn.length === 0) {
       return [
         `the tag ${opts.tag} has no '${ReleasePlan.BUILT_ON.trim()}' line, so what IGNIS it was built on is unknown: publish a new prerelease and promote that`,
@@ -533,6 +551,7 @@ export class ReleasePlan {
     }
 
     const problems: string[] = [];
+
     for (const { name, version } of builtOn) {
       const latest = await opts.latestOf({ name });
 
@@ -753,10 +772,13 @@ export class ReleasePlan {
 const runPlan = async (opts: { argv: string[] }): Promise<number> => {
   // The label is text a person can type: it is taken out first, so no other flag reads it and it reads none.
   const { label, rest: argv } = ReleasePlan.takeLabel({ argv: opts.argv });
+
   const flag = (name: string): string | undefined => {
     const index = argv.indexOf(name);
+
     return index === -1 ? undefined : argv[index + 1];
   };
+
   const names = (flag('--packages') ?? '').split(',').filter(Boolean);
   const ref = flag('--ref');
   ReleasePlan.validate({ packages: names });
@@ -873,12 +895,14 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
   }
 
   const output = process.env.GITHUB_OUTPUT;
+
   if (output !== undefined) {
     appendFileSync(
       output,
       `version=${plan.version}\nkind=${plan.kind}\nnpm_tag=${plan.npmTag}\ncatalog_tag=${plan.catalogTag}\ndevelop_sha=${developSha}\nchangelog_base=${changelog.base}\n`,
     );
   }
+
   if (summary !== undefined) {
     appendFileSync(summary, ReleasePlan.summaryOf({ plan, target, ref }));
   }
@@ -889,6 +913,7 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
 if (import.meta.main) {
   try {
     const [command, ...rest] = Bun.argv.slice(2);
+
     if (command === 'resolve') {
       console.log(ReleasePlan.resolveFromManifests({ argv: rest }));
     } else if (command === 'plan') {

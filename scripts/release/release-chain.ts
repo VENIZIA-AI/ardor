@@ -255,6 +255,7 @@ export class ReleaseChain {
           `the plan approved ${options.plan.version} but this run would publish ${options.version}`,
         );
       }
+
       if (options.plan.kind !== given) {
         problems.push(`the plan said ${options.plan.kind} but this run is a ${given}`);
       }
@@ -702,6 +703,7 @@ export class ReleaseChain {
 
   static describe(opts: { step: TStep }): string {
     const { step } = opts;
+
     if ('command' in step) {
       return `${step.label}: ${step.command.join(' ')}${step.kind === 'run' && step.cwd ? `  (in ${step.cwd})` : ''}`;
     }
@@ -741,6 +743,7 @@ export class ReleaseChain {
 
     if (failed === undefined) {
       const done = states.filter((candidate) => candidate.stage === 'tagged');
+
       return stopped
         ? ReleaseChain.report({
             states,
@@ -871,6 +874,7 @@ export const runChain = async (opts: {
   const targetBranch = ReleaseChain.targetBranchOf({ options });
   /** The npm name of each workspace folder: what a pin in a packed manifest is matched against. */
   const workspaceNames = new Map<string, string>();
+
   for (const dir of ReleaseChain.WORKSPACE) {
     try {
       workspaceNames.set(dir, ports.readManifest({ path: `packages/${dir}/package.json` }).name);
@@ -886,6 +890,7 @@ export const runChain = async (opts: {
       }
     }
   }
+
   let stopped: IChainStop | undefined;
   let mergeBack: 'none' | 'done' = 'none';
 
@@ -914,16 +919,19 @@ export const runChain = async (opts: {
     stopped = { failed: stopOpts.failed.name, label: stopOpts.label, detail: stopOpts.detail };
     await persist();
     ports.log(report);
+
     return { ok: false, states, report };
   };
 
   const unbound = ReleaseChain.checkBinding({ options });
+
   if (unbound.length > 0) {
     return stop({ failed: states[0] as IPackageState, label: 'plan', detail: unbound.join('; ') });
   }
 
   // What each package already is, read fresh before anything changes (D5).
   const toRelease: IChainPackage[] = [];
+
   for (const pkg of options.packages) {
     const state = stateOf(pkg.name);
     const manifest = ports.readManifest({ path: `packages/${pkg.name}/package.json` });
@@ -940,6 +948,7 @@ export const runChain = async (opts: {
 
     if (order === 0) {
       const tagged = await ports.tagOnOrigin({ tag: `${pkg.name}-v${version}` });
+
       if (onNpm && tagged) {
         state.skipped = true;
         state.stage = 'tagged';
@@ -957,6 +966,7 @@ export const runChain = async (opts: {
       }
 
       state.stage = 'none';
+
       return stop({
         failed: state,
         label: 'plan',
@@ -994,38 +1004,48 @@ export const runChain = async (opts: {
     switch (step.kind) {
       case 'run': {
         const result = await ports.run({ command: step.command, cwd: step.cwd });
+
         if (result.exitCode !== 0) {
           if (!step.fatal && state) {
             state.warnings.push(`${step.label} failed (exit ${result.exitCode}); not fatal`);
+
             return { ok: true };
           }
+
           return { ok: false, detail: `exit ${result.exitCode}` };
         }
+
         if (step.stage && state) {
           state.stage = step.stage;
         }
+
         return { ok: true };
       }
       case 'manifest': {
         const extracted = await ports.run({
           command: ['tar', '-xzOf', step.tarball, 'package/package.json'],
         });
+
         if (extracted.exitCode !== 0) {
           return { ok: false, detail: 'the tarball has no package.json' };
         }
+
         await ports.writeFile({ path: step.out, content: extracted.stdout });
         const checked = await ports.run({
           command: ReleaseChain.gate({ args: ['protocols', step.out] }),
         });
+
         if (checked.exitCode !== 0) {
           return { ok: false, detail: 'an unresolved protocol survives in the packed manifest' };
         }
+
         const packed = JSON.parse(extracted.stdout) as {
           version?: string;
           dependencies?: Record<string, string>;
           peerDependencies?: Record<string, string>;
           optionalDependencies?: Record<string, string>;
         };
+
         if (packed.version !== version) {
           return {
             ok: false,
@@ -1038,33 +1058,42 @@ export const runChain = async (opts: {
         // an order bug. A sibling declared with a caret range would be refused here; that is the point of the exact pin.
         const problems: string[] = [];
         const pins: Record<string, string> = {};
+
         for (const [name, pinned] of [
           ...Object.entries(packed.dependencies ?? {}),
           ...Object.entries(packed.peerDependencies ?? {}),
           ...Object.entries(packed.optionalDependencies ?? {}),
         ]) {
           const sibling = ReleaseChain.WORKSPACE.find((dir) => workspaceNames.get(dir) === name);
+
           if (sibling === undefined || sibling === state?.name) {
             continue;
           }
 
           const expected = ports.readManifest({ path: `packages/${sibling}/package.json` }).version;
+
           if (pinned !== expected) {
             problems.push(`${name} is pinned ${pinned}, the workspace has ${expected}`);
           }
+
           const later = toRelease.findIndex((candidate) => candidate.name === sibling);
           const own = toRelease.findIndex((candidate) => candidate.name === state?.name);
+
           if (later > own && own > -1) {
             problems.push(`${name} is released after this package, but this package depends on it`);
           }
+
           pins[name] = pinned;
         }
+
         if (problems.length > 0) {
           return { ok: false, detail: problems.join('; ') };
         }
+
         if (state) {
           state.pins = pins;
         }
+
         return { ok: true };
       }
       case 'record-sha': {
@@ -1072,10 +1101,12 @@ export const runChain = async (opts: {
           const result2 = await ports.sha256({ path: step.tarball });
           state.sha = result2;
         }
+
         return { ok: true };
       }
       case 'verify-sha': {
         const now = await ports.sha256({ path: step.tarball });
+
         return now === state?.sha
           ? { ok: true }
           : { ok: false, detail: 'the tarball changed after it was checked' };
@@ -1098,27 +1129,34 @@ export const runChain = async (opts: {
             return { ok: false, detail: `${name}@${pinned} is not on npm` };
           }
         }
+
         if (state) {
           state.stage = 'attempted';
         }
+
         const result = await ports.run({ command: step.command, cwd: step.cwd });
+
         if (result.exitCode !== 0) {
           return { ok: false, detail: `exit ${result.exitCode}` };
         }
+
         if (state) {
           state.stage = 'published';
         }
+
         return { ok: true };
       }
       case 'wait': {
         if (!state) {
           return { ok: false, detail: 'no package' };
         }
+
         try {
           await ports.waitForTarball({ packageName: state.packageName, version });
         } catch (error) {
           return { ok: false, detail: error instanceof Error ? error.message : String(error) };
         }
+
         return { ok: true };
       }
       case 'tag-release-commit': {
@@ -1126,12 +1164,15 @@ export const runChain = async (opts: {
           command: ['git', 'log', '-1', '--format=%H', '--fixed-strings', '--grep', step.grep],
         });
         const sha = found.stdout.trim();
+
         if (found.exitCode !== 0 || sha === '') {
           return { ok: false, detail: `no release commit ${step.grep.trim()} in the history` };
         }
+
         const tagged = await ports.run({
           command: ['git', 'tag', '-a', step.tag, '-m', step.message, sha],
         });
+
         return tagged.exitCode === 0
           ? { ok: true }
           : { ok: false, detail: `exit ${tagged.exitCode}` };
@@ -1139,17 +1180,22 @@ export const runChain = async (opts: {
       case 'push-tag': {
         for (let attempt = 1; attempt <= ReleaseChain.PUSH_ATTEMPTS; attempt += 1) {
           const result = await ports.run({ command: ['git', 'push', 'origin', step.tag] });
+
           if (result.exitCode === 0) {
             if (state) {
               state.stage = 'tagged';
             }
+
             return { ok: true };
           }
+
           ports.log(`>>> tag push attempt ${attempt} failed`);
+
           if (attempt < ReleaseChain.PUSH_ATTEMPTS) {
             await ports.sleep(attempt * 10_000);
           }
         }
+
         return { ok: false, detail: 'the tag push failed three times' };
       }
       case 'merge-back': {
@@ -1157,6 +1203,7 @@ export const runChain = async (opts: {
         const head = result3.stdout.trim();
         const commands = ReleaseChain.mergeBackCommands({ options: planned, head });
         const fetched = await ports.run({ command: commands.fetch });
+
         if (fetched.exitCode !== 0) {
           return {
             ok: false,
@@ -1166,12 +1213,15 @@ export const runChain = async (opts: {
 
         // 0: develop already holds the last release commit; 1: it does not; anything else is an error.
         const contained = await ports.run({ command: commands.contained });
+
         if (contained.exitCode === 0) {
           ports.log(
             `merge back: ${ReleaseChain.DEVELOP} already holds ${head.slice(0, 7)} - skipped`,
           );
+
           return { ok: true };
         }
+
         if (contained.exitCode !== 1) {
           return {
             ok: false,
@@ -1193,6 +1243,7 @@ export const runChain = async (opts: {
 
           for (const { command, cwd, what } of sequence) {
             const result = await ports.run({ command, cwd });
+
             if (result.exitCode !== 0) {
               return { ok: false, detail: `${what} (exit ${result.exitCode})` };
             }
@@ -1218,27 +1269,33 @@ export const runChain = async (opts: {
 
   // Records the published packages one after another, in the order they were published: the first failure stops.
   let branchMade = false;
+
   const recordAll = async (): Promise<
     { failed: IPackageState; label: string; detail?: string } | undefined
   > => {
     for (const pkg of toRelease) {
       const state = stateOf(pkg.name);
       const wants = pkg.mode === 'tag' ? state.stage === 'pushed' : state.stage === 'published';
+
       if (!wants || unserved.has(pkg.name) || (pkg.mode === 'record' && !prepared.has(pkg.name))) {
         continue;
       }
 
       const first = pkg.mode !== 'tag' && !branchMade;
+
       for (const step of ReleaseChain.record({ pkg, options: planned, first })) {
         const outcome = await execute(step, state);
         await persist();
+
         if (!outcome.ok) {
           return { failed: state, label: step.label, detail: outcome.detail };
         }
       }
+
       if (pkg.mode !== 'tag') {
         branchMade = true;
       }
+
       if (atLeast({ stage: state.stage, than: 'tagged' })) {
         ports.log(`${pkg.name}: released ${version}`);
       }
@@ -1254,6 +1311,7 @@ export const runChain = async (opts: {
     detail?: string;
   }): Promise<IChainResult> => {
     const recorded = await recordAll();
+
     if (recorded !== undefined) {
       ports.log(
         `WARNING | the packages published before the stop could not all be recorded (${recorded.failed.name}: ${recorded.label}${recorded.detail ? `: ${recorded.detail}` : ''}); dispatch the same version again`,
@@ -1268,6 +1326,7 @@ export const runChain = async (opts: {
     for (const step of ReleaseChain.checks({ pkg, options: planned })) {
       const outcome = await execute(step, undefined);
       await persist();
+
       if (!outcome.ok) {
         return stopAfterRecording({
           failed: stateOf(pkg.name),
@@ -1286,6 +1345,7 @@ export const runChain = async (opts: {
     }
 
     const state = stateOf(pkg.name);
+
     for (const step of ReleaseChain.prepare({
       pkg,
       options: planned,
@@ -1293,20 +1353,25 @@ export const runChain = async (opts: {
     })) {
       const outcome = await execute(step, state);
       await persist();
+
       if (!outcome.ok) {
         return stopAfterRecording({ failed: state, label: step.label, detail: outcome.detail });
       }
     }
+
     prepared.add(pkg.name);
   }
+
   // Packages published by an earlier dispatch are installed from the registry by the gate below: wait until it serves them.
   for (const pkg of toRelease.filter(
     (candidate) => candidate.mode === 'record' && full.length > 0,
   )) {
     const outcome = await execute(ReleaseChain.settle({ pkg }), stateOf(pkg.name));
     await persist();
+
     if (!outcome.ok) {
       unserved.add(pkg.name);
+
       return stopAfterRecording({
         failed: stateOf(pkg.name),
         label: ReleaseChain.settle({ pkg }).label,
@@ -1314,9 +1379,11 @@ export const runChain = async (opts: {
       });
     }
   }
+
   for (const step of ReleaseChain.install({ names: full.map((pkg) => pkg.name) })) {
     const outcome = await execute(step, undefined);
     await persist();
+
     if (!outcome.ok) {
       return stopAfterRecording({
         failed: stateOf(full[0]?.name ?? ''),
@@ -1329,9 +1396,11 @@ export const runChain = async (opts: {
   // Phase B: publish every package, one after another, in order, and wait for nothing.
   for (const pkg of full) {
     const state = stateOf(pkg.name);
+
     for (const step of ReleaseChain.publish({ pkg, options: planned })) {
       const outcome = await execute(step, state);
       await persist();
+
       if (!outcome.ok) {
         return stopAfterRecording({ failed: state, label: step.label, detail: outcome.detail });
       }
@@ -1340,6 +1409,7 @@ export const runChain = async (opts: {
 
   // Phase R: one wait for the tarballs (the first covers the lag of all), then the record of each package.
   const failedRecord = await recordAll();
+
   if (failedRecord !== undefined) {
     return stop(failedRecord);
   }
@@ -1347,6 +1417,7 @@ export const runChain = async (opts: {
   // Phase C: a stable merges main back into develop, also when every package was already released.
   for (const step of ReleaseChain.mergeBack({ options: planned })) {
     const outcome = await execute(step, undefined);
+
     if (!outcome.ok) {
       const report = ReleaseChain.mergeBackReport({
         states,
@@ -1358,8 +1429,10 @@ export const runChain = async (opts: {
       stopped = { failed: 'merge back', label: step.label, detail: outcome.detail };
       await persist();
       ports.log(report);
+
       return { ok: false, states, report };
     }
+
     mergeBack = 'done';
     await persist();
   }
@@ -1370,10 +1443,13 @@ export const runChain = async (opts: {
 const readArgs = (opts: { argv: string[] }) => {
   const value = (flag: string): string | undefined => {
     const index = opts.argv.indexOf(flag);
+
     return index === -1 ? undefined : opts.argv[index + 1];
   };
+
   const packages = value('--packages');
   const version = value('--version');
+
   if (!packages || !version) {
     throw new Error(
       '[release-chain] use: --packages kernel,react --version <x.y.z[-pre]> [--issue N] [--branch name] [--tarballs dir] [--tmp dir] [--state file] [--target-branch develop|main] [--plan-version v --plan-kind prerelease|stable] [--dry-run]',
@@ -1401,9 +1477,11 @@ const realPorts = (): IChainPorts => ({
     const stdoutResponse = new Response(proc.stdout);
     const stdout = await stdoutResponse.text();
     const exitCode = await proc.exited;
+
     if (!command.includes('-xzOf')) {
       process.stdout.write(stdout);
     }
+
     return { exitCode, stdout };
   },
   readManifest: ({ path }) =>
@@ -1413,6 +1491,7 @@ const realPorts = (): IChainPorts => ({
       ['npm', 'view', `${packageName}@${version}`, 'version', '--prefer-online'],
       { stdout: 'pipe', stderr: 'pipe' },
     );
+
     return proc.exitCode === 0 && proc.stdout.toString().trim().length > 0;
   },
   tagOnOrigin: async ({ tag }) => {
@@ -1420,6 +1499,7 @@ const realPorts = (): IChainPorts => ({
       stdout: 'pipe',
       stderr: 'pipe',
     });
+
     return proc.exitCode === 0 && proc.stdout.toString().trim().length > 0;
   },
   waitForTarball: (waitOpts) => waitForTarball(waitOpts),
@@ -1431,7 +1511,7 @@ const realPorts = (): IChainPorts => ({
   writeFile: async ({ path, content }) => {
     await Bun.write(path, content);
   },
-  sleep: (ms) => new Promise<void>((done) => setTimeout(done, ms)),
+  sleep: (ms) => Bun.sleep(ms),
   log: (line) => console.log(line),
   readBuiltOn: () => {
     const root = JSON.parse(readFileSync('package.json', 'utf8')) as {
@@ -1445,14 +1525,17 @@ const realPorts = (): IChainPorts => ({
 const reportMain = async (opts: { argv: string[] }): Promise<void> => {
   const index = opts.argv.indexOf('--state');
   const statePath = index === -1 ? undefined : opts.argv[index + 1];
+
   if (!statePath) {
     throw new Error('[release-chain] use: report --state <file>');
   }
 
   // No file means the chain step never ran (an earlier step failed): there is nothing to report.
   const result = await Bun.file(statePath).exists();
+
   if (!result) {
     console.log('No release state was written: the release step did not start.');
+
     return;
   }
 
@@ -1461,6 +1544,7 @@ const reportMain = async (opts: { argv: string[] }): Promise<void> => {
   console.log(text);
 
   const summary = process.env.GITHUB_STEP_SUMMARY;
+
   if (summary) {
     appendFileSync(summary, `\n\`\`\`\n${text}\n\`\`\`\n`);
   }
@@ -1469,6 +1553,7 @@ const reportMain = async (opts: { argv: string[] }): Promise<void> => {
 const main = async (): Promise<void> => {
   if (Bun.argv[2] === 'report') {
     await reportMain({ argv: Bun.argv.slice(3) });
+
     return;
   }
 
@@ -1515,10 +1600,12 @@ const main = async (): Promise<void> => {
     for (const step of phaseR) console.log(`  ${ReleaseChain.describe({ step })}`);
     if (phaseC.length > 0) console.log('Phase C: after the last package');
     for (const step of phaseC) console.log(`  ${ReleaseChain.describe({ step })}`);
+
     return;
   }
 
   const result = await runChain({ options, ports });
+
   if (!result.ok) {
     process.exit(1);
   }

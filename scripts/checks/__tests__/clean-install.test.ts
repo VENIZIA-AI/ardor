@@ -92,6 +92,7 @@ describe('findDuplicateCopies', () => {
     const body = Object.entries(opts.entries)
       .map(([key, spec]) => `    "${key}": ["${spec}", {}, "sha512-x"],`)
       .join('\n');
+
     return `{\n  "lockfileVersion": 1,\n  "packages": {\n${body}\n  }\n}`;
   };
 
