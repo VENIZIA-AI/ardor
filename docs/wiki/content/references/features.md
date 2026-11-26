@@ -101,7 +101,7 @@ The `Features` helpers: `define()` types a feature, `read()` resolves bound feat
 | --- | --- | --- | --- |
 | `name` | `string` | None (required) | Unique identifier for the feature within an application. |
 | `configurations` | `Array<TClass<unknown>>` | `undefined` | Stereotyped `@configuration()` classes of the feature. |
-| `artifacts` | `IArtifactIndex` | `undefined` | The feature's own stereotyped classes, by value, per group (`services`, `repositories`, ...). |
+| `artifacts` | `IArdorArtifactIndex` | `undefined` | The feature's own stereotyped classes, by value, per group (`services`, `repositories`, ...). |
 | `resources` | `Array<ResourceProps>` | `undefined` | React-admin `<Resource>` definitions mounted into the view tree. |
 | `routes` | `Array<TArdorRoute>` | `undefined` | Custom routes; each may declare `access`, `auth` and `layout`. |
 | `messages` | `TFeatureMessages` | `undefined` | Locale codes mapped to message objects or lazy loaders. |

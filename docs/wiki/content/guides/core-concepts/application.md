@@ -56,7 +56,7 @@ The `start()` method in `packages/kernel/src/base/applications/abstract.ts` awai
 
 ## Application Props
 
-`ArdorApplication` accepts `IApplication` props (in `packages/admin/src/common/types.ts`), extending `CoreAdminProps` (omitting `children`). Each prop, with its type and whether it is required, is in the [Application reference](../../references/application#props).
+`ArdorApplication` accepts `IArdorApplicationProps` props (in `packages/admin/src/common/types.ts`), extending `CoreAdminProps` (omitting `children`). Each prop, with its type and whether it is required, is in the [Application reference](../../references/application#props).
 
 ## Next Steps
 

@@ -416,6 +416,78 @@ describe('NamespaceTransform: ISendResponse', () => {
   });
 });
 
+const SHADOWED_TYPE_RENAMES: Array<[string, string]> = [
+  ['IAuthUser', 'IStoredAuthUser'],
+  ['IArtifactIndex', 'IArdorArtifactIndex'],
+  ['IApplication', 'IArdorApplicationProps'],
+];
+
+describe('NamespaceTransform: the types renamed away from an IGNIS name', () => {
+  test.each(SHADOWED_TYPE_RENAMES)('renames %s from an ARDOR package to %s', (before, after) => {
+    const result = run(
+      [
+        `import type { ${before} } from '@venizia/ardor';`,
+        `export type A = Array<${before}>;`,
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.text).toBe(
+      [
+        `import type { ${after} } from '@venizia/ardor';`,
+        `export type A = Array<${after}>;`,
+        '',
+      ].join('\n'),
+    );
+    expect(result.findings).toEqual([]);
+  });
+
+  test.each(SHADOWED_TYPE_RENAMES)('leaves %s of IGNIS as it is', (before) => {
+    const text = [
+      `import type { ${before} } from '@venizia/ignis-kernel';`,
+      "import { ArdorApplication } from '@venizia/ardor';",
+      `export type A = ${before};`,
+      'export const shell = ArdorApplication;',
+      '',
+    ].join('\n');
+    const result = run(text);
+
+    expect(result.text).toBe(text);
+    expect(result.renamed).toBe(0);
+    expect(result.findings).toEqual([]);
+  });
+
+  test('renames the ARDOR import and keeps the IGNIS one of the same name in one file', () => {
+    const result = run(
+      [
+        "import type { IApplication as ShellProps } from '@venizia/ardor';",
+        "import type { IApplication } from '@venizia/ignis-kernel';",
+        'export type A = [ShellProps, IApplication];',
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.text).toBe(
+      [
+        "import type { IArdorApplicationProps } from '@venizia/ardor';",
+        "import type { IApplication } from '@venizia/ignis-kernel';",
+        'export type A = [IArdorApplicationProps, IApplication];',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  test('leaves IdType and IApplicationInfo, which keep their names', () => {
+    const text = [
+      "import type { IApplicationInfo, IdType } from '@venizia/ardor';",
+      'export type A = [IApplicationInfo, IdType];',
+      '',
+    ].join('\n');
+
+    expect(run(text).text).toBe(text);
+  });
+});
+
 describe('NamespaceTransform: removed with no replacement', () => {
   test('lists a destructured offset and filter["offset"] in a file that imports the list filter', () => {
     const result = run(

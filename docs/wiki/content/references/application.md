@@ -55,9 +55,9 @@ export async function boot(): Promise<ShopApplication> {
 | `ArdorApplication` | component | `@venizia/ardor` | Root component connecting container to react-admin `CoreAdmin` |
 | `IArdorApplication` | interface | `@venizia/ardor` | Container interface contract in `packages/kernel/src/common/types.ts` |
 | `IApplicationInfo` | interface | `@venizia/ardor` | Application metadata shape returned by `getAppInfo()` |
-| `IArtifactIndex` | interface | `@venizia/ardor` | Stereotyped class index shape returned by `artifacts()` |
+| `IArdorArtifactIndex` | interface | `@venizia/ardor` | Stereotyped class index shape returned by `artifacts()` |
 | `IArtifactRegistration` | interface | `@venizia/ardor` | Registration options for `service()`, `repository()`, `dataSource()`, `component()` |
-| `IApplication` | interface | `@venizia/ardor` | Props accepted by `ArdorApplication` in `packages/admin/src/common/types.ts` |
+| `IArdorApplicationProps` | interface | `@venizia/ardor` | Props accepted by `ArdorApplication` in `packages/admin/src/common/types.ts` |
 | `CoreBindings` | class | `@venizia/ardor` | Container binding keys in `packages/kernel/src/common/keys.ts` |
 
 > [!NOTE]
@@ -199,9 +199,9 @@ A stereotype's `order` and `after` are not read: every binding is lazy, so the o
 
 ### artifacts()
 
-Signature: `artifacts(): Array<IArtifactIndex>`
+Signature: `artifacts(): Array<IArdorArtifactIndex>`
 
-Returns artifact index definitions checked by `start()` (default `[]`). `IArtifactIndex` in `packages/kernel/src/common/types.ts` holds indexed classes grouped by kind:
+Returns artifact index definitions checked by `start()` (default `[]`). `IArdorArtifactIndex` in `packages/kernel/src/common/types.ts` holds indexed classes grouped by kind:
 
 | Kind | Type | Description |
 |---|---|---|
@@ -224,7 +224,7 @@ Returns feature packages mounted by the application (default `[]`), bound by `pr
 |---|---|---|
 | `name` | `string` | Unique identifier for the feature package within an application |
 | `configurations` | `Array<TClass<unknown>>` | Optional list of feature `@configuration()` classes to verify and discover |
-| `artifacts` | `IArtifactIndex` | Optional: the feature's own stereotyped classes, by value, per group |
+| `artifacts` | `IArdorArtifactIndex` | Optional: the feature's own stereotyped classes, by value, per group |
 | `permissions` | `Array<string>` | Optional descriptive list of the permission names the feature's pages use; it enforces nothing |
 
 For details on feature mounting, routes, resources, and translations, see [Features](./features).
@@ -301,7 +301,7 @@ export class ShopApplication extends BaseArdorApplication {
 
 ## ArdorApplication
 
-`ArdorApplication` (in `packages/admin/src/components/application.tsx`) is the root React component connecting the started application container to react-admin's `CoreAdmin`. Component properties are typed by `IApplication` in `packages/admin/src/common/types.ts`.
+`ArdorApplication` (in `packages/admin/src/components/application.tsx`) is the root React component connecting the started application container to react-admin's `CoreAdmin`. Component properties are typed by `IArdorApplicationProps` in `packages/admin/src/common/types.ts`.
 
 ### Props
 

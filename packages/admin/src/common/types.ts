@@ -172,7 +172,7 @@ export interface II18nProviderOptions {
 }
 
 /** The props of `ArdorApplication`: react-admin's `CoreAdmin` props except `children`, plus the ARDOR ones. */
-export interface IApplication extends Omit<CoreAdminProps, 'children'> {
+export interface IArdorApplicationProps extends Omit<CoreAdminProps, 'children'> {
   /** The container the providers and the features are resolved from. */
   container: Container;
 

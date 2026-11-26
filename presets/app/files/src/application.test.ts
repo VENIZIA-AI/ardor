@@ -7,7 +7,7 @@ import {
   CoreBindings,
   RUNTIME_CONFIG_GLOBAL,
   type IApplicationInfo,
-  type IArtifactIndex,
+  type IArdorArtifactIndex,
 } from '@venizia/ardor';
 
 import { AdminConfiguration } from '#src/configurations/admin.configuration';
@@ -18,7 +18,7 @@ class TestApplication extends BaseArdorApplication {
     return { name: 'test', version: '0.0.0', description: 'A test of the container' };
   }
 
-  override artifacts(): Array<IArtifactIndex> {
+  override artifacts(): Array<IArdorArtifactIndex> {
     return [{ configurations: [AdminConfiguration] }];
   }
 

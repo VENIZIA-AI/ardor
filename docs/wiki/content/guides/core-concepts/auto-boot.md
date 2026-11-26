@@ -157,7 +157,7 @@ import 'reflect-metadata';
 
 import { ArtifactGroup } from '@venizia/ignis-kernel/metadata';
 
-import { BaseArdorApplication, type IApplicationInfo, type IArtifactIndex } from '@venizia/ardor';
+import { BaseArdorApplication, type IApplicationInfo, type IArdorArtifactIndex } from '@venizia/ardor';
 
 export const OrdersGroup = ArtifactGroup.define({ folder: 'orders' });
 
@@ -166,7 +166,7 @@ export class Application extends BaseArdorApplication {
     return { name: 'shop', version: '1.0.0', description: 'The shop' };
   }
 
-  override artifacts(): Array<IArtifactIndex> {
+  override artifacts(): Array<IArdorArtifactIndex> {
     return [OrdersGroup];
   }
 

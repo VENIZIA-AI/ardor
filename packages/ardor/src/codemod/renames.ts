@@ -102,10 +102,13 @@ export class TypeRenames {
   }
 }
 
-/** Types removed in favour of another export of the same packages: the import and each use are renamed. */
+/** Types now exported under another name by the same packages: the import and each use are renamed. */
 export class TypeExportRenames {
   static readonly TARGETS: Readonly<Record<string, string>> = {
     ISendResponse: 'INetworkResponse',
+    IAuthUser: 'IStoredAuthUser',
+    IArtifactIndex: 'IArdorArtifactIndex',
+    IApplication: 'IArdorApplicationProps',
   };
 
   static find(opts: { name: string }): string | undefined {

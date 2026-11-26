@@ -9,7 +9,7 @@ import {
   BaseArdorApplication,
   CoreBindings,
   type IApplicationInfo,
-  type IArtifactIndex,
+  type IArdorArtifactIndex,
   type IFeatureBase,
   RolePermissionProvider,
 } from '@venizia/ardor';
@@ -19,7 +19,7 @@ export class Application extends BaseArdorApplication {
     return { name: 'shell', version: '0.0.0', description: 'ARDOR shell with feature packages' };
   }
 
-  override artifacts(): Array<IArtifactIndex> {
+  override artifacts(): Array<IArdorArtifactIndex> {
     return [AutoArtifacts];
   }
 

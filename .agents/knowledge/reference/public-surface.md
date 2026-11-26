@@ -39,7 +39,7 @@ generated:
 - `FileUtility` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
-- `IArtifactIndex` interface
+- `IArdorArtifactIndex` interface
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
@@ -47,7 +47,6 @@ generated:
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
-- `IAuthUser` interface
 - `IBuildInfoFile` interface
 - `ICoreBindingTypes` interface
 - `ICustomParams` interface
@@ -71,6 +70,7 @@ generated:
 - `ISignInSession` interface
 - `IStorageChange` interface
 - `IStorageCodec` interface
+- `IStoredAuthUser` interface
 - `LocalStorageKeys` class
 - `model` const
 - `NETWORK_TIMEOUT_CODE` const
@@ -216,7 +216,7 @@ generated:
 - `DefaultRestDataProvider` class
 - `englishMessages` const
 - `Features` class
-- `IApplication` interface
+- `IArdorApplicationProps` interface
 - `IAuthProvider` interface
 - `IAuthRejection` interface
 - `IDataProvider` interface
@@ -298,11 +298,11 @@ generated:
 - `Environments` class
 - `Features` class
 - `FileUtility` class
-- `IApplication` interface
 - `IApplicationContextValue` interface
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
-- `IArtifactIndex` interface
+- `IArdorApplicationProps` interface
+- `IArdorArtifactIndex` interface
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
@@ -312,7 +312,6 @@ generated:
 - `IAuthRecoveryOptions` interface
 - `IAuthRejection` interface
 - `IAuthTokenRecord` interface
-- `IAuthUser` interface
 - `IBreakpoint` interface
 - `IBuildInfoFile` interface
 - `ICoreBindingTypes` interface
@@ -346,6 +345,7 @@ generated:
 - `ISignInSession` interface
 - `IStorageChange` interface
 - `IStorageCodec` interface
+- `IStoredAuthUser` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface
 - `IUseAutosaveOptions` interface

@@ -22,7 +22,7 @@ which re-exports this package.
 | Features | `Features`, `TFeature`, `useFeatures` |
 | Lists | `ListFilterBuilder` |
 | Hooks | `useTranslate`, `useUntypedTranslate`, `useNotifyError`, `useRefreshToken`, `useRequestHeaderLocale`, `useFeatures`, `useMenuEntries`, `useDocumentTitle`, `useHtmlLang` |
-| Types | `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `IApplication`, `TUseTranslateKeys`, `TI18nSource` |
+| Types | `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `IArdorApplicationProps`, `TUseTranslateKeys`, `TI18nSource` |
 
 Every export, with its signature, is in the [references](https://ardor.venizia.ai/references/).
 

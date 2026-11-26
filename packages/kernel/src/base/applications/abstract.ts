@@ -13,14 +13,14 @@ import {
   Container,
   getError,
   type TBindingKey,
-  type TBindingScope,
   type TClass,
 } from '@venizia/ignis-inversion';
+import type { IArtifactRegistrationOptions } from '@venizia/ignis-kernel';
 
 import {
   CoreBindings,
   type IApplicationInfo,
-  type IArtifactIndex,
+  type IArdorArtifactIndex,
   type IFeatureBase,
   type ValueOrPromise,
 } from '@/common';
@@ -34,24 +34,13 @@ const ArtifactIndexKinds = [
   'repositories',
   'services',
   'controllers',
-] as const satisfies ReadonlyArray<keyof IArtifactIndex>;
+] as const satisfies ReadonlyArray<keyof IArdorArtifactIndex>;
 
 /** Per-registration choices for `service()`, `repository()`, `dataSource()` and `component()`. */
-export interface IArtifactRegistration {
-  /** Bind under this key instead of `<namespace>.<ClassName>`. */
-  binding?: { namespace: string; key: string };
-  /**
-   * The scope of the binding.
-   * @default The scope declared on the class, else `BindingScopes.SINGLETON`
-   */
-  scope?: TBindingScope;
-  /**
-   * `false` refuses to replace a binding already under the key, and keeps `bindingList()` from
-   * replacing this one; only `bindContext()` does.
-   * @default true
-   */
-  allowOverride?: boolean;
-}
+export interface IArtifactRegistration extends Pick<
+  IArtifactRegistrationOptions,
+  'binding' | 'scope' | 'allowOverride'
+> {}
 
 /**
  * Two ways to register, as in IGNIS: stereotype discovery, or `service()`/`repository()`/
@@ -68,7 +57,7 @@ export abstract class AbstractArdorApplication extends Container {
   abstract getAppInfo(): ValueOrPromise<IApplicationInfo>;
 
   /** What `start()` resolved from `artifacts()`; unset when `preConfigure()` runs without it. */
-  private resolvedIndexes: Array<IArtifactIndex> | undefined;
+  private resolvedIndexes: Array<IArdorArtifactIndex> | undefined;
 
   /** The keys bound with `allowOverride: false`, each with the class that holds it; only `bindContext()` may replace them. */
   private readonly lockedKeys = new Map<TBindingKey, Function>();
@@ -286,7 +275,7 @@ export abstract class AbstractArdorApplication extends Container {
    * The generated artifact indexes (`ignis-artifacts generate`). Discovery still binds every
    * stereotyped class; an index only holds each class by value and has `start()` check it.
    */
-  artifacts(): Array<IArtifactIndex> {
+  artifacts(): Array<IArdorArtifactIndex> {
     return [];
   }
 
@@ -299,8 +288,8 @@ export abstract class AbstractArdorApplication extends Container {
    * `artifacts()` with each group replaced by its index. Resolving imports the modules, which
    * decorates their classes: it must finish before `registerArtifacts()` reads the discovery list.
    */
-  private async resolveArtifactIndexes(): Promise<Array<IArtifactIndex>> {
-    const resolved: Array<IArtifactIndex> = [];
+  private async resolveArtifactIndexes(): Promise<Array<IArdorArtifactIndex>> {
+    const resolved: Array<IArdorArtifactIndex> = [];
 
     for (const entry of this.artifacts()) {
       if (!ArtifactGroup.isGroup(entry)) {
@@ -320,11 +309,14 @@ export abstract class AbstractArdorApplication extends Container {
    * artifact group (`isArtifactGroup`) is not an index - its kind fields throw when read - so only
    * its inlined `content` is checked.
    */
-  private assertIndexed(opts: { indexes: Array<IArtifactIndex>; discovered: Set<unknown> }): void {
+  private assertIndexed(opts: {
+    indexes: Array<IArdorArtifactIndex>;
+    discovered: Set<unknown>;
+  }): void {
     const { indexes, discovered } = opts;
 
     for (const entry of indexes) {
-      const group = entry as { isArtifactGroup?: boolean; content?: IArtifactIndex };
+      const group = entry as { isArtifactGroup?: boolean; content?: IArdorArtifactIndex };
       const index = group.isArtifactGroup === true ? group.content : entry;
 
       if (!index) {
@@ -339,7 +331,7 @@ export abstract class AbstractArdorApplication extends Container {
 
   /** Every class list of an index: the six built-in fields, then `custom.<type>` for each defined type. */
   private static listsOf(opts: {
-    index: IArtifactIndex;
+    index: IArdorArtifactIndex;
   }): Array<{ field: string; targets: ReadonlyArray<unknown> }> {
     const { index } = opts;
 

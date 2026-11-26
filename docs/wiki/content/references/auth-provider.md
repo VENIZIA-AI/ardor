@@ -213,7 +213,7 @@ For `sessionHookTimeout`, see [Session hooks](#session-hooks).
   - Signature: `opts: { reason: TSessionClearReason } => IAuthRejection`
   - Default: `{ redirectTo: this.loginPagePath }`
 - **`onSessionStarted(opts)`**: runs when a session starts or its token is replaced. See [Session hooks](#session-hooks).
-  - Signature: `opts: { token: IAuthTokenRecord; user: IAuthUser } => void \| Promise<void>`
+  - Signature: `opts: { token: IAuthTokenRecord; user: IStoredAuthUser } => void \| Promise<void>`
   - Default: no-op
 - **`onSessionCleared(opts)`**: runs when the announced session ends. See [Session hooks](#session-hooks).
   - Signature: `opts: { reason: TSessionClearReason } => void \| Promise<void>`
@@ -267,7 +267,7 @@ To keep a socket or a per-user cache in step with the session, override `onSessi
 import {
   DefaultAuthProvider,
   type IAuthTokenRecord,
-  type IAuthUser,
+  type IStoredAuthUser,
   type TSessionClearReason,
 } from '@venizia/ardor';
 
@@ -279,7 +279,7 @@ declare const socket: {
 export class SocketAuthProvider extends DefaultAuthProvider {
   protected override async onSessionStarted(opts: {
     token: IAuthTokenRecord;
-    user: IAuthUser;
+    user: IStoredAuthUser;
   }): Promise<void> {
     await socket.connect({ token: opts.token.value });
   }

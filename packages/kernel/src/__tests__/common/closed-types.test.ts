@@ -22,18 +22,16 @@ describe('request types name every field they accept', () => {
     expect(params.extra).toBeDefined();
   });
 
-  test('IApplicationInfo takes name, version, description and author, and no other key', () => {
-    const info: IApplicationInfo = {
-      name: 'app',
-      version: '1.0.0',
-      description: 'x',
-      author: { name: 'a', email: 'a@x.dev' },
-    };
-    // @ts-expect-error - an unknown key is an error, not a silent extra
-    const extra: IApplicationInfo = { name: 'app', version: '1', description: 'x', build: 7 };
+  test('IApplicationInfo requires name, version and description, and takes keys of your own', () => {
+    const info: IApplicationInfo = { name: 'app', version: '1.0.0', description: 'x', build: 7 };
+    // @ts-expect-error - `name` is required
+    const unnamed: IApplicationInfo = { version: '1', description: 'x' };
+    // @ts-expect-error - `id` is a string
+    const numbered: IApplicationInfo = { name: 'app', version: '1', description: 'x', id: 7 };
 
-    expect(info.name).toBe('app');
-    expect(extra.name).toBe('app');
+    expect(info.build).toBe(7);
+    expect(unnamed.version).toBe('1');
+    expect(numbered.name).toBe('app');
   });
 
   test('INetworkResponse is closed: a field it does not name is refused', () => {

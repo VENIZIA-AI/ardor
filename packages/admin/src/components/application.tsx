@@ -27,7 +27,7 @@ import {
 import { getError } from '@venizia/ignis-inversion';
 import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
-import type { IApplication } from '../common/types';
+import type { IArdorApplicationProps } from '../common/types';
 import { AccessDeniedPage } from './access-denied';
 import { ApplicationProviders } from './resolve';
 
@@ -243,7 +243,9 @@ const readSessionUser = (opts: { authService: DefaultAuthService }): string | un
  * @useWhen you mount an ARDOR admin app: it resolves the providers, features, resources and routes into react-admin
  * @insteadOf a hand-wired react-admin `<Admin>` with its own provider setup
  */
-export const ArdorApplication: React.FC<IApplication> = (props: IApplication) => {
+export const ArdorApplication: React.FC<IArdorApplicationProps> = (
+  props: IArdorApplicationProps,
+) => {
   const {
     container,
     reduxStore,

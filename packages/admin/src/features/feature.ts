@@ -1,4 +1,5 @@
 import { getError, type Container } from '@venizia/ignis-inversion';
+import type { IAuthorizationRequest } from '@venizia/ignis-kernel';
 import type { I18nProvider, ResourceProps } from 'ra-core';
 import { createContext } from 'react';
 import type { RouteProps } from 'react-router-dom';
@@ -9,10 +10,7 @@ import { FeatureMessagesHelper } from '@/helpers/feature-messages';
 import { LazyLocales } from '@/utilities/lazy-locales';
 
 /** What a user must be allowed to do, as the permission provider's `canAccess` is asked. */
-export interface IRouteAccess {
-  resource: string;
-  action: string;
-}
+export interface IRouteAccess extends Pick<IAuthorizationRequest, 'resource' | 'action'> {}
 
 /**
  * A react-router route, plus who may open it and whether it renders inside the layout. react-admin

@@ -13,22 +13,24 @@ packages: ['@venizia/ardor-kernel']
 **In one line.** An application returns the index `ignis-artifacts generate` emits from `artifacts()`, the same file an IGNIS backend passes to `createAppConfig`.
 
 ```typescript
-import { BaseArdorApplication, type IApplicationInfo, type IArtifactIndex } from '@venizia/ardor';
+import { BaseArdorApplication, type IApplicationInfo, type IArdorArtifactIndex } from '@venizia/ardor';
 
-const GeneratedArtifacts: IArtifactIndex = { services: [] }; // from src/_artifacts.ts
+const GeneratedArtifacts: IArdorArtifactIndex = { services: [] }; // from src/_artifacts.ts
 
 class Application extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
 
-  override artifacts(): Array<IArtifactIndex> {
+  override artifacts(): Array<IArdorArtifactIndex> {
     return [GeneratedArtifacts];
   }
 
   bindContext(): void {}
 }
 ```
+
+Since 0.5.0 `IArtifactIndex` is named `IArdorArtifactIndex`.
 
 ## What changed
 

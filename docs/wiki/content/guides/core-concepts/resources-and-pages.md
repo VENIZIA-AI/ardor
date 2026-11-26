@@ -281,7 +281,7 @@ export const ProductList = () => {
 
 ## CoreAdmin props
 
-`IApplication` in `packages/admin/src/common/types.ts` extends `Omit<CoreAdminProps, 'children'>`. All remaining props pass directly to react-admin's `CoreAdmin`:
+`IArdorApplicationProps` in `packages/admin/src/common/types.ts` extends `Omit<CoreAdminProps, 'children'>`. All remaining props pass directly to react-admin's `CoreAdmin`:
 
 - **`loginPage`**: Component mounted at `/login`, or `false` to disable the route.
 - **`dashboard`**: Component mounted on the root `/` route.

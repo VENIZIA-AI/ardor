@@ -5,7 +5,7 @@ import {
   CoreBindings,
   type IApplicationInfo,
   type IAuthTokenRecord,
-  type IAuthUser,
+  type IStoredAuthUser,
   type IdType,
   type IScopedKeys,
   LocalStorageKeys,
@@ -214,7 +214,7 @@ export class DefaultAuthService extends BaseService {
   }
 
   /** The stored identity; `{}` when nothing usable is stored, also outside a browser. */
-  getUser(): IAuthUser {
+  getUser(): IStoredAuthUser {
     const identity = this.parseStored({
       key: this.keys.identity,
       method: 'getUser',
@@ -224,7 +224,7 @@ export class DefaultAuthService extends BaseService {
   }
 
   /** A stored identity is data from the browser: an object whose known fields, when present, have their type. */
-  private isAuthUser(value: unknown): value is IAuthUser {
+  private isAuthUser(value: unknown): value is IStoredAuthUser {
     if (!RecordUtility.isPlainRecord(value)) {
       return false;
     }
