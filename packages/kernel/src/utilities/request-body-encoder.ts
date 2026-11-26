@@ -1,3 +1,4 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
 import { RequestBodyTypes } from '@/common';
@@ -45,7 +46,7 @@ export class RequestBodyEncoder {
       case RequestBodyTypes.FORM_URL_ENCODED: {
         const encoded = new URLSearchParams();
 
-        for (const [key, value] of Object.entries((body ?? {}) as Record<string, unknown>)) {
+        for (const [key, value] of RequestBodyEncoder.entriesOf({ body })) {
           if (!ValueUtility.isDefined(value)) {
             continue;
           }
@@ -65,10 +66,13 @@ export class RequestBodyEncoder {
       case RequestBodyTypes.FORM_DATA: {
         const formData = new FormData();
 
-        for (const [key, value] of Object.entries((body ?? {}) as Record<string, unknown>)) {
-          const values = Array.isArray(value) || RequestBodyEncoder.isFileList(value);
+        for (const [key, value] of RequestBodyEncoder.entriesOf({ body })) {
+          const items: unknown[] =
+            Array.isArray(value) || RequestBodyEncoder.isFileList(value)
+              ? Array.from(value)
+              : [value];
 
-          for (const item of values ? Array.from(value as ArrayLike<unknown>) : [value]) {
+          for (const item of items) {
             RequestBodyEncoder.appendFormValue({ formData, key, value: item });
           }
         }
@@ -82,8 +86,19 @@ export class RequestBodyEncoder {
     }
   }
 
+  /** The fields of a form body: those of an object, or the indexes of an array or a string. */
+  private static entriesOf(opts: { body: unknown }): Array<[string, unknown]> {
+    const { body } = opts;
+
+    if (RecordUtility.isRecord(body)) {
+      return Object.entries(body);
+    }
+
+    return typeof body === 'string' ? Object.entries(body) : [];
+  }
+
   // `FileList` exists only in a DOM; the bare identifier throws in Workers and on Bun.
-  private static isFileList(value: unknown): boolean {
+  private static isFileList(value: unknown): value is FileList {
     return typeof FileList !== 'undefined' && value instanceof FileList;
   }
 
@@ -118,7 +133,8 @@ export class RequestBodyEncoder {
     }
 
     if (value instanceof Blob) {
-      formData.append(key, value, (value as File).name);
+      const name = 'name' in value && typeof value.name === 'string' ? value.name : undefined;
+      formData.append(key, value, name);
 
       return;
     }

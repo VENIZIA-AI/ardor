@@ -113,9 +113,7 @@ export class NetworkResponseReader {
             });
           }
 
-          const dataFormatted = data as { data: TData; count?: number };
-
-          const normalizedData = NetworkResponseReader.toRows({ data: dataFormatted.data });
+          const normalizedData = NetworkResponseReader.toRows({ data: data.data });
 
           const total = NetworkResponseReader.resolveTotal({
             headers,
@@ -124,7 +122,7 @@ export class NetworkResponseReader {
 
           return {
             data: normalizedData as TData,
-            count: dataFormatted?.count ?? normalizedData.length,
+            count: data.count ?? normalizedData.length,
             total,
           };
         }
