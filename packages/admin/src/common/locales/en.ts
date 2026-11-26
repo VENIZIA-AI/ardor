@@ -1,7 +1,5 @@
 /**
  * The built-in English messages: react-admin's `ra` catalogue and ARDOR's own keys under `ardor`.
- *
- * @useWhen you build the i18n messages of an app and want the built-in English ones as the base
  */
 export const englishMessages = {
   ra: {

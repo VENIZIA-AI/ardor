@@ -87,9 +87,6 @@ const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> 
  *   }
  * }
  * ```
- *
- * @useWhen you need the react-admin data provider over an IGNIS REST API
- * @insteadOf a hand-written react-admin `dataProvider`
  */
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>

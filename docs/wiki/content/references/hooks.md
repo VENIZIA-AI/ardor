@@ -832,7 +832,7 @@ export function Navigation() {
 ```tsx
 import { Ardor } from '@venizia/ardor';
 
-export function PauseWhenHidden() {
+export function StopWhenHidden() {
   const visibility = Ardor.useDocumentVisibility();
   return <span>{visibility === 'visible' ? 'Live' : 'Paused'}</span>;
 }

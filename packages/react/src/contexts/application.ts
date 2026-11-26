@@ -14,8 +14,6 @@ export interface IApplicationContextValue {
 
 /**
  * Read through `useApplicationContext` and `useApplicationLogger`; the default value holds `null`s.
- *
- * @useWhen you mount the component tree and must hand it the application
  */
 export const ApplicationContext = React.createContext<IApplicationContextValue>({
   container: null,

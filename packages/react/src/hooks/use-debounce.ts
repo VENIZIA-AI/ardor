@@ -20,9 +20,6 @@ export interface IUseDebounceReturn<TValue> {
 
 /**
  * Follows `value` after it has stopped changing for `delay`. Outside a browser, or when not `enabled`, it never updates.
- *
- * @useWhen a value that changes often, such as a search box, should drive work only after it settles
- * @insteadOf a `setTimeout` debounce in an effect
  */
 export const useDebounce = <TValue>(
   opts: IUseDebounceOptions<TValue>,

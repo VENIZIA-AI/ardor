@@ -171,9 +171,6 @@ export const createBuildInfoFilePlugin = (opts: {
  *   plugins: [buildInfoFile({ fileName: 'build-info.json', onUnresolved: 'unspecified' })],
  * });
  * ```
- *
- * @useWhen a built app must say which commit, branch and framework versions it was built from
- * @insteadOf a script that writes a version file or injects the commit by hand
  */
 export const buildInfoFile = (opts: IBuildInfoFileOptions = {}): Plugin =>
   createBuildInfoFilePlugin({ options: opts, sources: defaultSources });

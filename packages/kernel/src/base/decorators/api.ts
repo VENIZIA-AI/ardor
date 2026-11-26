@@ -3,9 +3,6 @@ import type { BaseService } from '../services';
 
 /**
  * Logs a failing method with its name, and its `resource` when the class has one, then rethrows.
- *
- * @useWhen a method of a repository or service should log its failure with its name and rethrow
- * @insteadOf a try and catch that only logs
  */
 export const api = () => {
   return (_target: BaseService, propertyKey: string, descriptor: PropertyDescriptor) => {

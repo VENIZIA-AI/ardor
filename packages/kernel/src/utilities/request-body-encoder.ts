@@ -17,9 +17,6 @@ type TPassThroughBodyType =
 
 /**
  * Turns a request body into what `fetch` sends, by `RequestBodyTypes`.
- *
- * @useWhen you turn a request body into what `fetch` sends
- * @insteadOf `JSON.stringify` and `FormData` built by hand
  */
 export class RequestBodyEncoder {
   /**

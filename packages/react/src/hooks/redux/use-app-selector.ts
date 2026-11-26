@@ -38,9 +38,6 @@ const deepEqual = (a: unknown, b: unknown): boolean => {
 
 /**
  * Builds the typed selector hooks of a Redux store.
- *
- * @useWhen a Redux store needs typed selector hooks
- * @insteadOf a hand-typed `useSelector` wrapper
  */
 export class SelectorHooks {
   /** The three typed selector hooks of a store: bind your `RootState` once, and export what comes back. */

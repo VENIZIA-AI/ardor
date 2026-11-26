@@ -70,9 +70,6 @@ const sameScope = (a: IScope, b: IScope): boolean => {
  *   return <div ref={ref}>{entry?.isIntersecting ? 'visible' : 'hidden'}</div>;
  * }
  * ```
- *
- * @useWhen a component must know whether an element is in view, for lazy loading or infinite scroll
- * @insteadOf `new IntersectionObserver`
  */
 export function useIntersection(
   opts: IUseIntersectionOptions & { target: TElementTarget[] },

@@ -4,22 +4,16 @@ import type { TNullable } from '@venizia/ignis-helpers/common';
 /**
  * The name `config.js` writes the runtime config under: `window.__APP_CONFIG__`, a record of strings.
  * The preset image writes it at container start, from the environment variables that start with `VITE_`.
- *
- * @useWhen you need the name of the global the runtime config is written under
  */
 export const RUNTIME_CONFIG_GLOBAL = '__APP_CONFIG__';
 
 /**
  * The `normalized.code` of the error `RuntimeConfig.getRequired` throws for a value that is not set; the key is in its `extra.key`.
- *
- * @useWhen you tell the error of a required config value that is not set from any other error
  */
 export const RUNTIME_CONFIG_REQUIRED_CODE = 'ardor.runtime_config.required';
 
 /**
  * The `normalized.code` of the error a `transform` of `RuntimeConfig` causes by throwing, or by answering `undefined` or `null` to `getRequired`; the key is in its `extra.key`, the value is never in the error.
- *
- * @useWhen you tell the error of a config value that failed its `transform` from any other error
  */
 export const RUNTIME_CONFIG_INVALID_CODE = 'ardor.runtime_config.invalid';
 
@@ -76,9 +70,6 @@ const applyTransform = <TInput, TValue>(opts: {
 
 /**
  * Reads configuration a deployment can change without a rebuild.
- *
- * @useWhen a value must change per deployment without a rebuild
- * @insteadOf `import.meta.env` or `window.__APP_CONFIG__` read by hand
  */
 export class RuntimeConfig {
   /**

@@ -52,9 +52,6 @@ export interface IArtifactRegistration extends Pick<
  * Two ways to register, as in IGNIS: stereotype discovery, or `service()`/`repository()`/
  * `dataSource()`/`component()` by hand. Both record the key on the class. Every kind defaults to
  * SINGLETON (IGNIS's server uses transient): a hook resolves on every render.
- *
- * @useWhen you write the application class of an ARDOR app and register its services, repositories, data sources and components
- * @insteadOf wiring the container by hand
  */
 export abstract class AbstractArdorApplication extends Container {
   /** The application's own bindings; `preConfigure` runs it last, so they win over discovered and feature bindings. */
