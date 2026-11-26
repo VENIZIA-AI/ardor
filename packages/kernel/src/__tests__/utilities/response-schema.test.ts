@@ -258,6 +258,16 @@ describe('NetworkResponseReader.read with a schema', () => {
     expect(result.data).toBe(true);
   });
 
+  test('gives the schema the Blob of a body with bytes and no content type', async () => {
+    const result = await NetworkResponseReader.read({
+      response: new Response(new Uint8Array([1, 2, 3])),
+      type: RequestTypes.GET_ONE,
+      schema: { parse: (data) => (data instanceof Blob ? data.size : -1) },
+    });
+
+    expect(result.data).toBe(3);
+  });
+
   test('answers an empty object for a 204 with no schema', async () => {
     const result = await NetworkResponseReader.read({
       response: new Response(null, { status: 204 }),
