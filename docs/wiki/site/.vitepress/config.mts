@@ -208,10 +208,6 @@ const config = defineConfig({
         output: {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
-              // Split search functionality
-              if (id.includes('minisearch') || id.includes('mark.js')) {
-                return 'search';
-              }
               // Split Vue core
               if (id.includes('@vue/')) {
                 return 'vue-vendor';
@@ -224,7 +220,6 @@ const config = defineConfig({
   },
   themeConfig: {
     logo: '/logo.svg',
-    search: { provider: 'local' },
     nav: [
       { text: 'Guides', link: '/guides/' },
       { text: 'References', link: '/references/' },

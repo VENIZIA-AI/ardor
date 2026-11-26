@@ -47,6 +47,8 @@ tags: [process, docs, wiki]
    site with `bun run docs:build` (`make docs` also builds it, without the dependency chain the
    other Makefile targets carry - `docs` has no prerequisite target). Clean with `bun run
    docs:clean`.
+   The search is Pagefind: `docs-build.sh` runs the shared `search-index.ts` after `vitepress build`,
+   which writes `dist/pagefind/` with the pinned `pagefind` of `docs/wiki`; `docs:dev` has no index.
 5. There is no compiled output in this package any more: `content/` is plain markdown VitePress
    reads directly, and every script under `scripts/` runs straight with `bun`, no build step.
 6. Style rules for anything you write in `docs/wiki/content/`: hyphen `-` only, never an em-dash or
