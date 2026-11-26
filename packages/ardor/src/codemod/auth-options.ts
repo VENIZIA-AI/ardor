@@ -1,6 +1,6 @@
 import type * as TS from 'typescript';
 
-import type { ICodemodResult, ICodemodInput } from './command';
+import type { ICodemodInput, ICodemodResult } from './command';
 import { ProvideScan } from './provide-scan';
 import { CodemodSource, type ISourceEdit } from './source';
 import type { IFinding, TTypeScript } from './transform';

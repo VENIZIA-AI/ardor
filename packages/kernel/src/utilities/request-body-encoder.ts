@@ -45,7 +45,7 @@ export class RequestBodyEncoder {
       case RequestBodyTypes.FORM_URL_ENCODED: {
         const encoded = new URLSearchParams();
 
-        for (const [key, value] of Object.entries((body ?? {}) as Record<string, unknown>)) {
+        for (const [key, value] of Object.entries(body ?? {})) {
           if (!ValueUtility.isDefined(value)) {
             continue;
           }
@@ -65,10 +65,13 @@ export class RequestBodyEncoder {
       case RequestBodyTypes.FORM_DATA: {
         const formData = new FormData();
 
-        for (const [key, value] of Object.entries((body ?? {}) as Record<string, unknown>)) {
-          const values = Array.isArray(value) || RequestBodyEncoder.isFileList(value);
+        for (const [key, value] of Object.entries(body ?? {})) {
+          const items: unknown[] =
+            Array.isArray(value) || RequestBodyEncoder.isFileList(value)
+              ? Array.from(value)
+              : [value];
 
-          for (const item of values ? Array.from(value as ArrayLike<unknown>) : [value]) {
+          for (const item of items) {
             RequestBodyEncoder.appendFormValue({ formData, key, value: item });
           }
         }
@@ -83,7 +86,7 @@ export class RequestBodyEncoder {
   }
 
   // `FileList` exists only in a DOM; the bare identifier throws in Workers and on Bun.
-  private static isFileList(value: unknown): boolean {
+  private static isFileList(value: unknown): value is FileList {
     return typeof FileList !== 'undefined' && value instanceof FileList;
   }
 
@@ -118,7 +121,8 @@ export class RequestBodyEncoder {
     }
 
     if (value instanceof Blob) {
-      formData.append(key, value, (value as File).name);
+      const name = 'name' in value && typeof value.name === 'string' ? value.name : undefined;
+      formData.append(key, value, name);
 
       return;
     }
