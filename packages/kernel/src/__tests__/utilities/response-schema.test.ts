@@ -20,7 +20,7 @@ const asNumber: IResponseSchema<number> = {
   parse: (data) => {
     if (typeof data !== 'number') {
       // What a careless schema does: quotes the value it refused.
-      throw Object.assign(new Error(`not a number: ${JSON.stringify(data)}`), {
+      throw Object.assign(getError({ message: `not a number: ${JSON.stringify(data)}` }), {
         issues: [{ path: ['total', 0], code: 'invalid_type', input: data }],
       });
     }
@@ -186,6 +186,16 @@ describe('NetworkResponseReader.read with a schema', () => {
   test('gives the schema the Blob of an empty file', async () => {
     const result = await NetworkResponseReader.read({
       response: new Response('', { headers: { 'content-disposition': 'attachment' } }),
+      type: RequestTypes.GET_ONE,
+      schema: { parse: (data) => data instanceof Blob },
+    });
+
+    expect(result.data).toBe(true);
+  });
+
+  test('gives the schema the Blob of an empty body of a file type', async () => {
+    const result = await NetworkResponseReader.read({
+      response: new Response('', { headers: { 'content-type': 'application/octet-stream' } }),
       type: RequestTypes.GET_ONE,
       schema: { parse: (data) => data instanceof Blob },
     });

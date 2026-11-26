@@ -158,6 +158,10 @@ beforeAll(() => {
         );
       }
 
+      if (isCollectionGet && url.pathname === '/unranged') {
+        return Response.json([{ id: 1 }, { id: 2 }]);
+      }
+
       if (isCollectionGet) {
         return new Response(JSON.stringify([{ id: 1 }]), {
           status: 200,
@@ -327,6 +331,20 @@ describe('getList behavior', () => {
     expect(filter['params']).toBeUndefined();
     expect(filter['tenantKey']).toBeUndefined();
     expect(filter['viewMode']).toBeUndefined();
+  });
+
+  test('resolves the number of rows as the total when the response has no content-range', async () => {
+    const provider = createProvider({ baseUrl });
+    const result = await provider.getList({
+      resource: 'unranged',
+      params: {
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+      },
+    });
+
+    expect(result.total).toBe(2);
   });
 
   test('resolves total count parsed from content-range response header', async () => {

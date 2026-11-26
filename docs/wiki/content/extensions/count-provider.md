@@ -97,8 +97,8 @@ The result is `Promise.all` over the two responses, mapped to the react-admin `g
 ```ts no-check
 // excerpt of the value resolved by requestList
 const result = {
-  data: listResponse.data,
-  total: this.toTotal({ counted: countResponse.data.count, resource }),
+  data: listResult.data,
+  total: this.toTotal({ counted, resource }), // `counted` is `data.count` of the count answer
 };
 // ...
 ```
@@ -157,7 +157,7 @@ export class AppDataProvider extends CountRestDataProvider<'products' | 'categor
 
 ## Common pitfalls
 
-- The API must expose `GET <resource>/count` for every resource that has a list view, and it must answer with `{ count: number }`. A missing endpoint answers 404, which rejects, and so does the whole list (`Promise.all`). A different field name does not reject: `total` becomes `0` with no warning, and react-admin shows an empty pagination.
+- The API must expose `GET <resource>/count` for every resource that has a list view, and it must answer with `{ count }`, a number or a numeric string. A missing endpoint answers 404, which rejects, and so does the whole list (`Promise.all`). A different field name does not reject: `total` becomes `0` with no warning, and react-admin shows an empty pagination.
 - The count request only carries `where`. Filters that rely on `include` or `fields` to restrict rows are not applied to the count.
 - Keys from `meta` and from `filter.params` are copied into `queryKey`, and `queryKey` is spread into both requests. Anything you put there also hits the count endpoint.
 - The count call uses `RequestTypes.SEND`, not `RequestTypes.GET_LIST`. Any logic that branches on request type sees `SEND` for the second call.

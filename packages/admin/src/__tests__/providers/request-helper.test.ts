@@ -8,7 +8,7 @@ import {
 } from '@venizia/ardor-kernel';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { FetchSchemaError } from '@venizia/ignis-helpers/core';
-import { getError } from '@venizia/ignis-inversion';
+import { Container, getError } from '@venizia/ignis-inversion';
 import type { RaRecord } from 'ra-core';
 import type { IRestRequestOptions } from '@/common';
 import { CountRestDataProvider } from '@/providers/count-rest-data';
@@ -170,6 +170,17 @@ describe('send with a schema', () => {
 
         return 'checked';
       },
+    });
+
+    expect(result.data).toBe('checked');
+  });
+
+  test('is checked through the send react-admin holds too', async () => {
+    const provider = create().value(new Container());
+    const result = await provider.send({
+      resource: 'posts',
+      params: { method: RequestMethods.POST },
+      schema: { parse: () => 'checked' },
     });
 
     expect(result.data).toBe('checked');

@@ -95,6 +95,7 @@ const ensureFound = <T>(opts: { value: T | undefined; message: string }): T => {
 const COUNT_ANSWERS = new Map<string, { count?: unknown }>([
   ['/journals/count', { count: '5' }],
   ['/letters/count', {}],
+  ['/lists/count', { count: null }],
   ['/ledgers/count', { count: 'many' }],
   ['/leaflets/count', { count: ' ' }],
   ['/logbooks/count', { count: [3] }],
@@ -300,10 +301,14 @@ describe('CountRestDataProvider getList', () => {
     expect(result2).toEqual({ total: 5, warnings: [] });
   });
 
-  test('returns 0 with no warning for an answer with no count', async () => {
-    const result3 = await readTotal('letters');
-    expect(result3).toEqual({ total: 0, warnings: [] });
-  });
+  test.each(['letters', 'lists'])(
+    'returns 0 with no warning for an answer with no count or a null one: %s',
+    async (resource) => {
+      const result = await readTotal(resource);
+
+      expect(result).toEqual({ total: 0, warnings: [] });
+    },
+  );
 
   test.each(['ledgers', 'leaflets', 'logbooks'])(
     'returns 0 and warns with the route and the value for a count that is no number: %s',

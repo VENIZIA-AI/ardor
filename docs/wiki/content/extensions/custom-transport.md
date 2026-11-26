@@ -212,7 +212,7 @@ export class TransportDataProvider<
       signal,
     });
 
-    // The transport answers unchecked data; a schema checks and types it, as the HTTP path does.
+    // The transport answers unchecked data; a schema checks and types it. `checkData` sees the data only: refuse an empty answer in the transport.
     if (!schema) {
       return answered;
     }

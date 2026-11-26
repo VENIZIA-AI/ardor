@@ -32,7 +32,9 @@ interface IReadResponseOptions {
 const NO_BODY_ISSUE: IFetchSchemaIssue = { path: [], code: 'invalid_json' };
 
 /** A path of a schema issue as the IGNIS fetchers report it: a symbol as its text. */
-const toIssuePath = (path: unknown): Array<string | number> => {
+const toIssuePath = (opts: { path: unknown }): Array<string | number> => {
+  const { path } = opts;
+
   if (!Array.isArray(path)) {
     return [];
   }
@@ -50,7 +52,8 @@ const toIssuePath = (path: unknown): Array<string | number> => {
  * Where and by which rule a schema refused: the `issues` of what it threw, as zod shapes them, or one
  * `custom` issue at the root when it threw none. Never the message or a value, which may quote the body.
  */
-const issuesOf = (error: unknown): IFetchSchemaIssue[] => {
+const issuesOf = (opts: { error: unknown }): IFetchSchemaIssue[] => {
+  const { error } = opts;
   const issues = RecordUtility.isRecord(error) ? error.issues : undefined;
 
   const named = Array.isArray(issues) ? issues.filter(RecordUtility.isRecord) : [];
@@ -60,7 +63,7 @@ const issuesOf = (error: unknown): IFetchSchemaIssue[] => {
   }
 
   return named.map(({ path, code }) => ({
-    path: toIssuePath(path),
+    path: toIssuePath({ path }),
     code: typeof code === 'string' ? code : 'custom',
   }));
 };
@@ -79,8 +82,8 @@ export class NetworkResponseReader {
   /**
    * A response as `INetworkResponse` whose `data` the schema checked and typed. The schema is given
    * the data as it was read: the rows of a list, the `Blob` of a file. What it refuses throws a
-   * `FetchSchemaError` (502), and so does a 204 or an empty body that is no file: there is nothing
-   * to check (code `invalid_json`, as in the IGNIS fetchers).
+   * `FetchSchemaError` (502). So do a 204 and an empty body that is textual or of no content type and
+   * no attachment: there is nothing to check (code `invalid_json`, as in the IGNIS fetchers).
    */
   static read<TResult>(
     opts: IReadResponseOptions & { schema: IResponseSchema<TResult> },
@@ -126,11 +129,11 @@ export class NetworkResponseReader {
     try {
       return { ...response, data: schema.parse(response.data) };
     } catch (error) {
-      throw NetworkResponseReader.refusal({ status, url, issues: issuesOf(error) });
+      throw NetworkResponseReader.refusal({ status, url, issues: issuesOf({ error }) });
     }
   }
 
-  /** A 204, or a response with an empty body that its headers do not name a file. */
+  /** A 204, or an empty body that is textual or of no content type and no attachment. */
   private static async isEmptyAnswer(opts: { response: Response }): Promise<boolean> {
     const { response } = opts;
 

@@ -235,11 +235,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    * The answer as the record type react-admin's caller names. Nothing checks it: a data provider
    * method has no schema for a type its caller picks. Use `send` with a schema for a checked answer.
    */
-  private adoptRecords<TResult>(
-    response: Promise<INetworkResponse>,
-  ): Promise<INetworkResponse<TResult>> {
+  private adoptRecords<TResult>(opts: {
+    response: Promise<INetworkResponse>;
+  }): Promise<INetworkResponse<TResult>> {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- ra-core's caller picks RecordType, which nothing here can check
-    return response as Promise<INetworkResponse<TResult>>;
+    return opts.response as Promise<INetworkResponse<TResult>>;
   }
 
   /**
@@ -265,7 +265,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       signal,
     });
 
-    return this.adoptRecords<RecordType[]>(response).then(({ extra: answered, ...rest }) => {
+    return this.adoptRecords<RecordType[]>({ response }).then(({ extra: answered, ...rest }) => {
       return answered ? { ...rest, meta: { extra: answered } } : rest;
     });
   }
@@ -306,8 +306,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     const { params: filterParams, ...filter } = params?.meta?.filter ?? {};
     const queryKey = ListFilterBuilder.extractQueryParams({ params: filterParams });
 
-    return this.adoptRecords<RecordType>(
-      this.request({
+    return this.adoptRecords<RecordType>({
+      response: this.request({
         resource,
         type: RequestTypes.GET_ONE,
         method: RequestMethods.GET,
@@ -315,7 +315,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         query: { ...queryKey, filter },
         signal: params.signal,
       }),
-    );
+    });
   }
 
   /**
@@ -333,8 +333,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
 
     // Always the GET, under the controller's own `find()`, so its scoping applies. A very long id
     // list answers 414/431.
-    return this.adoptRecords<RecordType[]>(
-      this.request({
+    return this.adoptRecords<RecordType[]>({
+      response: this.request({
         resource,
         type: RequestTypes.GET_MANY,
         method: RequestMethods.GET,
@@ -347,7 +347,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         },
         signal: params.signal,
       }),
-    );
+    });
   }
 
   /**
@@ -381,15 +381,15 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<UpdateResult<RecordType>> {
     const { resource, params } = opts;
 
-    return this.adoptRecords<RecordType>(
-      this.request({
+    return this.adoptRecords<RecordType>({
+      response: this.request({
         resource,
         type: RequestTypes.UPDATE,
         method: RequestMethods.PATCH,
         paths: recordPaths({ resource, id: params.id }),
         body: params.data,
       }),
-    );
+    });
   }
 
   /**
@@ -434,14 +434,14 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   >(opts: { resource: TResource; params: CreateParams }): Promise<CreateResult<ResultRecordType>> {
     const { resource, params } = opts;
 
-    return this.adoptRecords<ResultRecordType>(
-      this.request({
+    return this.adoptRecords<ResultRecordType>({
+      response: this.request({
         resource,
         type: RequestTypes.CREATE,
         method: RequestMethods.POST,
         body: params.data,
       }),
-    );
+    });
   }
 
   /** `DELETE /{resource}/{id}`. Resolves `{ data }`, the record the server answered. */
@@ -451,14 +451,14 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<DeleteResult<RecordType>> {
     const { resource, params } = opts;
 
-    return this.adoptRecords<RecordType>(
-      this.request({
+    return this.adoptRecords<RecordType>({
+      response: this.request({
         resource,
         type: RequestTypes.DELETE,
         method: RequestMethods.DELETE,
         paths: recordPaths({ resource, id: params.id }),
       }),
-    );
+    });
   }
 
   /**
@@ -493,7 +493,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    * Sends `params.method` to `/{resource}` with the provider's headers and auth; `requestType`
    * defaults to `RequestTypes.SEND`. Resolves the response read by that type. Rejects when
    * `params.method` is missing, before any request. With a `schema`, `data` is what it checked and
-   * typed; what it refuses throws a `FetchSchemaError` (502).
+   * typed; what it refuses, an empty answer included, throws a `FetchSchemaError` (502).
    */
   send<TResult>(opts: {
     resource: TResource;

@@ -753,7 +753,8 @@ export class DefaultNetworkRequestService extends BaseService {
    * one retry with the new token. Any other non-2xx response, or a retry that still fails, throws
    * the error read from the response. An aborted `signal` rejects with its reason, and a request
    * that outlives the service's `timeout` rejects with a 504 coded `NETWORK_TIMEOUT_CODE`. With a
-   * `schema`, `data` is what it checked and typed; what it refuses throws a `FetchSchemaError` (502).
+   * `schema`, `data` is what it checked and typed; what it refuses, an empty answer included, throws a
+   * `FetchSchemaError` (502).
    */
   doRequest<TResult>(
     opts: TDoRequestOptions & { schema: IResponseSchema<TResult> },
