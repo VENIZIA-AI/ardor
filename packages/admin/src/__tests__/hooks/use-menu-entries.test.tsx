@@ -9,6 +9,7 @@ import { useMenuEntries } from '@/hooks/use-menu-entries';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { CoreBindings } from '@venizia/ardor-kernel';
 import { BindingKeys, Container } from '@venizia/ignis-inversion';
+import { ActScreen } from '../act-screen';
 
 type TCanAccess = (params: { resource: string; action: string }) => Promise<boolean>;
 
@@ -106,7 +107,7 @@ describe('useMenuEntries', () => {
       container: createContainer({ features: [orders, settings], auth: { canAccess } }),
     });
 
-    const result = await screen.findByText(
+    const result = await ActScreen.findByText(
       'menu: orders/orders.menu.list,settings/settings.menu.users,settings/settings.menu.about',
     );
     expect(result).toBeDefined();
@@ -129,7 +130,7 @@ describe('useMenuEntries', () => {
 
     renderMenu({ container: createContainer({ features: [orders], auth: { canAccess } }) });
 
-    const result = await screen.findByText(
+    const result = await ActScreen.findByText(
       'menu: orders/orders.menu.list,orders/orders.menu.refunds',
     );
     expect(result).toBeDefined();
@@ -148,7 +149,7 @@ describe('useMenuEntries', () => {
       features: [orders],
     });
 
-    const result = await screen.findByText(
+    const result = await ActScreen.findByText(
       'menu: orders/orders.menu.list,orders/orders.menu.refunds',
     );
     expect(result).toBeDefined();
@@ -157,7 +158,7 @@ describe('useMenuEntries', () => {
   test('lists every entry when no permission provider answers canAccess', async () => {
     renderMenu({ container: createContainer({ features: [orders, settings], auth: {} }) });
 
-    const result = await screen.findByText(
+    const result = await ActScreen.findByText(
       'menu: orders/orders.menu.list,orders/orders.menu.refunds,settings/settings.menu.users,settings/settings.menu.about',
     );
     expect(result).toBeDefined();
@@ -166,7 +167,7 @@ describe('useMenuEntries', () => {
   test('lists every entry when the application has no sign-in', async () => {
     renderMenu({ container: createContainer({ features: [orders] }) });
 
-    const result = await screen.findByText(
+    const result = await ActScreen.findByText(
       'menu: orders/orders.menu.list,orders/orders.menu.refunds',
     );
     expect(result).toBeDefined();
@@ -181,14 +182,14 @@ describe('useMenuEntries', () => {
 
     renderMenu({ container: createContainer({ features: [orders], auth: { canAccess } }) });
 
-    const pending = await screen.findByText('menu: orders/orders.menu.list');
+    const pending = await ActScreen.findByText('menu: orders/orders.menu.list');
     expect(pending).toBeDefined();
 
     await act(async () => {
       answer(true);
     });
 
-    const result = await screen.findByText(
+    const result = await ActScreen.findByText(
       'menu: orders/orders.menu.list,orders/orders.menu.refunds',
     );
     expect(result).toBeDefined();
@@ -202,7 +203,7 @@ describe('useMenuEntries', () => {
       }),
     });
 
-    await screen.findByText('Home');
+    await ActScreen.findByText('Home');
     await act(async () => {
       await new Promise<void>((resolve) => setTimeout(resolve, 20));
     });

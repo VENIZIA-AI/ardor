@@ -622,13 +622,21 @@ describe('useStoredState writeDelayMs', () => {
   });
 
   describe('when the page is hidden or closed', () => {
+    const leavePage = () => {
+      act(() => {
+        window.dispatchEvent(new Event('pagehide'));
+      });
+    };
+
     const hide = (state: 'hidden' | 'visible') => {
       Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
       Object.defineProperty(document, 'hidden', {
         configurable: true,
         get: () => state === 'hidden',
       });
-      document.dispatchEvent(new Event('visibilitychange'));
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
     };
 
     afterEach(() => {
@@ -640,7 +648,7 @@ describe('useStoredState writeDelayMs', () => {
       const { result, storage } = delayed();
       act(() => result.current.setValue(8));
 
-      window.dispatchEvent(new Event('pagehide'));
+      leavePage();
 
       expect(storage.writes).toEqual(['8']);
       advance(DELAY);
@@ -661,14 +669,14 @@ describe('useStoredState writeDelayMs', () => {
     test('with no pending write, nothing is written', () => {
       const { result, storage } = delayed();
 
-      window.dispatchEvent(new Event('pagehide'));
+      leavePage();
       hide('hidden');
       expect(storage.writes).toEqual([]);
 
       act(() => result.current.setValue(8));
       advance(DELAY);
       storage.writes.length = 0;
-      window.dispatchEvent(new Event('pagehide'));
+      leavePage();
       expect(storage.writes).toEqual([]);
     });
 

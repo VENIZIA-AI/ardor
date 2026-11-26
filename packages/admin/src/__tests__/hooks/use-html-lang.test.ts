@@ -51,7 +51,7 @@ describe('useHtmlLang', () => {
     expect(document.documentElement.lang).toBe('vi');
   });
 
-  test('follows a locale change', () => {
+  test('follows a locale change', async () => {
     const { result } = renderHook(
       () => {
         useHtmlLang();
@@ -61,7 +61,8 @@ describe('useHtmlLang', () => {
       { wrapper: createWrapper({ locale: 'vi' }) },
     );
 
-    act(() => {
+    // The i18n provider of ra-core changes its locale in a promise, so the update lands after the call.
+    await act(async () => {
       const [, setLocale] = result.current;
       setLocale('en');
     });
