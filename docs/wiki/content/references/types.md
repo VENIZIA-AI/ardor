@@ -26,7 +26,7 @@ export const exportParams: ISendParams = {
 
 ## @venizia/ardor-kernel
 
-Source files: `packages/kernel/src/common/types.ts`, `packages/kernel/src/common/constants.ts`, `packages/kernel/src/common/keys.ts`, and `packages/kernel/src/base/services/network-request.ts` with its base, `network-session.ts`.
+Source files: `packages/kernel/src/common/types.ts`, `packages/kernel/src/common/constants.ts`, `packages/kernel/src/common/keys.ts`, and `packages/kernel/src/base/services/network-request.ts`.
 
 ### Primitives and value helpers
 

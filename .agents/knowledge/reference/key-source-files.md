@@ -29,7 +29,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/admin/src/providers/index.ts` - provider exports.
 
 ## Services
-- `packages/kernel/src/base/services/base.ts`, `auth.ts`, `network-request.ts`, `network-session.ts` - the kernel service layer: base service class, auth service, network request wrapper and its abstract base (session, no-auth paths, headers, `getDataSourceAuth`).
+- `packages/kernel/src/base/services/base.ts`, `auth.ts`, `network-request.ts`, `network-request-base.ts` - the kernel service layer: base service class, auth service, network request wrapper and its base class (no-auth paths, token, headers, body).
 - See [Public surface](/reference/public-surface.md) for the full inventory.
 
 ## Networking

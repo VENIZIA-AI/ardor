@@ -12,7 +12,7 @@ tags: [architecture, auth, network-request, no-auth-paths]
 
 ## The data
 
-Two options passed into the constructor (`packages/kernel/src/base/services/network-request.ts`) control this; `isNoAuthPath` and `compileNoAuthPathRegex` are in its base class, `AbstractNetworkSessionService` (`packages/kernel/src/base/services/network-session.ts`):
+Two options passed into the constructor (`packages/kernel/src/base/services/network-request.ts`) control this; `isNoAuthPath`, `compileNoAuthPathRegex` and the header members are in its base class (`packages/kernel/src/base/services/network-request-base.ts`):
 
 - `noAuthPaths` - an array of exact resource strings. If the request's `resource` matches one of these strings exactly, no auth header is added.
 - `noAuthPathRegex` - a `TNoAuthPathRegex`: a string, a `RegExp`, or an array of either. Each string entry is compiled with `new RegExp(...)`; invalid patterns are logged via `console.error` and dropped rather than throwing. The normalized list (`compileNoAuthPathRegex`) is kept as `noAuthPathRegexes: RegExp[]`. To send no token at all - an API with no sign-in - set `noAuthPathRegex: /./`; there is no `useAuth` switch.

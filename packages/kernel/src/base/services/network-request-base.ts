@@ -1,65 +1,97 @@
 import { getError } from '@venizia/ignis-inversion';
 import { HTTP } from '@venizia/ignis-helpers/common';
 import { HttpHeaders } from '@venizia/ignis-helpers/core';
+import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
   App,
   type IApplicationInfo,
-  type IAuthRecoveryOptions,
   type IAuthTokenRecord,
-  type IDataSourceAuth,
   type IGetRequestPropsParams,
   type IGetRequestPropsResult,
+  type ISignInSession,
+  LocalStorageKeys,
   RequestChannel,
   RequestCountData,
   type TNoAuthPathRegex,
+  type TRequestTimeoutOptions,
 } from '@/common';
-import type { AuthRecoveryHelper } from '@/helpers';
-import { type IEncodedBody, NetworkResponseReader, RequestBodyEncoder } from '@/utilities';
+import {
+  AuthTokenStore,
+  type IEncodedBody,
+  NetworkResponseReader,
+  RequestBodyEncoder,
+} from '@/utilities';
 import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
 
-/** Who sent a request, and with which token: what a 401 is judged against. */
-interface ISentSession {
-  /** `undefined` when the service cannot tell who is signed in (no auth service, or no user id stored). */
-  userId?: string;
-  token?: string;
-}
-
 /**
- * The `normalized.code` of the 401 that answers a request whose session is gone: the user who sent it signed out or another user signed in while it was in flight.
+ * What `DefaultNetworkRequestService` is built on: which requests go without a token, the token, the
+ * headers and body of a request, and the hooks that read data. It holds nothing about a request in
+ * flight.
  */
-export const SESSION_CHANGED_CODE = 'ardor.network.session_changed';
-
-/**
- * The session side of `DefaultNetworkRequestService`: who is signed in, which requests go without a
- * token, the headers and body of a request, and what an `HttpDataSource` needs to share them.
- */
-export abstract class AbstractNetworkSessionService extends BaseService {
+export abstract class AbstractNetworkRequestService extends BaseService {
   /** Resources sent without a token, matched exactly. */
   protected noAuthPaths?: string[];
   /** `noAuthPathRegex` compiled; a resource matching any is sent without a token. */
   protected noAuthPathRegexes: RegExp[];
   /** Headers added to every request. */
   protected headers: Headers;
-  protected authRecovery?: IAuthRecoveryOptions;
   protected authService?: DefaultAuthService;
 
-  /** The one refresh every 401 in flight shares; the subclass makes it. */
-  protected abstract readonly recovery: AuthRecoveryHelper;
+  /**
+   * The token under the unscoped session key (`AuthTokenStore.read`), `undefined` outside a browser, for an
+   * application with no `id`. With an application `id` the session is under other keys: use
+   * `createAuthTokenReader({ id })`, the `HttpDataSource` `getDataSourceAuth()` of the data provider, or `authService.getAuth`.
+   */
+  static readAuthTokenFromStorage(): IAuthTokenRecord | undefined {
+    return AuthTokenStore.read();
+  }
 
-  /** The session each data source request was sent under, keyed by the context object IGNIS hands to both hooks. */
-  private readonly sentSessions = new WeakMap<object, ISentSession>();
+  /**
+   * A reader of the stored token of the application with this `id` (`IApplicationInfo.id`): the same
+   * key `DefaultAuthService.getAuth` reads (`LocalStorageKeys.scoped({ id }).token`). Without an `id` it
+   * is `readAuthTokenFromStorage`. Throws for an invalid `id`, when it is created.
+   *
+   * @example
+   * ```ts
+   * super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' }) });
+   * ```
+   */
+  static createAuthTokenReader(opts: { id?: string } = {}): () => IAuthTokenRecord | undefined {
+    const { token: key } = LocalStorageKeys.scoped({ id: opts.id });
 
-  /** The token sent with a request, `undefined` when there is none. */
-  protected abstract resolveAuthToken(): IAuthTokenRecord | undefined;
+    return () => AuthTokenStore.read({ key });
+  }
 
-  /** The tracing id of a request. */
-  protected abstract buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string;
+  /** Throws unless a timeout that is on has a positive integer `milliseconds`. */
+  static assertTimeout(opts: { timeout?: TRequestTimeoutOptions }): void {
+    const { timeout } = opts;
 
-  /** Refreshes the session, once for every 401 in flight. */
-  abstract refresh(): Promise<boolean>;
+    if (!timeout?.use) {
+      return;
+    }
+
+    const { milliseconds } = timeout;
+
+    if (!Number.isSafeInteger(milliseconds) || milliseconds <= 0) {
+      throw getError({
+        message: `[DefaultNetworkRequestService] timeout.milliseconds must be a positive integer, got ${milliseconds}`,
+      });
+    }
+  }
+
+  /**
+   * The token this service sends. The one way to supply a token: override it to read another
+   * store, or to hold the token in memory.
+   */
+  protected resolveAuthToken(): IAuthTokenRecord | undefined {
+    // The auth service knows where this application's session is kept (its `id` scopes the keys).
+    return this.authService
+      ? (this.authService.getAuth() ?? undefined)
+      : AbstractNetworkRequestService.readAuthTokenFromStorage();
+  }
 
   /**
    * Whether a request goes without a token: its `resource` is in `noAuthPaths`, or the resource, or
@@ -90,6 +122,43 @@ export abstract class AbstractNetworkSessionService extends BaseService {
         return regex.test(candidate);
       });
     });
+  }
+
+  /**
+   * The new token of a refresh response: `{ token: { value, type } }` or `{ token: '<jwt>' }`. A
+   * refresh keeps the same user, so nothing else is read. Override it for another shape. No token is
+   * a throw.
+   */
+  protected readRefreshedToken(opts: { data: unknown }): ISignInSession['token'] {
+    const body: { token?: unknown } =
+      typeof opts.data === 'object' && opts.data !== null ? opts.data : {};
+    const { token } = body;
+    let record: object = {};
+
+    if (typeof token === 'string') {
+      record = { value: token };
+    } else if (typeof token === 'object' && token !== null) {
+      record = token;
+    }
+
+    const value = 'value' in record ? record.value : undefined;
+    const type = 'type' in record ? record.type : undefined;
+
+    if (typeof value !== 'string' || !value) {
+      throw getError({ message: '[refreshToken] The refresh response carries no token' });
+    }
+
+    return { value, type: typeof type === 'string' ? type : App.TOKEN_TYPE };
+  }
+
+  /** Runs once when `refreshToken` threw. The place to send the user back to sign-in. */
+  protected onAuthFailure(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** The tracing id of a request, sent in `x-request-id`. Default `<application name>_<uuid>`. */
+  protected buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string {
+    return `${opts.applicationInfo.name}_${UuidV4Generator.generate()}`;
   }
 
   /** `noAuthPathRegex` as `RegExp`s; a string is compiled, and an invalid one is logged and dropped. */
@@ -125,132 +194,6 @@ export abstract class AbstractNetworkSessionService extends BaseService {
     }
 
     return compiled;
-  }
-
-  /** The session signed in now: who, and with which token. */
-  protected readSession(): ISentSession {
-    const userId = this.authService?.getUser().userId;
-
-    return {
-      userId: userId === undefined ? undefined : `${userId}`,
-      token: this.resolveAuthToken()?.value,
-    };
-  }
-
-  /** The 401 that answers a request whose session is gone: `DefaultAuthProvider.checkError` leaves the signed-in session alone for it. */
-  protected sessionChangedError(): Error {
-    return getError({
-      statusCode: 401,
-      messageCode: SESSION_CHANGED_CODE,
-      message: '[doRequest] The session that sent this request ended while it was in flight',
-    });
-  }
-
-  /**
-   * How the session changed since `sent`: `undefined` when it did not, `true` when the same user holds
-   * another token now (the request can be sent again with it), `false` when the user who sent is gone. When
-   * nobody can tell who sent, another token is a switch: it is never read as the same user's.
-   */
-  protected readSessionChange(opts: { sent: ISentSession }): boolean | undefined {
-    const { sent } = opts;
-    const now = this.readSession();
-
-    if (now.userId === sent.userId && now.token === sent.token) {
-      return undefined;
-    }
-
-    return sent.userId !== undefined && now.userId === sent.userId && !!now.token;
-  }
-
-  /**
-   * Whether the 401 of a request that `sent` is a session change for the caller: the user who sent is gone and
-   * either the request was sent again since (`isRetried`) or another session is signed in now. A refresh that
-   * failed and ended the session itself leaves nobody to protect, and its 401 stands.
-   */
-  protected isSessionTaken(opts: { sent: ISentSession; isRetried: boolean }): boolean {
-    // With no user to compare, the token that follows a refresh this service ran is that refresh's.
-    if (opts.sent.userId === undefined && opts.isRetried) {
-      return false;
-    }
-
-    // A user switch in progress (a token stored for another user than the identity) is someone signing in: it
-    // reads no token, but it is not a sign-out.
-    return (
-      this.readSessionChange({ sent: opts.sent }) === false &&
-      (opts.isRetried ||
-        this.readSession().token !== undefined ||
-        this.authService?.isSwitching() === true)
-    );
-  }
-
-  /**
-   * Spread into an `HttpDataSource`'s settings, so its requests carry the session headers and the
-   * timezone as read at send time (and the channel and tracing id, given the data provider's
-   * options), and a 401 joins this service's shared `refresh`. A no-auth path gets no token.
-   */
-  getDataSourceAuth(
-    opts?: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
-  ): IDataSourceAuth {
-    return {
-      authTokenResolver: (context) => {
-        const { paths } = context;
-        const sent = this.sentSessions.get(context);
-
-        // The retry of a request whose user has gone must not carry the token of whoever signed in since.
-        if (sent && this.readSessionChange({ sent }) === false) {
-          return undefined;
-        }
-
-        const token = this.isNoAuthPath({ resource: paths[0], paths })
-          ? undefined
-          : this.resolveAuthToken();
-
-        // Both hooks receive this very object, and a retry sends again under the session of that moment.
-        this.sentSessions.set(context, { userId: this.readSession().userId, token: token?.value });
-
-        return token;
-      },
-      headersResolver: () => {
-        return Object.fromEntries(
-          HttpHeaders.merge({
-            layers: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
-          }),
-        );
-      },
-      onUnauthorized: (context, info) => {
-        if (!this.recovery.canRecover({ paths: context.paths })) {
-          return Promise.resolve(false);
-        }
-
-        const sent = this.sentSessions.get(context);
-        const change = sent ? this.readSessionChange({ sent }) : undefined;
-
-        if (change === false) {
-          return Promise.reject(this.sessionChangedError());
-        }
-
-        // The retry's own 401 stands, as it does for `doRequest`: one refresh, one retry.
-        if (info.attempt >= 2) {
-          return Promise.resolve(false);
-        }
-
-        if (change === true) {
-          return Promise.resolve(true);
-        }
-
-        return this.refresh().then((isRefreshed) => {
-          // The retry sends again under the session of this refresh.
-          if (sent && sent.userId === undefined && isRefreshed) {
-            this.sentSessions.set(context, this.readSession());
-          }
-
-          return sent && this.isSessionTaken({ sent, isRetried: isRefreshed })
-            ? Promise.reject(this.sessionChangedError())
-            : isRefreshed;
-        });
-      },
-      errorRootKey: NetworkResponseReader.ERROR_ROOT_KEY,
-    };
   }
 
   /**
@@ -385,5 +328,10 @@ export abstract class AbstractNetworkSessionService extends BaseService {
     };
 
     return props;
+  }
+
+  /** Reads a response by the request type. See `NetworkResponseReader.convert`. */
+  convertResponse(opts: Parameters<typeof NetworkResponseReader.convert>[0]) {
+    return NetworkResponseReader.convert(opts);
   }
 }
