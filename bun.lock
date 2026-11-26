@@ -45,6 +45,7 @@
         "@types/react-dom": "catalog:",
         "@venizia/dev-configs": "catalog:",
         "@venizia/ignis-boot": "catalog:",
+        "@venizia/ignis-helpers": "catalog:",
         "@vitejs/plugin-react": "catalog:",
         "eslint": "catalog:",
         "oxlint": "catalog:",

@@ -1,5 +1,4 @@
-# Lint and format the packages, the wiki and scripts/. The examples have no lint script of their own
-# to run here: their files are format-checked by `lint-files` below.
+# Lint and format the packages, the wiki, the examples and scripts/.
 
 # Each project lints itself, from its own .configs/ and with its own tools (its node_modules/.bin).
 # oxlint owns the rules, ESLint runs only naming-convention (oxlint has no port yet), bun fmt formats.
@@ -21,14 +20,14 @@ LINT_PKG_TARGETS := $(addprefix lint-,$(PACKAGES))
 FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
 
 # changelog-check is not in lint-packages: it reads the changelog folder, not a package.
-.PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-files changelog-check lint-fix lint-fix-packages lint-fix-wiki \
+.PHONY: lint lint-all lint-packages lint-wiki lint-examples lint-scripts lint-files changelog-check lint-fix lint-fix-packages lint-fix-wiki \
         fmt-files fmt-scripts \
         $(LINT_PKG_TARGETS) $(FIX_PKG_TARGETS)
 
 lint: lint-packages lint-scripts
 	@echo "✅ Linting completed."
 
-lint-all: lint-packages lint-wiki lint-scripts lint-files changelog-check
+lint-all: lint-packages lint-wiki lint-examples lint-scripts lint-files changelog-check
 	@echo "✅ All linting completed."
 
 lint-packages: $(LINT_PKG_TARGETS)
@@ -54,6 +53,12 @@ $(FIX_PKG_TARGETS): lint-fix-%:
 lint-wiki:
 	@echo "🔍 Linting docs/wiki..."
 	@$(call LINT_PROJECT,docs/wiki)
+	@cd docs/wiki && bun check --no-pretty -p tsconfig.json
+
+# Needs a build: an example resolves the packages through dist.
+lint-examples:
+	@echo "🔍 Linting the examples..."
+	@$(foreach e,$(EXAMPLES),($(call LINT_PROJECT,examples/$(e))) &&) true
 
 lint-fix-wiki:
 	@$(call FIX_PROJECT,docs/wiki)
