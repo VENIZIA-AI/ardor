@@ -4,9 +4,6 @@ import type { IStorageCodec } from '@/common';
 
 /**
  * The codecs `BrowserStorage` takes, in place of its JSON default.
- *
- * @useWhen `BrowserStorage` or `useStoredState` needs a codec other than JSON
- * @insteadOf hand-written parse and stringify around storage
  */
 export class StorageCodecs {
   /** A bare string, not JSON. Create once; outside `allowed`, decode and encode throw. */

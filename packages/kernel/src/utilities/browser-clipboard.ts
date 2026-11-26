@@ -3,9 +3,6 @@
  * (a server), no `navigator.clipboard` (an insecure context, an old WebView), a denied permission,
  * a missing user gesture and an unfocused document all answer `false` or `undefined`. Nothing
  * touches `navigator` at import.
- *
- * @useWhen code outside React copies text and must never throw
- * @insteadOf `navigator.clipboard.writeText`
  */
 export class BrowserClipboard {
   /** The one catch: every refusal the browser can make is the case this class absorbs. */

@@ -33,15 +33,10 @@ export type TUseUntypedTranslateFn = TranslateFunction;
 
 /**
  * For a key that exists only at run time (`errors.${code}`); a key written in code belongs to `useTranslate`.
- *
- * @useWhen a translation key exists only at run time, such as `errors.${code}`
  */
 export const useUntypedTranslate: () => TUseUntypedTranslateFn = useRaTranslate;
 
 /**
  * The same function as `useUntypedTranslate`, with the key narrowed to `TUseTranslateKeys`.
- *
- * @useWhen a component translates a key written in code, with the key checked by the compiler
- * @insteadOf react-admin's untyped `useTranslate`
  */
 export const useTranslate: () => TUseTranslateFn = useUntypedTranslate;

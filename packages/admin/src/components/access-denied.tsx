@@ -8,8 +8,6 @@ import { useTranslate } from '@/hooks/use-translate';
  * The page `ArdorApplication` mounts at `/access-denied` unless the application passes its own
  * `accessDenied`: a title, a sentence and a link home, translated with the `ardor.access_denied`
  * keys. Unstyled, for a shell to replace.
- *
- * @useWhen you want ARDOR's own access-denied page, or a base for your own
  */
 export const AccessDeniedPage: React.FC = () => {
   const translate = useTranslate();

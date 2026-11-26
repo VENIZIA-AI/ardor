@@ -2,9 +2,6 @@ import { getError } from '@venizia/ignis-inversion';
 
 /**
  * Helpers over `Blob` and file data.
- *
- * @useWhen you work with `Blob` and file data, such as a download or a size
- * @insteadOf hand-written `Blob` and object URL code
  */
 export class FileUtility {
   /** How long a saved file's object URL lives, in milliseconds: a browser that starts the download later (Safari) still finds it. */

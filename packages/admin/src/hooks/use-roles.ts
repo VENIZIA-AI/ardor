@@ -30,9 +30,6 @@ const isSameSet = (opts: { left: ReadonlySet<string>; right: ReadonlySet<string>
  *   return roles.has('admin') ? props.children : null;
  * };
  * ```
- *
- * @useWhen a component needs the roles of the signed-in user and must update when the session changes
- * @insteadOf reading roles from the token or storage by hand
  */
 export const useRoles = (): ReadonlySet<string> => {
   const container = useApplicationContainer();

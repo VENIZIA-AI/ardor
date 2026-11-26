@@ -12,9 +12,6 @@ const logger = LoggerFactory.getLogger(['useRefreshToken']);
  * Returns a function that refreshes the session through the auth provider's `refreshToken` and, once
  * that resolves, invalidates the cached `canAccess` answers (react-admin's `useCanAccess`, key
  * `['auth', 'canAccess', ...]`), so every permission check runs again with the new token. It rejects when `refreshToken` rejects.
- *
- * @useWhen a component must refresh the session and then drop the cached access answers
- * @insteadOf calling the auth endpoint by hand
  */
 export const useRefreshToken = (): TRefreshToken => {
   const authProvider = useAuthProvider<IAuthProvider>();

@@ -4,8 +4,6 @@ import { MediaQueryStore } from './media-query-store';
 
 /**
  * The breakpoints of Tailwind: a name is reached at its width, in CSS pixels.
- *
- * @useWhen you need Tailwind's breakpoint widths as numbers
  */
 export const DefaultBreakpoints = { sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1536 } as const;
 
@@ -42,9 +40,6 @@ export interface IBreakpoint<TName extends string> {
  * const { name, isAtLeast } = useBreakpoint();
  * return isAtLeast('md') ? <Sidebar /> : <Drawer />;
  * ```
- *
- * @useWhen a component changes its layout by screen size (sm, md, lg)
- * @insteadOf `window.matchMedia` for screen-size checks
  */
 export function useBreakpoint(opts?: {
   breakpoints?: undefined;

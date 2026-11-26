@@ -8,9 +8,6 @@ import { DefaultRestDataProvider } from './rest-data';
 /**
  * A `DefaultRestDataProvider` whose list reads take their `total` from the count route
  * (`GET /{resource}/count` with the same `where`) instead of the `Content-Range` header.
- *
- * @useWhen the API counts a list on a `/count` route instead of the `Content-Range` header
- * @insteadOf a hand-written data provider for the count route
  */
 export class CountRestDataProvider<
   TResource extends string = string,

@@ -4,9 +4,6 @@ import { MediaQueryStore } from './media-query-store';
 
 /**
  * Whether the media query matches now, and again after each change. `false` in a server render.
- *
- * @useWhen a component must react to a CSS media query
- * @insteadOf `window.matchMedia`
  */
 export const useMediaQuery = (opts: { query: string }): boolean => {
   const { query } = opts;

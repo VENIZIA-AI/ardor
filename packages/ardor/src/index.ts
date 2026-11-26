@@ -22,9 +22,6 @@
  *   return <span>{orders.count()} {container.isBound({ key: 'repositories.OrdersRepository' }) ? 'bound' : 'missing'}</span>;
  * };
  * ```
- *
- * @useWhen a component calls an ARDOR hook and you want one import for all of them
- * @insteadOf importing each hook from the react and admin packages by name
  */
 export * as Ardor from './ardor';
 export * from '@venizia/ardor-kernel';

@@ -22,9 +22,6 @@ export interface IListFilter {
 
 /**
  * Builds the filter, query and extras of a list request from react-admin's list params.
- *
- * @useWhen you turn react-admin list params into an IGNIS filter, query and extras
- * @insteadOf building the `where` and `limit` of a list request by hand
  */
 export class ListFilterBuilder {
   /** `filter.params` as the keys of the query string, as a copy. */

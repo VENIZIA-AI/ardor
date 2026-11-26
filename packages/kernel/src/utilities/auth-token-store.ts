@@ -5,9 +5,6 @@ import { type IAuthTokenRecord, type IdType, LocalStorageKeys } from '@/common';
 
 /**
  * The one place that reads and writes the stored auth token, with the browser guard.
- *
- * @useWhen you read or write the stored auth token
- * @insteadOf reading `localStorage` for the token by hand
  */
 export class AuthTokenStore {
   private static readonly logger = LoggerFactory.getLogger(['AuthTokenStore']);

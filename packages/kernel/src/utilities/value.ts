@@ -2,9 +2,6 @@ import type { TNullable } from '@venizia/ignis-helpers/common';
 
 /**
  * Checks of a value's kind.
- *
- * @useWhen you check what type a value has
- * @insteadOf repeated `typeof` chains
  */
 export class ValueUtility {
   /** Positional on purpose: a type predicate narrows its own parameter. */

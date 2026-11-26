@@ -6,9 +6,6 @@ import { ApplicationContext } from '../contexts/application';
 
 /**
  * The application's `Container`. Throws when there is no `ApplicationContext` provider above.
- *
- * @useWhen a component needs the application's container
- * @insteadOf a global or a hand-built context that holds the application
  */
 export const useApplicationContext = () => {
   const context = React.useContext(ApplicationContext);
@@ -24,9 +21,6 @@ export const useApplicationContext = () => {
 
 /**
  * The application's logger. Throws when there is no `ApplicationContext` provider above.
- *
- * @useWhen a component needs to log through the application logger
- * @insteadOf `console.log` in a component
  */
 export const useApplicationLogger = () => {
   const context = React.useContext(ApplicationContext);

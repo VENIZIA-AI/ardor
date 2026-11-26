@@ -5,9 +5,6 @@ import { useDispatch } from 'react-redux';
 
 /**
  * Builds the typed dispatch hooks of a store.
- *
- * @useWhen a Redux store needs a typed dispatch hook
- * @insteadOf a hand-typed `useDispatch` wrapper
  */
 export class DispatchHooks {
   /**
