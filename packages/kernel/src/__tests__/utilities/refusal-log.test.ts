@@ -46,6 +46,8 @@ describe('a refusal the browser utilities absorb', () => {
     } finally {
       if (original) {
         Object.defineProperty(globalThis, 'navigator', original);
+      } else {
+        Reflect.deleteProperty(globalThis, 'navigator');
       }
 
       logged.mockRestore();

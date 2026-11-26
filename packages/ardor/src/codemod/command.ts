@@ -164,7 +164,7 @@ export class CodemodCommand {
     } catch (error) {
       // Why it did not load; the caller prints how to install it.
       console.error(
-        `ardor codemod: "typescript" did not load: ${error instanceof Error ? error.message : String(error)}`,
+        `ardor codemod: "typescript" did not load: ${CodemodCommand.clean(error instanceof Error ? error.message : String(error))}`,
       );
 
       return undefined;
