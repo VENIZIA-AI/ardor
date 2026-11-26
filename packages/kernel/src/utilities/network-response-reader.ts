@@ -106,6 +106,15 @@ export class NetworkResponseReader {
     const { status, url } = response;
     const json = await NetworkResponseReader.readSchemaJson({ response });
     const read = await NetworkResponseReader.readUnchecked({ ...opts, json });
+    const { contentType, isAttachment } = NetworkResponseReader.describeBody({ response });
+
+    // No content type and no attachment reads as a `Blob`: an empty one is nothing to check.
+    const isNoBody =
+      contentType === '' && !isAttachment && read.data instanceof Blob && read.data.size === 0;
+
+    if (isNoBody) {
+      throw NetworkResponseReader.noBodyRefusal({ response });
+    }
 
     return NetworkResponseReader.checkData({ response: read, schema, status, url });
   }
@@ -124,8 +133,8 @@ export class NetworkResponseReader {
 
   /**
    * The response with its `data` checked and typed by the schema, for a transport that builds an
-   * `INetworkResponse` itself. What the schema refuses throws a `FetchSchemaError` (502) that names
-   * paths and rules, never the data.
+   * `INetworkResponse` itself. Whatever `parse` throws, a bug inside it included, becomes a
+   * `FetchSchemaError` (502) that names paths and rules, never the data.
    */
   static checkData<TResult>(opts: {
     response: INetworkResponse;
@@ -144,41 +153,21 @@ export class NetworkResponseReader {
   }
 
   /**
-   * The body of an answer a schema is to check: the JSON of a textual one, whatever textual type it
-   * names, or nothing for a file. Throws `invalid_json` for a 204, for a textual body that is no
-   * JSON, and for an empty body of no content type.
+   * The JSON of a textual body, whatever textual type it names, for a schema to check; nothing for a
+   * file. Throws `invalid_json` for a 204 and for a textual body that is no JSON.
    */
   private static async readSchemaJson(opts: {
     response: Response;
   }): Promise<{ body: unknown } | undefined> {
     const { response } = opts;
-    const { status, url } = response;
 
-    const noJson = () => {
-      return NetworkResponseReader.refusal({ status, url, issues: [NO_BODY_ISSUE] });
-    };
-
-    if (status === HTTP.ResultCodes.RS_2.NoContent) {
-      throw noJson();
+    if (response.status === HTTP.ResultCodes.RS_2.NoContent) {
+      throw NetworkResponseReader.noBodyRefusal({ response });
     }
 
     const { contentType, isAttachment } = NetworkResponseReader.describeBody({ response });
 
-    if (
-      isAttachment ||
-      (contentType !== '' && !NetworkResponseReader.TEXTUAL_RE.test(contentType))
-    ) {
-      return undefined;
-    }
-
-    if (contentType === '') {
-      // A clone: a body with bytes is a file, read once more by what follows.
-      const bytes = await response.clone().text();
-
-      if (bytes === '') {
-        throw noJson();
-      }
-
+    if (isAttachment || !NetworkResponseReader.TEXTUAL_RE.test(contentType)) {
       return undefined;
     }
 
@@ -188,8 +177,15 @@ export class NetworkResponseReader {
       return { body: JSON.parse(text) };
     } catch {
       // Without the parse error: its message quotes the body.
-      throw noJson();
+      throw NetworkResponseReader.noBodyRefusal({ response });
     }
+  }
+
+  /** The refusal of an answer that holds no JSON and no file. */
+  private static noBodyRefusal(opts: { response: Response }): FetchSchemaError {
+    const { status, url } = opts.response;
+
+    return NetworkResponseReader.refusal({ status, url, issues: [NO_BODY_ISSUE] });
   }
 
   /** What the headers say of the body: its content type, lower-cased, and whether it is an attachment. */

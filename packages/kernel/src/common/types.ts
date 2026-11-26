@@ -278,7 +278,8 @@ export interface IDataSourceAuth {
 
 /**
  * A schema that checks the data of a response: `parse` answers the checked value and throws what it
- * refuses. A zod schema is one.
+ * refuses. A zod schema is one. Whatever `parse` throws is read as a refusal, a bug inside it
+ * included.
  */
 export interface IResponseSchema<TResult = unknown> {
   parse(data: unknown): TResult;
