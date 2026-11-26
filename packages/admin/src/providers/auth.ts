@@ -1,62 +1,29 @@
-import { RecordUtility } from '@venizia/ignis-helpers/core';
-import { type Container, getError, inject, isApplicationError } from '@venizia/ignis-inversion';
+import { type Container, inject } from '@venizia/ignis-inversion';
 import { removeDoubleSlashes } from 'ra-core';
 
 import {
-  App,
   BaseProvider,
   BrowserStorage,
   CoreBindings,
   type DefaultAuthService,
   type IAuthProviderOptions,
   type TAuthProviderOptions,
-  type IApplicationInfo,
   type IAuthTokenRecord,
   type IStoredAuthUser,
   type ISignInSession,
   type IPermissionProvider,
-  LocalStorageKeys,
   RequestMethods,
-  SESSION_CHANGED_CODE,
   StorageAreas,
-  type TStringConstValue,
 } from '@venizia/ardor-kernel';
 import type { IAuthProvider, IAuthRejection, IDataProvider } from '@/common';
+import { CheckAuthUtility } from '@/utilities/check-auth';
+import { ErrorStatusUtility } from '@/utilities/error-status';
+import { ReactAdminAuthFactory } from '@/utilities/react-admin-auth';
+import { SessionHookUtility } from '@/utilities/session-hook';
+import { SignInUtility } from '@/utilities/sign-in';
+import { type ILoginParams, SessionClearReasons, type TSessionClearReason } from './auth-types';
 
-/** What the login form hands to `login`: the user name and the password, and whatever else the form holds. */
-export interface ILoginParams {
-  username?: string;
-  password?: string;
-  [field: string]: unknown;
-}
-
-/**
- * Why `onSessionCleared` was called.
- */
-export class SessionClearReasons {
-  /** `logout` ran. */
-  static readonly LOGOUT = 'logout';
-  /** `checkError` met a 401. */
-  static readonly UNAUTHORIZED = 'unauthorized';
-  /** The session was cleared by code that is not this provider, such as the network service's `onAuthFailure`. */
-  static readonly EXTERNAL = 'external';
-  /** `checkAuth` rejected: no token is stored, or the server answered with no data. */
-  static readonly REJECTED = 'rejected';
-}
-
-/** One of the `SessionClearReasons` values. */
-export type TSessionClearReason = TStringConstValue<typeof SessionClearReasons>;
-
-/** The status of a failure: react-admin's `HttpError` has `status`, the data provider's `ApplicationError` has `statusCode`. */
-const readStatus = (error: unknown): unknown => {
-  if (typeof error !== 'object' || error === null) {
-    return undefined;
-  }
-
-  const status = 'status' in error ? error.status : undefined;
-
-  return status ?? ('statusCode' in error ? error.statusCode : undefined);
-};
+export { type ILoginParams, SessionClearReasons, type TSessionClearReason } from './auth-types';
 
 /**
  * The options hold data (`paths`); behaviour is in the protected hooks around `login` and the page
@@ -192,69 +159,16 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
    * would pass `login` and fail every check after it.
    */
   protected readSignInSession(opts: { data: unknown }): ISignInSession {
-    const body: Record<string, unknown> = RecordUtility.isRecord(opts.data) ? opts.data : {};
-    const { userId, token, roles } = body;
-    const sent = RecordUtility.isRecord(token) ? token : undefined;
-
-    const record: Record<string, unknown> | undefined =
-      typeof token === 'string' ? { value: token, type: App.TOKEN_TYPE } : sent;
-
-    if (typeof record?.value !== 'string' || record.value.length === 0) {
-      throw getError({
-        message:
-          '[login] The sign-in response carries no token | Expect { userId, token: { value, type } } or { token: <jwt> }',
-      });
-    }
-
-    const claims = this.decodeJwtClaims({ jwt: record.value });
-
-    const isUserId = (value: unknown): value is number | string => {
-      return typeof value === 'number' || (typeof value === 'string' && value.length > 0);
-    };
-
-    const resolvedUserId = [userId, claims?.userId, claims?.sub].find(isUserId);
-
-    if (resolvedUserId === undefined) {
-      throw getError({
-        message:
-          '[login] The sign-in response carries no user id | Send userId next to the token, or put a userId or sub claim in the JWT',
-      });
-    }
-
-    return {
-      userId: resolvedUserId,
-      token: {
-        value: record.value,
-        type: typeof record.type === 'string' ? record.type : App.TOKEN_TYPE,
-      },
-      roles: this.readRoleNames({ roles: roles ?? claims?.roles }),
-    };
+    return SignInUtility.readSession({
+      data: opts.data,
+      decodeClaims: (params) => this.decodeJwtClaims(params),
+      readRoleNames: (params) => this.readRoleNames(params),
+    });
   }
 
   /** The claims of a JWT, or `undefined` for a token that is not one. The signature is not checked. */
   protected decodeJwtClaims(opts: { jwt: string }): Record<string, unknown> | undefined {
-    const segment = opts.jwt.split('.')[1];
-
-    if (!segment) {
-      return undefined;
-    }
-
-    try {
-      const bytes = Uint8Array.from(atob(segment.replace(/-/g, '+').replace(/_/g, '/')), (char) =>
-        char.charCodeAt(0),
-      );
-      const claims: unknown = JSON.parse(new TextDecoder().decode(bytes));
-
-      return RecordUtility.isRecord(claims) ? claims : undefined;
-    } catch (error) {
-      // The name only: the message of a JSON parse error quotes the payload it could not parse.
-      this.logger.debug(
-        '[decodeJwtClaims] The token payload cannot be decoded, reading no claims | error: %s',
-        error instanceof Error ? error.name : typeof error,
-      );
-
-      return undefined;
-    }
+    return SignInUtility.decodeClaims({ jwt: opts.jwt, logger: this.logger });
   }
 
   /**
@@ -262,27 +176,7 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
    * its `name` (IGNIS's role model has an `identifier`). An entry that is neither is skipped.
    */
   protected readRoleNames(opts: { roles: unknown }): Array<string> {
-    if (!Array.isArray(opts.roles)) {
-      return [];
-    }
-
-    const names: Array<string> = [];
-
-    const roles: unknown[] = opts.roles;
-
-    for (const role of roles) {
-      const named: Record<string, unknown> = RecordUtility.isRecord(role) ? role : {};
-      const name =
-        typeof role === 'string'
-          ? role
-          : [named.identifier, named.name].find((v) => typeof v === 'string');
-
-      if (typeof name === 'string' && name.length > 0) {
-        names.push(name);
-      }
-    }
-
-    return names;
+    return SignInUtility.readRoleNames(opts);
   }
 
   /** The username `login` remembers with the identity. Default: `params.username`. */
@@ -353,19 +247,13 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
    */
   private runSessionHook(opts: { name: string; run: () => void | Promise<void> }): Promise<void> {
     const done = this.hookQueue.then(async () => {
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const timeout = new Promise<void>((_resolve, reject) => {
-        timer = setTimeout(() => {
-          reject(getError({ message: `did not settle in ${this.sessionHookTimeout} ms` }));
-        }, this.sessionHookTimeout);
-      });
-
       try {
-        await Promise.race([opts.run(), timeout]);
+        await SessionHookUtility.settleWithin({
+          run: opts.run,
+          milliseconds: this.sessionHookTimeout,
+        });
       } catch (error) {
         this.logger.error('[%s] The hook failed, carrying on | error: %o', opts.name, error);
-      } finally {
-        clearTimeout(timer);
       }
     });
     this.hookQueue = done;
@@ -570,7 +458,8 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
     }
 
     const checked = this.announcedSession;
-    const { response, isStale } = await this.askCheckAuth({
+    const { response, isStale } = await CheckAuthUtility.ask({
+      dataProvider: this.restDataProvider,
       resource: checkAuthPath,
     });
 
@@ -603,24 +492,6 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
     return Promise.resolve();
   }
 
-  /** The `checkAuth` request. `isStale` is a 401 that answers a user who is gone (`SESSION_CHANGED_CODE`): it has no answer. */
-  private async askCheckAuth(opts: { resource: string }) {
-    try {
-      const response = await this.restDataProvider.send({
-        resource: opts.resource,
-        params: { method: RequestMethods.GET },
-      });
-
-      return { response, isStale: false };
-    } catch (error) {
-      if (isApplicationError(error) && error.normalized.code === SESSION_CHANGED_CODE) {
-        return { response: undefined, isStale: true };
-      }
-
-      throw error;
-    }
-  }
-
   /**
    * Resolves for every error but 401 and 403. A 401 clears the session (unless
    * `unauthenticatedRejection` says `logoutUser: false`) and rejects with that rejection; a 403
@@ -629,9 +500,9 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
    * `SESSION_CHANGED_CODE`) resolves and leaves the signed-in session alone.
    */
   async checkError(error: unknown) {
-    const status = readStatus(error);
+    const status = ErrorStatusUtility.read({ error });
 
-    if (isApplicationError(error) && error.normalized.code === SESSION_CHANGED_CODE) {
+    if (ErrorStatusUtility.isSessionChanged({ error })) {
       return Promise.resolve();
     }
 
@@ -709,47 +580,11 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
   }
 
   override value(container: Container): IAuthProvider {
-    // A subclass of DefaultAuthService with its own constructor must forward the application info to
-    // super(info): without it the service keeps the unscoped session, silently shared with every other
-    // application of the origin. Refuse that here, where the application info is at hand.
-    const id = container.get<IApplicationInfo>({
-      key: CoreBindings.APPLICATION_INFO,
-      isOptional: true,
-    })?.id;
-
-    if (id !== undefined && this.authService.keys.token !== LocalStorageKeys.scoped({ id }).token) {
-      throw getError({
-        message: `[DefaultAuthProvider] The auth service does not use the application id '${id}': a subclass of DefaultAuthService with its own constructor passes the application info to super(info)`,
-      });
-    }
-
-    // A subclass with its own constructor rarely forwards the optional 4th argument to `super`.
-    const permissionProvider =
-      this.permissionProvider ??
-      container.get<IPermissionProvider>({
-        key: CoreBindings.PERMISSION_PROVIDER,
-        isOptional: true,
-      });
-
-    return {
-      login: (params: ILoginParams) => this.login(params),
-      logout: (params?: unknown) => this.logout(params),
-      checkError: (error: unknown) => this.checkError(error),
-      checkAuth: (params?: unknown) => this.checkAuth(params),
-      getIdentity: (params?: unknown) => this.getIdentity(params),
-      getPermissions: (params?: unknown) => this.getPermissions(params),
-      getRoles: (params?: unknown) => this.getRoles(params),
-      refreshToken: () => this.refreshToken(),
-      // Absent without a permission provider, so react-admin keeps allowing everything.
-      ...(permissionProvider
-        ? {
-            canAccess: (params: Parameters<IPermissionProvider['canAccess']>[0]) => {
-              const { resource, action, record } = params;
-
-              return permissionProvider.canAccess({ resource, action, record });
-            },
-          }
-        : {}),
-    };
+    return ReactAdminAuthFactory.build({
+      container,
+      provider: this,
+      authService: this.authService,
+      permissionProvider: this.permissionProvider,
+    });
   }
 }

@@ -24,7 +24,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 ## Providers and data flow
 - `packages/kernel/src/base/providers/base.ts` and `packages/kernel/src/base/providers/index.ts` - base provider contracts.
 - `packages/admin/src/providers/rest-data.ts`, `packages/admin/src/providers/count-rest-data.ts` - the data provider pipeline implementations, see [Data provider pipeline](/architecture/data-provider-pipeline.md).
-- `packages/admin/src/providers/auth.ts` - the auth provider, tied to [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
+- `packages/admin/src/providers/auth.ts` (types in `auth-types.ts`; the bodies of its sign-in readers, hook timeout, check request and react-admin object in `src/utilities/`) - the auth provider, tied to [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
 - `packages/admin/src/providers/i18n.ts` - the i18n provider, see [i18n](/architecture/i18n.md).
 - `packages/admin/src/providers/index.ts` - provider exports.
 
