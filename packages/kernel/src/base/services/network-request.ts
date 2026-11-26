@@ -6,41 +6,27 @@ import {
   NativeFetcher,
   NativeFetchNetworkRequest,
 } from '@venizia/ignis-helpers/core';
-import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
-import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
-  App,
-  type IApplicationInfo,
-  type IAuthTokenRecord,
   type IAuthRecoveryOptions,
   type IDataSourceAuth,
   type IGetRequestPropsParams,
   type IGetRequestPropsResult,
-  type ISignInSession,
   type INetworkResponse,
   type IResponseSchema,
   type INoAuthOptions,
-  LocalStorageKeys,
-  RequestChannel,
-  RequestCountData,
+  type RequestCountData,
   RequestMethods,
   RequestTypes,
   type TConstValue,
-  type TNoAuthPathRegex,
   type TRequestMethod,
   type TRequestTimeoutOptions,
   type TRequestType,
 } from '@/common';
 import { AuthRecoveryHelper } from '@/helpers';
-import {
-  AuthTokenStore,
-  type IEncodedBody,
-  NetworkResponseReader,
-  RequestBodyEncoder,
-} from '@/utilities';
+import { NetworkResponseReader } from '@/utilities';
 import type { DefaultAuthService } from './auth';
-import { BaseService } from './base';
+import { AbstractNetworkRequestService } from './network-request-base';
 
 /** Who sent a request, and with which token: what a 401 is judged against. */
 interface ISentSession {
@@ -82,18 +68,11 @@ type TDoRequestOptions = IGetRequestPropsResult & {
  * The options hold data (the base URL, headers, the no-auth lists, the refresh path); behaviour is
  * in the protected hooks, each taking one `opts` object, which a subclass overrides.
  */
-export class DefaultNetworkRequestService extends BaseService {
-  /** Resources sent without a token, matched exactly. */
-  protected noAuthPaths?: string[];
-  /** `noAuthPathRegex` compiled; a resource matching any is sent without a token. */
-  protected noAuthPathRegexes: RegExp[];
-  /** Headers added to every request. */
-  protected headers: Headers;
+export class DefaultNetworkRequestService extends AbstractNetworkRequestService {
   protected networkRequest: NativeFetchNetworkRequest;
   /** The origin and base path requests are sent to; an empty one makes `doRequest` throw. */
   protected baseUrl: string;
   protected authRecovery?: IAuthRecoveryOptions;
-  protected authService?: DefaultAuthService;
   /** How long a request may take; see `IRestDataProviderOptions.timeout`. */
   protected timeout: TRequestTimeoutOptions;
 
@@ -191,91 +170,7 @@ export class DefaultNetworkRequestService extends BaseService {
     return sent;
   }
 
-  /**
-   * The token under the unscoped session key (`AuthTokenStore.read`), `undefined` outside a browser, for an
-   * application with no `id`. With an application `id` the session is under other keys: use
-   * `createAuthTokenReader({ id })`, the `HttpDataSource` `getDataSourceAuth()` of the data provider, or `authService.getAuth`.
-   */
-  static readAuthTokenFromStorage(): IAuthTokenRecord | undefined {
-    return AuthTokenStore.read();
-  }
-
-  /**
-   * A reader of the stored token of the application with this `id` (`IApplicationInfo.id`): the same
-   * key `DefaultAuthService.getAuth` reads (`LocalStorageKeys.scoped({ id }).token`). Without an `id` it
-   * is `readAuthTokenFromStorage`. Throws for an invalid `id`, when it is created.
-   *
-   * @example
-   * ```ts
-   * super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' }) });
-   * ```
-   */
-  static createAuthTokenReader(opts: { id?: string } = {}): () => IAuthTokenRecord | undefined {
-    const { token: key } = LocalStorageKeys.scoped({ id: opts.id });
-
-    return () => AuthTokenStore.read({ key });
-  }
-
-  /** Throws unless a timeout that is on has a positive integer `milliseconds`. */
-  static assertTimeout(opts: { timeout?: TRequestTimeoutOptions }): void {
-    const { timeout } = opts;
-
-    if (!timeout?.use) {
-      return;
-    }
-
-    const { milliseconds } = timeout;
-
-    if (!Number.isSafeInteger(milliseconds) || milliseconds <= 0) {
-      throw getError({
-        message: `[DefaultNetworkRequestService] timeout.milliseconds must be a positive integer, got ${milliseconds}`,
-      });
-    }
-  }
-
   // --- Hooks -----------------------------------------------------------------------------------
-
-  /**
-   * The token this service sends. The one way to supply a token: override it to read another
-   * store, or to hold the token in memory.
-   */
-  protected resolveAuthToken(): IAuthTokenRecord | undefined {
-    // The auth service knows where this application's session is kept (its `id` scopes the keys).
-    return this.authService
-      ? (this.authService.getAuth() ?? undefined)
-      : DefaultNetworkRequestService.readAuthTokenFromStorage();
-  }
-
-  /**
-   * Whether a request goes without a token: its `resource` is in `noAuthPaths`, or the resource, or
-   * the joined `paths`, matches `noAuthPathRegex`. To send no token at all (an API with no sign-in),
-   * set `noAuthPathRegex: /./`.
-   */
-  protected isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
-    const { resource, paths } = opts;
-
-    if (resource && this.noAuthPaths?.includes(resource)) {
-      return true;
-    }
-
-    if (!this.noAuthPathRegexes.length) {
-      return false;
-    }
-
-    const candidates = [resource, paths?.join('/')].filter((item): item is string => !!item);
-
-    if (!candidates.length) {
-      return false;
-    }
-
-    return this.noAuthPathRegexes.some((regex) => {
-      return candidates.some((candidate) => {
-        regex.lastIndex = 0;
-
-        return regex.test(candidate);
-      });
-    });
-  }
 
   /**
    * Refreshes the session after a 401. `true`: refreshed, the request is retried; `false`: this
@@ -361,79 +256,7 @@ export class DefaultNetworkRequestService extends BaseService {
     return true;
   }
 
-  /**
-   * The new token of a refresh response: `{ token: { value, type } }` or `{ token: '<jwt>' }`. A
-   * refresh keeps the same user, so nothing else is read. Override it for another shape. No token is
-   * a throw.
-   */
-  protected readRefreshedToken(opts: { data: unknown }): ISignInSession['token'] {
-    const body: { token?: unknown } =
-      typeof opts.data === 'object' && opts.data !== null ? opts.data : {};
-    const { token } = body;
-    let record: object = {};
-
-    if (typeof token === 'string') {
-      record = { value: token };
-    } else if (typeof token === 'object' && token !== null) {
-      record = token;
-    }
-
-    const value = 'value' in record ? record.value : undefined;
-    const type = 'type' in record ? record.type : undefined;
-
-    if (typeof value !== 'string' || !value) {
-      throw getError({ message: '[refreshToken] The refresh response carries no token' });
-    }
-
-    return { value, type: typeof type === 'string' ? type : App.TOKEN_TYPE };
-  }
-
-  /** Runs once when `refreshToken` threw. The place to send the user back to sign-in. */
-  protected onAuthFailure(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  /** The tracing id of a request, sent in `x-request-id`. Default `<application name>_<uuid>`. */
-  protected buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string {
-    return `${opts.applicationInfo.name}_${UuidV4Generator.generate()}`;
-  }
-
   // --- No-auth and recovery --------------------------------------------------------------------
-
-  /** `noAuthPathRegex` as `RegExp`s; a string is compiled, and an invalid one is logged and dropped. */
-  protected compileNoAuthPathRegex(opts: { input?: TNoAuthPathRegex }): RegExp[] {
-    const { input } = opts;
-
-    if (!input) {
-      return [];
-    }
-
-    const patterns = Array.isArray(input) ? input : [input];
-    const compiled: RegExp[] = [];
-
-    for (const pattern of patterns) {
-      if (!pattern) {
-        continue;
-      }
-
-      if (pattern instanceof RegExp) {
-        compiled.push(pattern);
-        continue;
-      }
-
-      try {
-        compiled.push(new RegExp(pattern));
-      } catch (error) {
-        this.logger.error(
-          '[compileNoAuthPathRegex] Invalid noAuthPathRegex pattern: %s | error: %o',
-          pattern,
-          error,
-        );
-      }
-    }
-
-    return compiled;
-  }
 
   /**
    * Refreshes the session, once for every 401 in flight on either transport (see `AuthRecoveryHelper`).
@@ -606,145 +429,6 @@ export class DefaultNetworkRequestService extends BaseService {
       },
       errorRootKey: NetworkResponseReader.ERROR_ROOT_KEY,
     };
-  }
-
-  /**
-   * The `token` (`<type> <value>`, `Bearer` when the type is empty) and `provider` of the stored
-   * token. Throws an error with status 401 when there is no token.
-   */
-  getRequestAuthorizationHeader() {
-    const authToken = this.resolveAuthToken();
-
-    if (!authToken?.value) {
-      throw getError({
-        message: '[dataProvider][getAuthHeader] Invalid auth token to fetch!',
-        statusCode: 401,
-      });
-    }
-
-    return {
-      provider: authToken?.provider,
-      token: `${authToken?.type?.length ? authToken.type : App.TOKEN_TYPE} ${authToken.value}`,
-    };
-  }
-
-  /** Adds headers to every request this service sends; a name already set is replaced, in any case. */
-  setHeaders(opts: { headers: HeadersInit }) {
-    this.headers = HttpHeaders.merge({ layers: [this.headers, opts.headers] });
-  }
-
-  /** Removes the headers set by name, in any case. */
-  removeHeaders(opts: { keys: string[] }) {
-    if (!opts.keys?.length) {
-      return;
-    }
-
-    for (const key of opts.keys) {
-      this.headers.delete(key);
-    }
-  }
-
-  /** The timezone, then whatever `setHeaders` holds now. Both transports send these. */
-  protected getSessionHeaders(): Record<string, string> {
-    return Object.fromEntries(
-      HttpHeaders.merge({
-        layers: [
-          {
-            [HTTP.Headers.TIMEZONE]: App.TIMEZONE,
-            [HTTP.Headers.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
-          },
-          this.headers,
-        ],
-      }),
-    );
-  }
-
-  /** The request channel (`RequestChannel.WEB` unless configured) and a fresh tracing id. */
-  protected getTracingHeaders(
-    opts: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
-  ): Record<string, string> {
-    const { restDataProviderOptions, applicationInfo } = opts;
-    const channel = restDataProviderOptions.requestTracingChannel?.length
-      ? restDataProviderOptions.requestTracingChannel
-      : RequestChannel.WEB;
-
-    return {
-      [HTTP.Headers.REQUEST_CHANNEL]: channel,
-      [HTTP.Headers.REQUEST_TRACING_ID]: this.buildRequestTracingId({ applicationInfo }),
-    };
-  }
-
-  /**
-   * The session headers, plus `authorization` and `x-auth-provider` unless `resource` is a no-auth
-   * path. Throws a 401 error for any other resource when there is no token.
-   */
-  getRequestHeader(opts: { resource: string }): Record<string, string> {
-    const { resource } = opts;
-
-    const defaultHeaders = this.getSessionHeaders();
-
-    if (this.isNoAuthPath({ resource })) {
-      return defaultHeaders;
-    }
-
-    const authHeader = this.getRequestAuthorizationHeader();
-
-    return {
-      ...defaultHeaders,
-      // A token need not name a provider; never send the string `undefined`.
-      ...(authHeader.provider ? { [HTTP.Headers.AUTH_PROVIDER]: authHeader.provider } : {}),
-      [HTTP.Headers.AUTHORIZATION]: authHeader.token,
-    };
-  }
-
-  /** The body as it is sent and the content type to send it under. Override to encode another way. */
-  protected encodeBody(opts: { bodyType?: string; body: unknown }): IEncodedBody {
-    return RequestBodyEncoder.encode(opts);
-  }
-
-  /**
-   * The headers (session, auth, tracing, `x-request-count`, the `extra` header, and the content type
-   * of the encoded body) and the encoded body of a request. Throws as `getRequestHeader` does.
-   */
-  getRequestProps(params: IGetRequestPropsParams) {
-    const {
-      bodyType,
-      body,
-      resource,
-      restDataProviderOptions,
-      applicationInfo,
-      requestCountData = RequestCountData.DATA_ONLY,
-      extra,
-    } = params;
-    const extraHeader = HttpExtraRequest.toHeader({ extra });
-
-    // Merged, not spread, so a per-request value replaces a static header in any case.
-    const headers = Object.fromEntries(
-      HttpHeaders.merge({
-        layers: [
-          this.getRequestHeader({ resource }),
-          this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
-          { [HTTP.Headers.REQUEST_COUNT_DATA]: requestCountData },
-          extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
-        ],
-      }),
-    );
-
-    const encoded = this.encodeBody({ bodyType, body });
-
-    const props: IGetRequestPropsResult = {
-      headers: encoded.contentType
-        ? { ...headers, [HTTP.Headers.CONTENT_TYPE]: encoded.contentType }
-        : headers,
-      body: encoded.body,
-    };
-
-    return props;
-  }
-
-  /** Reads a response by the request type. See `NetworkResponseReader.convert`. */
-  convertResponse(opts: Parameters<typeof NetworkResponseReader.convert>[0]) {
-    return NetworkResponseReader.convert(opts);
   }
 
   /**
