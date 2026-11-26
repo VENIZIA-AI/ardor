@@ -1,4 +1,4 @@
-import { HttpHeaders } from '@venizia/ignis-helpers/core';
+import { HttpHeaders, LoggerFactory } from '@venizia/ignis-helpers/core';
 import { type Container, getError, inject } from '@venizia/ignis-inversion';
 import type {
   CreateParams,
@@ -55,8 +55,12 @@ const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> 
 
   try {
     segment = encodeURIComponent(`${opts.id}`);
-    // eslint-disable-next-line venizia/no-silent-catch -- a lone surrogate cannot be encoded: the empty segment below refuses it
-  } catch {
+  } catch (error) {
+    // A lone surrogate cannot be encoded: the empty segment below refuses it. The id is not logged.
+    LoggerFactory.getLogger(['DefaultRestDataProvider']).debug(
+      '[recordPaths] The id cannot be encoded | error: %s',
+      error instanceof Error ? error.name : typeof error,
+    );
     segment = '';
   }
 

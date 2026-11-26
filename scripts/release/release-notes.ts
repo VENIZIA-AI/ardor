@@ -28,8 +28,12 @@ export class ReleaseNotes {
       const parsed: unknown = Bun.YAML.parse(opts.migration);
 
       return typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length > 0;
-      // eslint-disable-next-line venizia/no-silent-catch -- a file that does not parse is not "no block": it ships, and the changelog gate reports it
-    } catch {
+    } catch (error) {
+      // A file that does not parse is not "no block": it ships, and the changelog gate reports it.
+      console.error(
+        `release notes: migration.yaml does not parse, so it ships: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
       return true;
     }
   }
