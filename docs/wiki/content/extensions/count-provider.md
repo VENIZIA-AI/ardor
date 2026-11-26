@@ -103,7 +103,7 @@ const result = {
 // ...
 ```
 
-`total` is `data.count` of the count response: a number, or a numeric string such as `"5"`, as a database count often is. A `count` that is missing or `null`, or an answer with no body (204), gives `0`. Any other value gives `0` and a warning that names the route and the value.
+`total` is `data.count` of the count response: a non-negative integer, or a string of digits such as `"5"`, as a database count often is. A `count` that is missing or `null`, or an answer with no body (204), gives `0`. Any other value (negative, decimal, hexadecimal, other text) gives `0` and a warning that names the route and the value.
 
 ## Binding it
 
@@ -157,7 +157,7 @@ export class AppDataProvider extends CountRestDataProvider<'products' | 'categor
 
 ## Common pitfalls
 
-- The API must expose `GET <resource>/count` for every resource that has a list view, and it must answer with `{ count }`, a number or a numeric string. A missing endpoint answers 404, which rejects, and so does the whole list (`Promise.all`). A different field name does not reject: `total` becomes `0` with no warning, and react-admin shows an empty pagination.
+- The API must expose `GET <resource>/count` for every resource that has a list view, and it must answer with `{ count }`, a non-negative integer or a string of digits. A missing endpoint answers 404, which rejects, and so does the whole list (`Promise.all`). A different field name does not reject: `total` becomes `0` with no warning, and react-admin shows an empty pagination.
 - The count request only carries `where`. Filters that rely on `include` or `fields` to restrict rows are not applied to the count.
 - Keys from `meta` and from `filter.params` are copied into `queryKey`, and `queryKey` is spread into both requests. Anything you put there also hits the count endpoint.
 - The count call uses `RequestTypes.SEND`, not `RequestTypes.GET_LIST`. Any logic that branches on request type sees `SEND` for the second call.

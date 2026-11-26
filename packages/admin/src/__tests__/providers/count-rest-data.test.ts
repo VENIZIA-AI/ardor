@@ -99,6 +99,11 @@ const COUNT_ANSWERS = new Map<string, { count?: unknown }>([
   ['/ledgers/count', { count: 'many' }],
   ['/leaflets/count', { count: ' ' }],
   ['/logbooks/count', { count: [3] }],
+  ['/lessons/count', { count: -1 }],
+  ['/labels/count', { count: 2.5 }],
+  ['/lanes/count', { count: '0x10' }],
+  ['/leases/count', { count: '-1' }],
+  ['/levels/count', { count: '2.5' }],
 ]);
 
 const createProvider = (opts: { baseUrl: string }): CountRestDataProvider => {
@@ -310,15 +315,15 @@ describe('CountRestDataProvider getList', () => {
     },
   );
 
-  test.each(['ledgers', 'leaflets', 'logbooks'])(
-    'returns 0 and warns with the route and the value for a count that is no number: %s',
+  test.each(['ledgers', 'leaflets', 'logbooks', 'lessons', 'labels', 'lanes', 'leases', 'levels'])(
+    'returns 0 and warns with the route and the value for a count that is no whole number: %s',
     async (resource) => {
       const { total, warnings } = await readTotal(resource);
 
       expect(total).toBe(0);
       expect(warnings).toEqual([
         [
-          expect.stringContaining('The count is no number'),
+          expect.stringContaining('The count is no non-negative integer'),
           `/${resource}/count`,
           COUNT_ANSWERS.get(`/${resource}/count`)?.count,
         ],

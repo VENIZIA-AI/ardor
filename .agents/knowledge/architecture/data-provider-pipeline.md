@@ -37,7 +37,7 @@ ARDOR has no controllers, repositories or datasources. Instead, all data access 
 
 ## CountRestDataProvider
 
-The default, `DefaultRestDataProvider`, reads a list's total from `Content-Range`, which the list route of an IGNIS CRUD controller sends. `CountRestDataProvider` is only for a backend that sends none: it subclasses `DefaultRestDataProvider` and, for list-producing calls (`getList`, `getManyReference`), issues a second request to `/{resource}/count` alongside the data request, carrying the same `where` and query keys, so react-admin gets both `data` and `total`. That count request always uses `RequestTypes.SEND` rather than the list-specific request type. A `count` that is a number or a numeric string is the total; a missing one gives 0, and any other value gives 0 with a warning that names the route and the value.
+The default, `DefaultRestDataProvider`, reads a list's total from `Content-Range`, which the list route of an IGNIS CRUD controller sends. `CountRestDataProvider` is only for a backend that sends none: it subclasses `DefaultRestDataProvider` and, for list-producing calls (`getList`, `getManyReference`), issues a second request to `/{resource}/count` alongside the data request, carrying the same `where` and query keys, so react-admin gets both `data` and `total`. That count request always uses `RequestTypes.SEND` rather than the list-specific request type. A `count` that is a non-negative integer or a string of digits (`NetworkResponseReader.parseCount`) is the total; a missing one gives 0, and any other value gives 0 with a warning that names the route and the value.
 
 ## send()
 

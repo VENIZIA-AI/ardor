@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 
-import { FetchSchemaError } from '@venizia/ignis-helpers/core';
+import { FetchSchemaError, LoggerFactory } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
 import { type IResponseSchema, RequestCountData, RequestTypes, type TRequestType } from '@/common';
@@ -173,6 +173,61 @@ describe('NetworkResponseReader.read with a schema', () => {
     expect(calls).toBe(0);
   });
 
+  test.each([
+    ['broken JSON', '{"id":', 'application/json'],
+    ['whitespace', '   ', 'application/json'],
+    ['plain text', 'done', 'text/plain'],
+    ['csv', 'a,b', 'text/csv'],
+  ])('refuses %s as no JSON, without calling the schema', async (_name, text, contentType) => {
+    let calls = 0;
+    const accepting: IResponseSchema = {
+      parse: (data) => {
+        calls += 1;
+
+        return data;
+      },
+    };
+    const refusal = await refusalOf(
+      NetworkResponseReader.read({
+        response: new Response(text, { headers: { 'content-type': contentType } }),
+        type: RequestTypes.GET_ONE,
+        schema: accepting,
+      }),
+    );
+
+    expect(FetchSchemaError.is(refusal)).toBe(true);
+    expect(refusal).toMatchObject({ status: 200, issues: [{ path: [], code: 'invalid_json' }] });
+    expect(String(refusal)).not.toContain(text.trim() || '{');
+    expect(calls).toBe(0);
+  });
+
+  test('gives the schema the value of a JSON body sent as plain text', async () => {
+    const result = await NetworkResponseReader.read({
+      response: new Response('7', { headers: { 'content-type': 'text/plain' } }),
+      type: RequestTypes.GET_ONE,
+      schema: asNumber,
+    });
+
+    expect(result.data).toBe(7);
+  });
+
+  test('answers plain text and broken JSON as before with no schema', async () => {
+    const plain = await NetworkResponseReader.read({
+      response: new Response('done', { headers: { 'content-type': 'text/plain' } }),
+      type: RequestTypes.GET_ONE,
+    });
+    const broken = await refusalOf(
+      NetworkResponseReader.read({
+        response: new Response('{', { headers: { 'content-type': 'application/json' } }),
+        type: RequestTypes.GET_ONE,
+      }),
+    );
+
+    expect(plain.data).toBe('done');
+    expect(broken).toMatchObject({ statusCode: 502 });
+    expect(FetchSchemaError.is(broken)).toBe(false);
+  });
+
   test('gives the schema the null of a JSON body that says null', async () => {
     const result = await NetworkResponseReader.read({
       response: json(null),
@@ -272,4 +327,42 @@ describe('NetworkResponseReader.convert, a count in the body of a request that i
       expect(convert(body)).toEqual({ data: undefined });
     }
   });
+});
+
+describe('NetworkResponseReader.convert, the count in the body of a list', () => {
+  const countOf = (count: unknown) => {
+    const warn = spyOn(
+      LoggerFactory.getLogger([NetworkResponseReader.name]),
+      'warn',
+    ).mockImplementation(() => undefined);
+    const answered = NetworkResponseReader.convert({
+      response: { data: { data: [{ id: 1 }, { id: 2 }], count }, headers: new Headers() },
+      type: RequestTypes.GET_LIST,
+      requestCountData: RequestCountData.DATA_WITH_COUNT,
+    });
+    const warnings = warn.mock.calls.length;
+
+    warn.mockRestore();
+
+    return { count: answered.count, warnings };
+  };
+
+  test.each([
+    [9, 9],
+    [0, 0],
+    ['12', 12],
+  ])('reads the count %p', (sent, count) => {
+    expect(countOf(sent)).toEqual({ count, warnings: 0 });
+  });
+
+  test.each([null, undefined])('counts the rows for a count of %p', (sent) => {
+    expect(countOf(sent)).toEqual({ count: 2, warnings: 0 });
+  });
+
+  test.each([-1, 2.5, '-1', '2.5', '0x10', '1e3', ' 5', '', {}])(
+    'answers 0 and warns for the count %p',
+    (sent) => {
+      expect(countOf(sent)).toEqual({ count: 0, warnings: 1 });
+    },
+  );
 });

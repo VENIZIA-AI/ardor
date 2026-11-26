@@ -1,7 +1,12 @@
 import { RecordUtility } from '@venizia/ignis-helpers/core';
 import type { RaRecord } from 'ra-core';
 
-import { RequestMethods, RequestTypes, type TRequestType } from '@venizia/ardor-kernel';
+import {
+  NetworkResponseReader,
+  RequestMethods,
+  RequestTypes,
+  type TRequestType,
+} from '@venizia/ardor-kernel';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IListFilter } from './list-filter';
 import { DefaultRestDataProvider } from './rest-data';
@@ -18,8 +23,8 @@ export class CountRestDataProvider<
   TResource extends string = string,
 > extends DefaultRestDataProvider<TResource> {
   /**
-   * Sends the list GET and the count GET together; `total` is the count's `count`, a number or a
-   * numeric string, or `0` when the count answers none. Any other `count` gives `0` and a warning.
+   * Sends the list GET and the count GET together; `total` is the count's `count`, a non-negative
+   * integer or a string of digits, or `0` when the count answers none. Any other gives `0` and a warning.
    * Rejects when either request rejects.
    */
   protected override requestList<RecordType extends RaRecord = RaRecord>(opts: {
@@ -64,16 +69,14 @@ export class CountRestDataProvider<
       return 0;
     }
 
-    // `Number` reads a blank string as 0, so a blank one is no number here.
-    const isNumeric = typeof counted === 'string' && counted.trim() !== '';
-    const total = typeof counted === 'number' || isNumeric ? Number(counted) : Number.NaN;
+    const total = NetworkResponseReader.parseCount({ count: counted });
 
-    if (Number.isFinite(total)) {
+    if (total !== undefined) {
       return total;
     }
 
     this.logger.warn(
-      '[requestList] The count is no number, total is 0 | route: %s | count: %o',
+      '[requestList] The count is no non-negative integer, total is 0 | route: %s | count: %o',
       `/${resource}/count`,
       counted,
     );

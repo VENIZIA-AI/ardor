@@ -4,6 +4,7 @@ import {
   FetchSchemaError,
   HttpResponseReader,
   type IFetchSchemaIssue,
+  LoggerFactory,
   RecordUtility,
 } from '@venizia/ignis-helpers/core';
 
@@ -17,7 +18,7 @@ import {
 } from '@/common';
 
 /** A list body that carries its rows and its total: `{ data, count }`. Null and primitives are not one. */
-const isCountedBody = (value: unknown): value is { data: unknown; count?: number } => {
+const isCountedBody = (value: unknown): value is { data: unknown; count?: unknown } => {
   return typeof value === 'object' && value !== null && 'data' in value && 'count' in value;
 };
 
@@ -75,6 +76,8 @@ export class NetworkResponseReader {
   /** The server wraps an error body under this key; both transports unwrap it. */
   static readonly ERROR_ROOT_KEY = 'error';
 
+  private static readonly DIGITS_RE = /^\d+$/;
+
   /** Content types read as text. */
   private static readonly TEXTUAL_RE =
     /^(application\/(json|.*\+json|xml|.*\+xml|x-www-form-urlencoded|javascript|graphql)|text\/)/i;
@@ -82,8 +85,9 @@ export class NetworkResponseReader {
   /**
    * A response as `INetworkResponse` whose `data` the schema checked and typed. The schema is given
    * the data as it was read: the rows of a list, the `Blob` of a file. What it refuses throws a
-   * `FetchSchemaError` (502). So do a 204 and an empty body that is textual or of no content type and
-   * no attachment: there is nothing to check (code `invalid_json`, as in the IGNIS fetchers).
+   * `FetchSchemaError` (502). A textual body is read as JSON whatever its type says; one that is no
+   * JSON, a 204, and an empty body of no content type that is no attachment are refused too (code
+   * `invalid_json`, as in the IGNIS fetchers).
    */
   static read<TResult>(
     opts: IReadResponseOptions & { schema: IResponseSchema<TResult> },
@@ -100,16 +104,22 @@ export class NetworkResponseReader {
     }
 
     const { status, url } = response;
-
-    const isEmpty = await NetworkResponseReader.isEmptyAnswer({ response });
-
-    if (isEmpty) {
-      throw NetworkResponseReader.refusal({ status, url, issues: [NO_BODY_ISSUE] });
-    }
-
-    const read = await NetworkResponseReader.readUnchecked(opts);
+    const json = await NetworkResponseReader.readSchemaJson({ response });
+    const read = await NetworkResponseReader.readUnchecked({ ...opts, json });
 
     return NetworkResponseReader.checkData({ response: read, schema, status, url });
+  }
+
+  /**
+   * A count as a server sends it: a non-negative integer, or a string of digits. Anything else is
+   * `undefined`.
+   */
+  static parseCount(opts: { count: unknown }): number | undefined {
+    const { count } = opts;
+    const isDigits = typeof count === 'string' && NetworkResponseReader.DIGITS_RE.test(count);
+    const parsed = typeof count === 'number' || isDigits ? Number(count) : Number.NaN;
+
+    return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined;
   }
 
   /**
@@ -133,12 +143,23 @@ export class NetworkResponseReader {
     }
   }
 
-  /** A 204, or an empty body that is textual or of no content type and no attachment. */
-  private static async isEmptyAnswer(opts: { response: Response }): Promise<boolean> {
+  /**
+   * The body of an answer a schema is to check: the JSON of a textual one, whatever textual type it
+   * names, or nothing for a file. Throws `invalid_json` for a 204, for a textual body that is no
+   * JSON, and for an empty body of no content type.
+   */
+  private static async readSchemaJson(opts: {
+    response: Response;
+  }): Promise<{ body: unknown } | undefined> {
     const { response } = opts;
+    const { status, url } = response;
 
-    if (response.status === HTTP.ResultCodes.RS_2.NoContent) {
-      return true;
+    const noJson = () => {
+      return NetworkResponseReader.refusal({ status, url, issues: [NO_BODY_ISSUE] });
+    };
+
+    if (status === HTTP.ResultCodes.RS_2.NoContent) {
+      throw noJson();
     }
 
     const { contentType, isAttachment } = NetworkResponseReader.describeBody({ response });
@@ -147,13 +168,28 @@ export class NetworkResponseReader {
       isAttachment ||
       (contentType !== '' && !NetworkResponseReader.TEXTUAL_RE.test(contentType))
     ) {
-      return false;
+      return undefined;
     }
 
-    // A clone: the body is read once more by what follows.
-    const text = await response.clone().text();
+    if (contentType === '') {
+      // A clone: a body with bytes is a file, read once more by what follows.
+      const bytes = await response.clone().text();
 
-    return text === '';
+      if (bytes === '') {
+        throw noJson();
+      }
+
+      return undefined;
+    }
+
+    const text = await response.text();
+
+    try {
+      return { body: JSON.parse(text) };
+    } catch {
+      // Without the parse error: its message quotes the body.
+      throw noJson();
+    }
   }
 
   /** What the headers say of the body: its content type, lower-cased, and whether it is an attachment. */
@@ -178,8 +214,11 @@ export class NetworkResponseReader {
     return new FetchSchemaError({ status, url: url.split('?')[0] ?? '', issues });
   }
 
-  private static async readUnchecked(opts: IReadResponseOptions): Promise<INetworkResponse> {
-    const { response, type, requestCountData } = opts;
+  /** `json` is the body already read and parsed, for a textual answer. */
+  private static async readUnchecked(
+    opts: IReadResponseOptions & { json?: { body: unknown } },
+  ): Promise<INetworkResponse> {
+    const { response, type, requestCountData, json } = opts;
 
     if (response.status === 204) {
       return { data: {} };
@@ -200,10 +239,15 @@ export class NetworkResponseReader {
       };
     }
 
-    const parsedBody = await HttpResponseReader.readBody({
-      response,
-      context: `[NetworkResponseReader] ${response.status}`,
-    });
+    let parsedBody = json?.body;
+
+    if (!json) {
+      const body = await HttpResponseReader.readBody({
+        response,
+        context: `[NetworkResponseReader] ${response.status}`,
+      });
+      parsedBody = body;
+    }
 
     // A route with extras answers `{ data, extra }`; `readExtra` strips only `extra`, so a
     // count-in-body request still reads `{ count, data }`.
@@ -224,7 +268,7 @@ export class NetworkResponseReader {
   /**
    * Shapes a parsed body by request type. `GET_LIST` and `GET_MANY_REFERENCE` give `data` as an
    * array and `total` from `Content-Range`, else the row count; with `RequestCountData.DATA_WITH_COUNT`
-   * the body must be `{ data, count }`, or it throws. Any other type gives `data` as is, and `count`
+   * the body must be `{ data, count }`, or it throws; its `count` is read by `parseCount` (none gives the row count, any other value 0 and a warning). Any other type gives `data` as is, and `count`
    * from `x-response-count` when that is a number; with `DATA_WITH_COUNT` it returns the
    * `data` of a `{ data, count }` body, with its `count` and `total` when they are numbers, and no
    * `data` for a body that is no plain object. Other keys of the body are left out.
@@ -266,7 +310,10 @@ export class NetworkResponseReader {
 
           return {
             data: normalizedData,
-            count: data.count ?? normalizedData.length,
+            count: NetworkResponseReader.toListCount({
+              count: data.count,
+              rowCount: normalizedData.length,
+            }),
             total,
           };
         }
@@ -308,6 +355,26 @@ export class NetworkResponseReader {
         };
       }
     }
+  }
+
+  /** The count of a list body: the row count when it names none, 0 and a warning for any other non-count. */
+  private static toListCount(opts: { count: unknown; rowCount: number }): number {
+    const { count, rowCount } = opts;
+
+    if (count === undefined || count === null) {
+      return rowCount;
+    }
+
+    const parsed = NetworkResponseReader.parseCount({ count });
+
+    if (parsed === undefined) {
+      LoggerFactory.getLogger([NetworkResponseReader.name]).warn(
+        '[convert] The count is no non-negative integer, count is 0 | count: %o',
+        count,
+      );
+    }
+
+    return parsed ?? 0;
   }
 
   /** The rows of a list answer: an array as it is, no body at all (an empty answer) as no row, any other value as the one row. */
