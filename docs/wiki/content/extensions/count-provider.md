@@ -96,12 +96,12 @@ The result is `Promise.all` over the two responses, mapped to the react-admin `g
 // excerpt of the value resolved by requestList
 const result = {
   data: listResponse.data,
-  total: countResponse.data?.count ?? 0,
+  total: typeof count === 'number' ? count : 0, // `count` is `data.count` of the count response
 };
 // ...
 ```
 
-`total` is `data.count` of the count response, as the server sent it: nothing converts it, so a `count` that is a string gives a string at run time. A `count` that is missing or `null`, or an answer with no body (204), gives `0`.
+`total` is `data.count` of the count response when it is a number. A `count` that is missing or no number (a numeric string included), or an answer with no body (204), gives `0`.
 
 ## Binding it
 

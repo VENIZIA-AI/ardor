@@ -6,6 +6,9 @@ import {
   RequestMethods,
   RequestTypes,
 } from '@venizia/ardor-kernel';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
+import { FetchSchemaError } from '@venizia/ignis-helpers/core';
+import { getError } from '@venizia/ignis-inversion';
 import type { RaRecord } from 'ra-core';
 import type { IRestRequestOptions } from '@/common';
 import { CountRestDataProvider } from '@/providers/count-rest-data';
@@ -152,6 +155,36 @@ describe('request', () => {
 
     expect(recorded[0].headers.get('x-request-channel')).toBe('custom');
     expect(recorded[0].headers.get('x-tenant')).toBe('t1');
+  });
+});
+
+describe('send with a schema', () => {
+  const send = (schema: IResponseSchema<string>) => {
+    return create().send({ resource: 'posts', params: { method: RequestMethods.POST }, schema });
+  };
+
+  test('answers the value the schema returns', async () => {
+    const result = await send({
+      parse: (data) => {
+        expect(data).toEqual({ ok: true });
+
+        return 'checked';
+      },
+    });
+
+    expect(result.data).toBe('checked');
+  });
+
+  test('rejects with a FetchSchemaError when the schema refuses', async () => {
+    const error = await RejectionUtility.rejectionOf({
+      task: send({
+        parse: () => {
+          throw getError({ message: 'refused' });
+        },
+      }),
+    });
+
+    expect(FetchSchemaError.is(error)).toBe(true);
   });
 });
 

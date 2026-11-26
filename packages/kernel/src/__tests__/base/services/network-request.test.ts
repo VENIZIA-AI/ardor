@@ -1,4 +1,5 @@
 import { HTTP } from '@venizia/ignis-helpers/common';
+import { FetchSchemaError } from '@venizia/ignis-helpers/core';
 import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
@@ -10,6 +11,7 @@ import {
   type IAuthRecoveryOptions,
   type IAuthTokenRecord,
   type IRestDataProviderOptions,
+  type IResponseSchema,
   LocalStorageKeys,
   RequestBodyTypes,
   RequestChannel,
@@ -1885,5 +1887,53 @@ describe('DefaultNetworkRequestService', () => {
         'SyntaxError',
       );
     });
+  });
+});
+
+describe('doRequest with a schema', () => {
+  let server: ReturnType<typeof Bun.serve>;
+
+  beforeAll(() => {
+    server = Bun.serve({ port: 0, fetch: () => Response.json({ total: 4 }) });
+  });
+
+  afterAll(async () => {
+    await server.stop(true);
+  });
+
+  const request = (schema: IResponseSchema<number>) => {
+    const service = createService({ baseUrl: `http://127.0.0.1:${server.port}`, isOpen: true });
+
+    return service.doRequest({
+      schema,
+      type: RequestTypes.SEND,
+      method: RequestMethods.GET,
+      paths: ['totals'],
+    });
+  };
+
+  test('answers the value the schema returns', async () => {
+    const result = await request({
+      parse: (data) => {
+        expect(data).toEqual({ total: 4 });
+
+        return 40;
+      },
+    });
+
+    expect(result.data).toBe(40);
+  });
+
+  test('rejects with a 502 FetchSchemaError when the schema refuses', async () => {
+    const error = await RejectionUtility.rejectionOf({
+      task: request({
+        parse: () => {
+          throw getError({ message: 'refused' });
+        },
+      }),
+    });
+
+    expect(FetchSchemaError.is(error)).toBe(true);
+    expect(error).toMatchObject({ statusCode: 502, status: 200 });
   });
 });

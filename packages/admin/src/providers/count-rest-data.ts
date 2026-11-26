@@ -15,7 +15,7 @@ export class CountRestDataProvider<
 > extends DefaultRestDataProvider<TResource> {
   /**
    * Sends the list GET and the count GET together; `total` is the count's `count`, or `0` when the
-   * count answers none. Rejects when either request rejects.
+   * count answers none or no number. Rejects when either request rejects.
    */
   protected override requestList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;

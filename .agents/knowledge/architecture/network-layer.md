@@ -57,7 +57,7 @@ Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`
 
 After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `NetworkResponseReader.read` (`packages/kernel/src/utilities/network-response-reader.ts`) decodes a 2xx response:
 
-- A 204 returns `{ data: {} }`.
+- A 204 returns `{ data: {} }`; with a `schema` it throws a `FetchSchemaError` (502, issue `invalid_json`) as the IGNIS fetchers do, and the schema is not called.
 - A `content-disposition` of type `attachment` (as IGNIS's `HttpResponseReader.parseContentDisposition` reads it, any case), or a `content-type` that is missing or not textual per `NetworkResponseReader.TEXTUAL_RE`, returns the blob as `data` (IGNIS's `HttpResponseReader.readFile`), plus `filename` (`filename*=` first, then a quoted, then a bare `filename=`; a `filename*` that cannot be decoded is dropped and the plain `filename` is used; the public `NetworkResponseReader.readFilename({ headers })` returns the same name through the same parser) and `contentDisposition` when present.
 - Anything else is read as text by IGNIS's `HttpResponseReader.readBody`: an empty body is `null`; a JSON content type is parsed, and a body that claims JSON and is not is a `502` `ApplicationError` that names the type and the length, never the content; any other textual type (`text/plain`, `text/csv`, XML) is returned as its text. `convertResponse` then reads the totals described in [Header protocol](/architecture/header-protocol.md).
 

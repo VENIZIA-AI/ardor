@@ -158,6 +158,14 @@ describe('CountRestDataProvider getList', () => {
           });
         }
 
+        if (url.pathname === '/journals/count') {
+          return createJsonResponse({ data: { count: '5' } });
+        }
+
+        if (url.pathname === '/journals') {
+          return createJsonResponse({ data: [] });
+        }
+
         return new Response('Not Found', { status: 404 });
       },
     });
@@ -254,6 +262,21 @@ describe('CountRestDataProvider getList', () => {
       message: 'Expected count request to be recorded',
     });
     expect(countRequest.method).toBe('GET');
+  });
+
+  test('returns total as 0 for a count sent as a string', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const result = await provider.getList({
+      resource: 'journals',
+      params: {
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+      },
+    });
+
+    expect(result.total).toBe(0);
   });
 
   test('forwards existing filter where clause to count request and returns total from count', async () => {

@@ -28,23 +28,39 @@ interface IReadResponseOptions {
   requestCountData?: TConstValue<typeof RequestCountData>;
 }
 
-const isPathPart = (value: unknown): value is string | number => {
-  return typeof value === 'string' || typeof value === 'number';
+/** The issue the IGNIS fetchers give for a body that is no JSON, an empty one included. */
+const NO_BODY_ISSUE: IFetchSchemaIssue = { path: [], code: 'invalid_json' };
+
+/** A path of a schema issue as the IGNIS fetchers report it: a symbol as its text. */
+const toIssuePath = (path: unknown): Array<string | number> => {
+  if (!Array.isArray(path)) {
+    return [];
+  }
+
+  return path.flatMap((part) => {
+    if (typeof part === 'symbol') {
+      return [String(part)];
+    }
+
+    return typeof part === 'string' || typeof part === 'number' ? [part] : [];
+  });
 };
 
 /**
- * Where and by which rule a schema refused: the `issues` of what it threw, as zod shapes them. Never
- * the message or a value, which may quote the body.
+ * Where and by which rule a schema refused: the `issues` of what it threw, as zod shapes them, or one
+ * `custom` issue at the root when it threw none. Never the message or a value, which may quote the body.
  */
 const issuesOf = (error: unknown): IFetchSchemaIssue[] => {
   const issues = RecordUtility.isRecord(error) ? error.issues : undefined;
 
-  if (!Array.isArray(issues)) {
-    return [];
+  const named = Array.isArray(issues) ? issues.filter(RecordUtility.isRecord) : [];
+
+  if (named.length === 0) {
+    return [{ path: [], code: 'custom' }];
   }
 
-  return issues.filter(RecordUtility.isRecord).map(({ path, code }) => ({
-    path: Array.isArray(path) ? path.filter(isPathPart) : [],
+  return named.map(({ path, code }) => ({
+    path: toIssuePath(path),
     code: typeof code === 'string' ? code : 'custom',
   }));
 };
@@ -62,8 +78,9 @@ export class NetworkResponseReader {
 
   /**
    * A response as `INetworkResponse` whose `data` the schema checked and typed. The schema is given
-   * the data as it was read: the rows of a list, `{}` of a 204, the `Blob` of a file. What it refuses
-   * throws a `FetchSchemaError` (502).
+   * the data as it was read: the rows of a list, the `Blob` of a file. What it refuses throws a
+   * `FetchSchemaError` (502), and so does a 204, which has no body to check (code `invalid_json`, as
+   * in the IGNIS fetchers).
    */
   static read<TResult>(
     opts: IReadResponseOptions & { schema: IResponseSchema<TResult> },
@@ -74,16 +91,20 @@ export class NetworkResponseReader {
     opts: IReadResponseOptions & { schema?: IResponseSchema },
   ): Promise<INetworkResponse> {
     const { schema, response } = opts;
+
+    if (!schema) {
+      return NetworkResponseReader.readUnchecked(opts);
+    }
+
+    const { status, url } = response;
+
+    if (status === HTTP.ResultCodes.RS_2.NoContent) {
+      throw NetworkResponseReader.refusal({ status, url, issues: [NO_BODY_ISSUE] });
+    }
+
     const read = await NetworkResponseReader.readUnchecked(opts);
 
-    return schema
-      ? NetworkResponseReader.checkData({
-          response: read,
-          schema,
-          status: response.status,
-          url: response.url,
-        })
-      : read;
+    return NetworkResponseReader.checkData({ response: read, schema, status, url });
   }
 
   /**
@@ -103,13 +124,19 @@ export class NetworkResponseReader {
     try {
       return { ...response, data: schema.parse(response.data) };
     } catch (error) {
-      // Without the query: it may carry a token or user data.
-      throw new FetchSchemaError({
-        status,
-        url: url.split('?')[0] ?? '',
-        issues: issuesOf(error),
-      });
+      throw NetworkResponseReader.refusal({ status, url, issues: issuesOf(error) });
     }
+  }
+
+  private static refusal(opts: {
+    status: number;
+    url: string;
+    issues: IFetchSchemaIssue[];
+  }): FetchSchemaError {
+    const { status, url, issues } = opts;
+
+    // Without the query: it may carry a token or user data.
+    return new FetchSchemaError({ status, url: url.split('?')[0] ?? '', issues });
   }
 
   private static async readUnchecked(opts: IReadResponseOptions): Promise<INetworkResponse> {

@@ -460,11 +460,12 @@ unchecked-response-types-removed:
     ]
   upgrade:
     steps:
-      - 'Run `bun check`. "Expected 0 type arguments" and "Property ''schema'' is missing" mark each `send`, `doRequest`, `request`, `read` or `convertResponse` that named a type nothing checked; an error on the use of `data` marks one whose type came from the code around it.'
+      - 'Run `bun check` to see every place to change. "Expected 0 type arguments" and "Property ''schema'' is missing" mark each `send`, `doRequest`, `request`, `read` or `convertResponse` that named a type nothing checked; an error on the use of `data` marks one whose type came from the code around it.'
       - 'At each place, drop the type argument and pass a `schema`: a zod schema, or an object whose `parse` returns the checked value and throws otherwise. Without a schema, narrow `data` before you use it.'
       - 'In a subclass that overrides `send` or `request`, declare the two overloads, and hand an answer your own transport built to `NetworkResponseReader.checkData` when a schema is given.'
+      - 'Pass no schema to a request whose route answers 204: with one it is refused (`invalid_json`). A route that answers 204 or a body needs two code paths, or no schema and your own check.'
       - 'With `RequestCountData.DATA_WITH_COUNT` on a request that is no list, code that read another key of the body than `data`, `count` or `total` from the answer sends the request without that flag and reads the body from `data`.'
-      - 'An `IDataProvider` you write as an object, a test fake included, needs a `send` of both shapes: write it as such a method and let `NetworkResponseReader.checkData` apply the schema.'
+      - 'An `IDataProvider` written as an object literal, a test fake included, needs a `send` that is a function with both overload declarations (`schema` required, answering `INetworkResponse<TResult>`; `schema` optional, answering `INetworkResponse`) and one implementation that hands its answer to `NetworkResponseReader.checkData` when a schema is given. An arrow function cannot declare both; no cast is needed.'
     before: |-
       const response = await dataProvider.send<{ message: string }>({ resource: 'hello', params: { method: 'GET' } });
     after: |-

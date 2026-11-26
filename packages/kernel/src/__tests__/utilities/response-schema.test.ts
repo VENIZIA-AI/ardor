@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { FetchSchemaError } from '@venizia/ignis-helpers/core';
+import { getError } from '@venizia/ignis-inversion';
 
 import { type IResponseSchema, RequestCountData, RequestTypes } from '@/common';
 import { NetworkResponseReader } from '@/utilities';
@@ -87,7 +88,71 @@ describe('NetworkResponseReader.read with a schema', () => {
     expect(refusal).toMatchObject({ url: 'https://api.test/items' });
   });
 
-  test('gives the schema the rows of a list, and an empty object for a 204', async () => {
+  test('names one custom issue at the root for a schema that throws no issues', () => {
+    const bare: IResponseSchema = {
+      parse: () => {
+        throw getError({ message: SECRET });
+      },
+    };
+
+    expect(() => {
+      return NetworkResponseReader.checkData({ response: { data: 1 }, schema: bare });
+    }).toThrow(expect.objectContaining({ issues: [{ path: [], code: 'custom' }] }));
+  });
+
+  test('names a symbol of a path by its text', () => {
+    const symbolic: IResponseSchema = {
+      parse: () => {
+        throw Object.assign(getError({ message: 'refused' }), {
+          issues: [{ path: [Symbol('key'), 2], code: 'invalid_type' }],
+        });
+      },
+    };
+
+    expect(() => {
+      return NetworkResponseReader.checkData({ response: { data: 1 }, schema: symbolic });
+    }).toThrow(
+      expect.objectContaining({ issues: [{ path: ['Symbol(key)', 2], code: 'invalid_type' }] }),
+    );
+  });
+
+  test('refuses a 204 as no JSON, without calling the schema', async () => {
+    let calls = 0;
+    const accepting: IResponseSchema = {
+      parse: (data) => {
+        calls += 1;
+
+        return data;
+      },
+    };
+
+    const refusal = await refusalOf(
+      NetworkResponseReader.read({
+        response: new Response(null, { status: 204 }),
+        type: RequestTypes.DELETE,
+        schema: accepting,
+      }),
+    );
+
+    expect(FetchSchemaError.is(refusal)).toBe(true);
+    expect(refusal).toMatchObject({
+      statusCode: 502,
+      status: 204,
+      issues: [{ path: [], code: 'invalid_json' }],
+    });
+    expect(calls).toBe(0);
+  });
+
+  test('answers an empty object for a 204 with no schema', async () => {
+    const result = await NetworkResponseReader.read({
+      response: new Response(null, { status: 204 }),
+      type: RequestTypes.DELETE,
+    });
+
+    expect(result).toEqual({ data: {} });
+  });
+
+  test('gives the schema the rows of a list', async () => {
     const seen: unknown[] = [];
     const record: IResponseSchema<unknown> = {
       parse: (data) => {
@@ -102,13 +167,8 @@ describe('NetworkResponseReader.read with a schema', () => {
       type: RequestTypes.GET_LIST,
       schema: record,
     });
-    await NetworkResponseReader.read({
-      response: new Response(null, { status: 204 }),
-      type: RequestTypes.DELETE,
-      schema: record,
-    });
 
-    expect(seen).toEqual([[{ id: 1 }], {}]);
+    expect(seen).toEqual([[{ id: 1 }]]);
   });
 
   test('a schema type argument cannot be written without a schema', () => {
