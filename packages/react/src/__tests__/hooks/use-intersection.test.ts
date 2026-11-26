@@ -181,6 +181,26 @@ describe('useIntersection', () => {
     expect(FakeIntersectionObserver.all).toHaveLength(1);
   });
 
+  test('under StrictMode, which mounts every effect twice, one observer stays and delivers', () => {
+    const element = document.createElement('div');
+    const { result } = renderHook(() => useIntersection({ target: element }), {
+      reactStrictMode: true,
+    });
+    const live = FakeIntersectionObserver.all.filter((observer) => !observer.isDisconnected);
+
+    expect(live).toHaveLength(1);
+    expect(live[0]?.targets).toEqual([element]);
+
+    act(() => {
+      live[0]?.callback(
+        [intersectionEntryOf({ target: element, isIntersecting: true, ratio: 1 })],
+        live[0],
+      );
+    });
+
+    expect(result.current).toMatchObject({ isIntersecting: true });
+  });
+
   test('unmount disconnects', () => {
     const element = document.createElement('div');
     const { unmount } = renderHook(() => useIntersection({ target: element }));
