@@ -11,6 +11,9 @@ import {
 } from '@/base/services/network-request';
 import { type IDataSourceRequestContext, RequestMethods, RequestTypes } from '@/common';
 import { FakeStorage } from '@/testing';
+import { LogWatch } from '../../log-watch';
+
+afterEach(() => LogWatch.restore());
 
 const REFRESH_PATH = '/auth/refresh';
 const originalLocal = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
@@ -149,12 +152,17 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
     });
 
     test('another user signed in while the refresh was in flight: the session changed, the new session stays', async () => {
+      const logged = LogWatch.on({ scope: 'DefaultNetworkRequestService', method: 'warn' });
+
       refreshHook = () => signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
       const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(authService.getAuth()?.value).toBe('bob-token');
+
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged).toHaveBeenCalledWith(expect.stringContaining('its answer is dropped'));
     });
 
     test('a switch to another user that has stored its identity only is a session change, not a sign-out', async () => {
@@ -215,14 +223,24 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         });
 
       test('through doRequest the 401 stands, so the provider sends the user to sign-in', async () => {
+        const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
         const error = await RejectionUtility.rejectionOf({ task: getItems(createEnding()) });
 
         expect(isApplicationError(error)).toBe(true);
         expect(codeOf(error)).not.toBe(SESSION_CHANGED_CODE);
         expect(authService.getAuth()).toBeNull();
+
+        expect(logged).toHaveBeenCalledTimes(1);
+        expect(logged).toHaveBeenCalledWith(
+          expect.stringContaining('[refresh] refreshToken failed'),
+          expect.objectContaining({ message: 'refresh refused' }),
+        );
       });
 
       test('through the data source hooks the refresh answers false, not a session change', async () => {
+        const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
         const auth = createEnding().getDataSourceAuth();
         const context = contextOf();
 
@@ -230,6 +248,12 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         const isRefreshed = await auth.onUnauthorized(context, { attempt: 1 });
 
         expect(isRefreshed).toBe(false);
+
+        expect(logged).toHaveBeenCalledTimes(1);
+        expect(logged).toHaveBeenCalledWith(
+          expect.stringContaining('[refresh] refreshToken failed'),
+          expect.objectContaining({ message: 'refresh refused' }),
+        );
       });
     });
 

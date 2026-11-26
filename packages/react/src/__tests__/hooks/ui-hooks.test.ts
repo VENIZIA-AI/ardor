@@ -1,8 +1,9 @@
-import { describe, test, expect, afterEach, beforeEach, jest, mock } from 'bun:test';
+import { describe, test, expect, afterEach, beforeEach, jest, mock, spyOn } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';
 import React from 'react';
 import { configureStore, createSlice, type Dispatch, type UnknownAction } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { FakeClipboard } from '@venizia/ardor-kernel/testing';
 import { useDebounce, type IUseDebounceOptions } from '@/hooks/use-debounce';
 import { useAutosave, type IUseAutosaveOptions } from '@/hooks/use-autosave';
@@ -234,7 +235,20 @@ describe('useConfirm', () => {
 describe('useCopyToClipboard', () => {
   const originalClipboard: Clipboard | undefined = navigator.clipboard;
 
+  const watchWarn = () => {
+    return spyOn(LoggerFactory.getLogger(['useCopyToClipboard']), 'warn').mockImplementation(
+      () => undefined,
+    );
+  };
+
+  let warn: ReturnType<typeof watchWarn>;
+
+  beforeEach(() => {
+    warn = watchWarn();
+  });
+
   afterEach(() => {
+    warn.mockRestore();
     Object.defineProperty(navigator, 'clipboard', {
       value: originalClipboard,
       configurable: true,
@@ -258,6 +272,7 @@ describe('useCopyToClipboard', () => {
 
     expect(copyResult).toBe(true);
     expect(clipboard.written).toEqual(['ARDOR text']);
+    expect(warn).not.toHaveBeenCalled();
   });
 
   test('resolves false when navigator.clipboard is absent', async () => {
@@ -278,6 +293,10 @@ describe('useCopyToClipboard', () => {
     });
 
     expect(copyResult).toBe(false);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('[copy] The clipboard did not take the text'),
+    );
   });
 
   test('resolves false, and does not throw, where navigator is not declared', async () => {
@@ -296,6 +315,10 @@ describe('useCopyToClipboard', () => {
       });
 
       expect(isCopied).toBe(false);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('[copy] The clipboard did not take the text'),
+      );
     } finally {
       if (descriptor) {
         Object.defineProperty(globalThis, 'navigator', descriptor);

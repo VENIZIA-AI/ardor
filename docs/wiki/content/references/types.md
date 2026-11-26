@@ -84,7 +84,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `IStoredAuthUser` | `interface` | The stored identity `getUser()` returns; every field is absent when nothing is stored; it has no index signature. | `userId`, `username`, `referenceId`, `provider` |
 | `IDataSourceRequestContext` | `interface` | Request context supplied to `HttpDataSource` auth hooks. | `paths` |
 | `IDataSourceAuth` | `interface` | Bridge settings returned by `getDataSourceAuth()`. | `authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey` |
-| `IApplicationInfo` | `interface` | Application metadata, bound under `CoreBindings.APPLICATION_INFO`. | `name`, `version`, `description`, `id`, `author`; IGNIS's `IApplicationInfo`, so keys of your own are accepted as `unknown` |
+| `IApplicationInfo` | `interface` | Application metadata, bound under `CoreBindings.APPLICATION_INFO`. | `name`, `version`, `description`, `id`, `author`; extends IGNIS's `IApplicationInfo`, so your own keys read as `unknown` |
 | `IFeatureBase` | `interface` | Base feature configuration, bound under `CoreBindings.FEATURES`. | `name`, `configurations`, `artifacts`, `permissions` |
 | `IArdorArtifactIndex` | `interface` | Artifact registry index emitted by code generation and verified at application `start()`. | - |
 | `IPermissionProvider` | `interface` | Authorization checker contract, bound under `CoreBindings.PERMISSION_PROVIDER`. | `canAccess` |
