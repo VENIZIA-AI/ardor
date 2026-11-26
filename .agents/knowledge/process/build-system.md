@@ -21,7 +21,7 @@ The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [a
 - `typecheck` - `bun check --no-pretty` over `tsconfig.json` (src and tests), then over the build program, which drops the Bun types, so a Bun global in `src` fails there and not in a consumer, then over each program of `EXTRA_BUILD_TSCONFIGS`.
 - `EXTRA_BUILD_TSCONFIGS` (a Makefile variable, empty by default) - further build programs of one package, each with its own `types`. `ardor` sets `.configs/builders/tsconfig.vite.build.json` for its Node-only `./vite` entry (`types: ["node"]`); the main program excludes `src/vite`. `build` emits each of them after the main one.
 - `lint` / `lint-fix` - see [Lint presets](#lint-presets).
-- `test` - `NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)` inside the package.
+- `test` - `NODE_ENV=test bun test --preload ./src/__tests__/setup $(BUN_TEST_FLAGS)` inside the package.
 - `TEST_PATHS` (a Makefile variable, empty by default) - where `bun test` looks, the whole package by default. `ardor` sets `./src`, because its `dist` holds the preset's own test files, which run only inside a generated app.
 - `size` - runs `size-limit` against the built bundle. Its `ignore` list excludes the peers (like `reflect-metadata` and the IGNIS packages) and any runtime dependencies from the measurement, so the budget measures only the package's own code.
 

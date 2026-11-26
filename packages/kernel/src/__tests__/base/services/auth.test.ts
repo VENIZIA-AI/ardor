@@ -3,7 +3,7 @@ import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
 import { AuthTokenStore } from '@/utilities';
 import { FakeStorage } from '@/testing';
-import { LogWatch } from '../../log-watch';
+import { LogWatch } from '@/__tests__/support/log-watch';
 
 afterEach(() => LogWatch.restore());
 

@@ -17,7 +17,7 @@ import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
 import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { BindingKeys, Container } from '@venizia/ignis-inversion';
-import { ActScreen } from '../act-screen';
+import { ActScreen } from '@/__tests__/support/act-screen';
 
 const ReportList = () => {
   const translate = useTranslate();

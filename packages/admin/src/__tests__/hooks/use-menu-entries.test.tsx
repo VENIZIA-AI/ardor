@@ -9,7 +9,7 @@ import { useMenuEntries } from '@/hooks/use-menu-entries';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { CoreBindings } from '@venizia/ardor-kernel';
 import { BindingKeys, Container } from '@venizia/ignis-inversion';
-import { ActScreen } from '../act-screen';
+import { ActScreen } from '@/__tests__/support/act-screen';
 
 type TCanAccess = (params: { resource: string; action: string }) => Promise<boolean>;
 
