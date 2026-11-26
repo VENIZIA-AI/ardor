@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { ElementTargets, type TElementTarget } from './element-target';
+import { type IIntersectionScope, IntersectionStore } from './intersection-store';
 
 /** The element or elements `useIntersection` watches, against which root, and when it delivers an entry. */
 export interface IUseIntersectionOptions {
@@ -19,18 +20,9 @@ export interface IUseIntersectionOptions {
 
 type TEntry = IntersectionObserverEntry | undefined;
 
-interface IScope {
-  /** In target order, `null` for a target with no element yet. */
-  elements: Array<Element | null>;
-  root: Element | null;
-  /** A `root` ref whose element is not there yet: nothing is observed until it is. */
-  isRootPending: boolean;
-}
-
-const EMPTY_SCOPE: IScope = { elements: [], root: null, isRootPending: false };
-const NO_ENTRIES = new Map<Element, IntersectionObserverEntry>();
-
-const resolveScope = (opts: Pick<IUseIntersectionOptions, 'target' | 'root'>): IScope => {
+const resolveScope = (
+  opts: Pick<IUseIntersectionOptions, 'target' | 'root'>,
+): IIntersectionScope => {
   const { target, root } = opts;
   const targets = Array.isArray(target) ? target : [target];
   const rootElement = root === undefined ? null : ElementTargets.resolve({ target: root });
@@ -40,15 +32,6 @@ const resolveScope = (opts: Pick<IUseIntersectionOptions, 'target' | 'root'>): I
     root: rootElement,
     isRootPending: rootElement === null && root !== undefined && root !== null,
   };
-};
-
-const sameScope = (a: IScope, b: IScope): boolean => {
-  return (
-    a.root === b.root &&
-    a.isRootPending === b.isRootPending &&
-    a.elements.length === b.elements.length &&
-    a.elements.every((element, index) => element === b.elements[index])
-  );
 };
 
 /**
@@ -83,63 +66,20 @@ export function useIntersection(opts: IUseIntersectionOptions): TEntry | TEntry[
   const count = isList ? target.length : 1;
   // A number list is compared by value, so a list made anew in each render observes nothing again.
   const thresholdKey = threshold === undefined ? undefined : JSON.stringify(threshold);
-  const [scope, setScope] = React.useState<IScope>(EMPTY_SCOPE);
-  const [entries, setEntries] = React.useState(NO_ENTRIES);
+  const [store] = React.useState(() => new IntersectionStore());
+  const { scope, entries } = React.useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    // A server render observes nothing: the store is still empty there.
+    store.getSnapshot,
+  );
 
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- the target and root are read after every render, and a state set to an equal scope renders nothing
+  // Every render: a ref's element changes with nothing else to tell. The store ignores what it observes already.
   React.useEffect(() => {
-    const next = resolveScope({ target, root });
-
-    setScope((current) => (sameScope(current, next) ? current : next));
+    store.sync({ scope: resolveScope({ target, root }), rootMargin, thresholdKey });
   });
 
-  React.useEffect(() => {
-    setEntries((current) => (current.size === 0 ? current : NO_ENTRIES));
-
-    const watched = new Set(scope.elements.filter((element) => element !== null));
-
-    if (watched.size === 0 || scope.isRootPending || typeof IntersectionObserver === 'undefined') {
-      return () => {};
-    }
-
-    const observer = new IntersectionObserver(
-      (delivered) => {
-        setEntries((current) => {
-          let next = current;
-
-          for (const entry of delivered) {
-            const known = next.get(entry.target);
-
-            if (
-              known?.isIntersecting === entry.isIntersecting &&
-              known.intersectionRatio === entry.intersectionRatio
-            ) {
-              continue;
-            }
-
-            if (next === current) {
-              next = new Map(current);
-            }
-
-            next.set(entry.target, entry);
-          }
-
-          return next;
-        });
-      },
-      {
-        root: scope.root ?? undefined,
-        rootMargin,
-        threshold: thresholdKey === undefined ? undefined : JSON.parse(thresholdKey),
-      },
-    );
-
-    for (const element of watched) {
-      observer.observe(element);
-    }
-
-    return () => observer.disconnect();
-  }, [scope, rootMargin, thresholdKey]);
+  React.useEffect(() => () => store.disconnect(), [store]);
 
   return React.useMemo(() => {
     const read = Array.from({ length: count }, (_, index): TEntry => {
