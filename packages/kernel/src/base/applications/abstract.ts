@@ -120,7 +120,10 @@ export abstract class AbstractArdorApplication extends Container {
     });
 
     const targets = discovered
-      .filter((target): target is Function => typeof target === 'function')
+      .filter(
+        (target): target is TClass<unknown> =>
+          typeof target === 'function' && typeof target.prototype === 'object',
+      )
       .filter((target) => this.isSelected({ target }));
 
     // Two classes a minifier named alike derive one key, and the second would silently replace the
@@ -166,7 +169,7 @@ export abstract class AbstractArdorApplication extends Container {
       const definition = metadata ? ArtifactTypes.definitionOf({ type: metadata.type }) : undefined;
 
       this.bind({ key })
-        .toClass(target as TClass<unknown>)
+        .toClass(target)
         .setScope(metadata?.scope ?? definition?.scope ?? BindingScopes.SINGLETON);
 
       for (const entry of registry.getProvideMetadata({ target })) {
