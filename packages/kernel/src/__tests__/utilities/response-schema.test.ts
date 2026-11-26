@@ -132,18 +132,19 @@ describe('NetworkResponseReader.convert, a count in the body of a request that i
     });
   };
 
-  test('answers the body as it is, other keys included', () => {
-    expect(convert({ data: { id: 1 }, count: 3, extra: 'kept' })).toEqual(
-      Object.fromEntries([
-        ['data', { id: 1 }],
-        ['count', 3],
-        ['extra', 'kept'],
-      ]),
-    );
+  test('answers data, count and total, and no other key of the body', () => {
+    expect(convert({ data: { id: 1 }, count: 3, total: 9, filename: 7 })).toStrictEqual({
+      data: { id: 1 },
+      count: 3,
+      total: 9,
+    });
   });
 
-  test('answers no count for a count that is no number', () => {
-    expect(convert({ data: 'x', count: '3' }).count).toBeUndefined();
+  test('answers no count and no total that is no number', () => {
+    const answered = convert({ data: 'x', count: '3', total: 'y' });
+
+    expect(answered.count).toBeUndefined();
+    expect(answered.total).toBeUndefined();
   });
 
   test('answers no data for a body that is no plain object', () => {

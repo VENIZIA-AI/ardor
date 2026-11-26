@@ -164,8 +164,8 @@ export class NetworkResponseReader {
    * array and `total` from `Content-Range`, else the row count; with `RequestCountData.DATA_WITH_COUNT`
    * the body must be `{ data, count }`, or it throws. Any other type gives `data` as is, and `count`
    * from `x-response-count` when that is a number; with `DATA_WITH_COUNT` it returns the
-   * keys of a `{ data, count }` body, a `count` that is no number left out, and no `data` for a body
-   * that is no plain object.
+   * `data` of a `{ data, count }` body, with its `count` and `total` when they are numbers, and no
+   * `data` for a body that is no plain object. Other keys of the body are left out.
    */
   static convert(opts: {
     response: {
@@ -223,14 +223,18 @@ export class NetworkResponseReader {
       }
       default: {
         if (requestCountData === RequestCountData.DATA_WITH_COUNT) {
-          // The `{ data, count }` body, with a `count` only when it is a number.
+          // Only the keys of the answer, each of its own type: another body key would pass as one.
           if (!RecordUtility.isPlainRecord(data)) {
             return { data: undefined };
           }
 
-          const { count } = data;
+          const { count, total } = data;
 
-          return { ...data, data: data.data, count: typeof count === 'number' ? count : undefined };
+          return {
+            data: data.data,
+            count: typeof count === 'number' ? count : undefined,
+            total: typeof total === 'number' ? total : undefined,
+          };
         }
 
         // A missing or non-numeric header means the server sent no count - never NaN.
