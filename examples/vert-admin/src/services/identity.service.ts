@@ -32,6 +32,7 @@ export class IdentityService extends BaseService {
       resource: VertPaths.WHO_AM_I,
       params,
     });
+
     return response.data;
   }
 }

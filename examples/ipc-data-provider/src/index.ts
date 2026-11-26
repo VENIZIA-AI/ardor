@@ -33,6 +33,7 @@ const COMMANDS: Record<string, TCommand> = {
       { id: 3, name: 'Cold brew', price: 50000 },
     ];
     const id = payload.query?.id;
+
     return id === undefined ? rows : rows.find((row) => row.id === Number(id));
   },
   'auth/login': (payload) => ({
@@ -46,9 +47,11 @@ const invoke = <TResponse>(opts: {
   payload: ISendParams;
 }): Promise<INetworkResponse<TResponse>> => {
   const handler = COMMANDS[opts.command];
+
   if (!handler) {
     return Promise.reject({ message: `[ipc] unknown command ${opts.command}`, statusCode: 404 });
   }
+
   return Promise.resolve({ data: handler(opts.payload) as TResponse });
 };
 
@@ -126,4 +129,5 @@ if (list.data.length !== 3 || one.data.name !== 'Latte' || login.data.userId !==
   console.error('[ipc] FAILED - unexpected data');
   process.exit(1);
 }
+
 console.log('[ipc] OK');

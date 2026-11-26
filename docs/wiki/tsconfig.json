@@ -3,8 +3,8 @@
   "//": "Config that Vite/esbuild reads for the VitePress site. Standalone (does NOT extend the ES2024 dev-configs base) because esbuild rejects the ES2024 target.",
   "compilerOptions": {
     "target": "ES2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
     "esModuleInterop": true,

@@ -2,7 +2,7 @@
 
 # =============================================================================
 # Pre-commit Hook
-# Runs `make lint-all`: the packages, the wiki, scripts/ and the format of the files outside the projects (the examples among them).
+# Runs `make lint-all`: the packages, the wiki, the examples, scripts/ and the format of the files outside the projects.
 # The examples resolve the packages through dist, so run `make build-all` after a pull.
 # =============================================================================
 

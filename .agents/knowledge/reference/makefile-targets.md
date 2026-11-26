@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**82 targets.**
+**83 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -45,8 +45,9 @@ generated:
 | `make links-check` | - | Gate: every ARDOR sibling resolves to the workspace, not to the registry. |
 | `make lint` | `lint-packages lint-scripts` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
-| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files changelog-check` | lint-packages, lint-wiki, lint-scripts, lint-files and changelog-check. |
+| `make lint-all` | `lint-packages lint-wiki lint-examples lint-scripts lint-files changelog-check` | lint-packages, lint-wiki, lint-examples, lint-scripts, lint-files and changelog-check. |
 | `make lint-ardor` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
+| `make lint-examples` | - | Lint the examples and check their format (needs a build). |
 | `make lint-files` | - | Format check of the files outside the projects: the root package.json, workflows, .agents, .configs, the presets, the examples. |
 | `make lint-fix` | `lint-fix-packages lint-fix-wiki fmt-files fmt-scripts` | lint-fix-<pkg> for every package. |
 | `make lint-fix-admin` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
@@ -59,7 +60,7 @@ generated:
 | `make lint-packages` | `lint-kernel lint-react lint-admin lint-ardor` | lint-<pkg> for every package. |
 | `make lint-react` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-scripts` | - | Format check + bun check type-check of scripts/. |
-| `make lint-wiki` | - | Lint docs/wiki and check its format. |
+| `make lint-wiki` | - | Lint docs/wiki, check its format and type-check its scripts. |
 | `make okf-check` | - | Check the knowledge bundle against OKF v0.2. |
 | `make okf-check-strict` | - | Gate: okf-check plus links, style, coverage, freshness. |
 | `make okf-coverage` | - | Report bundle coverage against the source inventory. |

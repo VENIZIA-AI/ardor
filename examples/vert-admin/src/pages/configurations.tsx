@@ -1,5 +1,5 @@
 import { useNotifyError, useService, useTranslate } from '@venizia/ardor';
-import { type ApplicationError } from '@venizia/ignis-inversion';
+import { ApplicationError } from '@venizia/ignis-inversion';
 import { useEffect, useState } from 'react';
 import { useListContext, useLogout } from 'ra-core';
 
@@ -23,7 +23,7 @@ export const ConfigurationList = () => {
     identityService
       .whoAmI()
       .then(setIdentity)
-      .catch((error: unknown) => notifyError(error as ApplicationError));
+      .catch((error: unknown) => notifyError(ApplicationError.fromUnknown({ error })));
   }, [identityService, notifyError]);
 
   if (isPending) {
