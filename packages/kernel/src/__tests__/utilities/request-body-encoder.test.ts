@@ -67,6 +67,33 @@ describe('RequestBodyEncoder.encode', () => {
     expect(form.get('zero')).toBe('0');
   });
 
+  test('an array or a string as a form body is read by its indexes, in both form types', () => {
+    for (const body of [['a', 'b'], 'ab']) {
+      const encoded = RequestBodyEncoder.encode({
+        bodyType: RequestBodyTypes.FORM_URL_ENCODED,
+        body,
+      });
+      const multipart = RequestBodyEncoder.encode({ bodyType: RequestBodyTypes.FORM_DATA, body });
+
+      expect((encoded.body as URLSearchParams).toString()).toBe('0=a&1=b');
+      expect([...(multipart.body as FormData).entries()]).toEqual([
+        ['0', 'a'],
+        ['1', 'b'],
+      ]);
+    }
+  });
+
+  test('a form body that is a number, a boolean or missing has no entries', () => {
+    for (const body of [7, true, null, undefined]) {
+      const { body: encoded } = RequestBodyEncoder.encode({
+        bodyType: RequestBodyTypes.FORM_URL_ENCODED,
+        body,
+      });
+
+      expect((encoded as URLSearchParams).toString()).toBe('');
+    }
+  });
+
   test('no FileList in the runtime is not an error', () => {
     const original = Object.getOwnPropertyDescriptor(globalThis, 'FileList');
     Reflect.deleteProperty(globalThis, 'FileList');

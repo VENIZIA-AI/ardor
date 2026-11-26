@@ -1,3 +1,4 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
 import { RequestBodyTypes } from '@/common';
@@ -45,7 +46,7 @@ export class RequestBodyEncoder {
       case RequestBodyTypes.FORM_URL_ENCODED: {
         const encoded = new URLSearchParams();
 
-        for (const [key, value] of Object.entries(body ?? {})) {
+        for (const [key, value] of RequestBodyEncoder.entriesOf({ body })) {
           if (!ValueUtility.isDefined(value)) {
             continue;
           }
@@ -65,7 +66,7 @@ export class RequestBodyEncoder {
       case RequestBodyTypes.FORM_DATA: {
         const formData = new FormData();
 
-        for (const [key, value] of Object.entries(body ?? {})) {
+        for (const [key, value] of RequestBodyEncoder.entriesOf({ body })) {
           const items: unknown[] =
             Array.isArray(value) || RequestBodyEncoder.isFileList(value)
               ? Array.from(value)
@@ -83,6 +84,17 @@ export class RequestBodyEncoder {
         return { body, contentType: 'application/json' };
       }
     }
+  }
+
+  /** The fields of a form body: those of an object, or the indexes of an array or a string. */
+  private static entriesOf(opts: { body: unknown }): Array<[string, unknown]> {
+    const { body } = opts;
+
+    if (RecordUtility.isRecord(body)) {
+      return Object.entries(body);
+    }
+
+    return typeof body === 'string' ? Object.entries(body) : [];
   }
 
   // `FileList` exists only in a DOM; the bare identifier throws in Workers and on Bun.
