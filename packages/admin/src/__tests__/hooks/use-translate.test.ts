@@ -133,18 +133,30 @@ describe('useUntypedTranslate hook', () => {
 
   test('gives the default text of a key the catalogs do not hold', () => {
     const container = new Container();
-    const i18nProvider = new DefaultI18nProvider({}).value(container);
+    const defaultI18nProvider = new DefaultI18nProvider({});
+    const i18nProvider = defaultI18nProvider.value(container);
+    const warn = spyOn(defaultI18nProvider.logger, 'warn').mockImplementation(() => undefined);
     const wrapper = createWrapper({ i18nProvider });
 
-    const { result } = renderHook(
-      () => {
-        return useUntypedTranslate();
-      },
-      { wrapper },
-    );
+    try {
+      const { result } = renderHook(
+        () => {
+          return useUntypedTranslate();
+        },
+        { wrapper },
+      );
 
-    expect(result.current('status.unknown', { _: 'Unknown' })).toBe('Unknown');
-    expect(result.current('status.unknown')).toBe('status.unknown');
+      expect(result.current('status.unknown', { _: 'Unknown' })).toBe('Unknown');
+      expect(result.current('status.unknown')).toBe('status.unknown');
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('[translate] Missing message'),
+        'status.unknown',
+        'en',
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   test('is the implementation of useTranslate, which keeps the checked key type', () => {

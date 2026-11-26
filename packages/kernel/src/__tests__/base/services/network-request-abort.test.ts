@@ -10,6 +10,9 @@ import {
 } from '@/base/services/network-request';
 import { RequestMethods, RequestTypes, type TRequestTimeoutOptions } from '@/common';
 import { FakeStorage } from '@/testing';
+import { LogWatch } from '../../log-watch';
+
+afterEach(() => LogWatch.restore());
 
 const SLOW_MS = 400;
 const REFRESH_PATH = '/auth/refresh';
@@ -209,6 +212,11 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
   });
 
   test('aborting a call while a refresh that then fails is in flight rejects with the abort, not the 401', async () => {
+    const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+    const refreshEnded = new Promise<void>((resolve) => {
+      logged.mockImplementation(() => resolve());
+    });
+
     refreshDelay = 120;
     refreshStatus = 500;
     const controller = new AbortController();
@@ -224,6 +232,14 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
 
     expect(nameOf(error)).toBe('AbortError');
     expect(codeOf(error)).toBeUndefined();
+
+    // The abort leaves the refresh running; it has to fail before this test ends.
+    await refreshEnded;
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining('[refresh] refreshToken failed'),
+      expect.objectContaining({ message: 'HTTP 500' }),
+    );
   });
 
   test('an abort that arrives while the refresh hangs rejects at once, with no timeout to end the wait', async () => {

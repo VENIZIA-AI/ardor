@@ -1,5 +1,8 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { describe, expect, mock, test, afterEach } from 'bun:test';
 import { AuthRecoveryHelper } from '@/helpers';
+import { LogWatch } from '../../log-watch';
+
+afterEach(() => LogWatch.restore());
 
 const create = (opts: {
   refresh?: () => Promise<boolean>;
@@ -68,14 +71,24 @@ describe('AuthRecoveryHelper.refresh', () => {
   });
 
   test('a refresh that rejects runs onFailure once and answers false', async () => {
+    const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
     const { recovery, onFailure } = create({ refresh: () => Promise.reject(new Error('expired')) });
 
     const result = await Promise.all([recovery.refresh(), recovery.refresh()]);
     expect(result).toEqual([false, false]);
     expect(onFailure).toHaveBeenCalledTimes(1);
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining('[refresh] refreshToken failed'),
+      expect.objectContaining({ message: 'expired' }),
+    );
   });
 
   test('a refresh that throws before it returns a promise is still a failed refresh', async () => {
+    const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
     const { recovery, onFailure } = create({
       refresh: () => {
         throw new Error('sync');
@@ -85,9 +98,17 @@ describe('AuthRecoveryHelper.refresh', () => {
     const result = await recovery.refresh();
     expect(result).toBe(false);
     expect(onFailure).toHaveBeenCalledTimes(1);
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining('[refresh] refreshToken failed'),
+      expect.objectContaining({ message: 'sync' }),
+    );
   });
 
   test('an onFailure that throws does not escape', async () => {
+    const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
     const { recovery } = create({
       refresh: () => Promise.reject(new Error('no')),
       onFailure: () => Promise.reject(new Error('hook failed')),
@@ -95,6 +116,18 @@ describe('AuthRecoveryHelper.refresh', () => {
 
     const result = await recovery.refresh();
     expect(result).toBe(false);
+
+    expect(logged).toHaveBeenCalledTimes(2);
+    expect(logged).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('[refresh] refreshToken failed'),
+      expect.objectContaining({ message: 'no' }),
+    );
+    expect(logged).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('[refresh] onAuthFailure failed'),
+      expect.objectContaining({ message: 'hook failed' }),
+    );
   });
 });
 

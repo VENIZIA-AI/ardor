@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:
 import React from 'react';
 import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { type AuthProvider, useEditController, useShowController, useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -17,6 +17,7 @@ import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
 import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { BindingKeys, Container } from '@venizia/ignis-inversion';
+import { ActScreen } from '../act-screen';
 
 const ReportList = () => {
   const translate = useTranslate();
@@ -91,7 +92,7 @@ describe('ArdorApplication with features', () => {
     );
 
     expect(screen.getByText('loading')).toBeDefined();
-    const result = await screen.findByText('Monthly reports');
+    const result = await ActScreen.findByText('Monthly reports');
     expect(result).toBeDefined();
     expect(load).toHaveBeenCalledTimes(1);
   });
@@ -110,7 +111,7 @@ describe('ArdorApplication with features', () => {
       </MemoryRouter>,
     );
 
-    const result = await screen.findByText('Monthly reports');
+    const result = await ActScreen.findByText('Monthly reports');
     expect(result).toBeDefined();
   });
 
@@ -131,7 +132,7 @@ describe('ArdorApplication with features', () => {
     );
 
     expect(screen.getByText('loading')).toBeDefined();
-    await screen.findByText('Monthly reports');
+    await ActScreen.findByText('Monthly reports');
     expect(loadSource).toHaveBeenCalledTimes(1);
   });
 
@@ -152,7 +153,7 @@ describe('ArdorApplication with features', () => {
         </MemoryRouter>,
       );
 
-      await screen.findByText('Monthly reports');
+      await ActScreen.findByText('Monthly reports');
       expect(error.mock.calls.some((call) => String(call[0]).includes('failed to load'))).toBe(
         true,
       );
@@ -179,7 +180,7 @@ describe('ArdorApplication with features', () => {
     );
 
     const { rerender } = render(tree('one'));
-    const result = await screen.findByText('Monthly reports');
+    const result = await ActScreen.findByText('Monthly reports');
     expect(result).toBeDefined();
     rerender(tree('two'));
     rerender(tree('three'));
@@ -241,34 +242,34 @@ describe('ArdorApplication features prop', () => {
 
   test('mounts every bound feature when no list is passed', async () => {
     renderAt({ path: '/reports' });
-    const result = await screen.findByText('Monthly reports');
+    const result = await ActScreen.findByText('Monthly reports');
     expect(result).toBeDefined();
     cleanup();
 
     renderAt({ path: '/invoices' });
-    const result2 = await screen.findByText('Open invoices');
+    const result2 = await ActScreen.findByText('Open invoices');
     expect(result2).toBeDefined();
     cleanup();
 
     renderAt({ path: '/reminders' });
-    const result3 = await screen.findByText('Reminders');
+    const result3 = await ActScreen.findByText('Reminders');
     expect(result3).toBeDefined();
   });
 
   test("mounts only the passed list's resources and routes", async () => {
     renderAt({ path: '/invoices', features: [invoices] });
-    const result = await screen.findByText('Open invoices');
+    const result = await ActScreen.findByText('Open invoices');
     expect(result).toBeDefined();
     cleanup();
 
     renderAt({ path: '/reminders', features: [invoices] });
-    const result2 = await screen.findByText('Reminders');
+    const result2 = await ActScreen.findByText('Reminders');
     expect(result2).toBeDefined();
     cleanup();
 
     // The container still binds `reports`; the list left it out, so its page is not mounted.
     const { container } = renderAt({ path: '/reports', features: [invoices] });
-    await act(async () => {});
+    await ActScreen.settle();
 
     expect(screen.queryByText('Monthly reports')).toBeNull();
     expect(container.textContent).toBe('');
@@ -276,7 +277,7 @@ describe('ArdorApplication features prop', () => {
 
   test('an empty list mounts no feature', async () => {
     const { container } = renderAt({ path: '/invoices', features: [] });
-    await act(async () => {});
+    await ActScreen.settle();
 
     expect(screen.queryByText('Open invoices')).toBeNull();
     expect(container.textContent).toBe('');
@@ -308,7 +309,7 @@ describe('ArdorApplication features prop', () => {
       </MemoryRouter>,
     );
 
-    const result = await screen.findByText('mounted: invoices,names');
+    const result = await ActScreen.findByText('mounted: invoices,names');
     expect(result).toBeDefined();
   });
 });
@@ -347,7 +348,7 @@ describe('ArdorApplication logger', () => {
         </MemoryRouter>,
       );
 
-      await screen.findByText('Logged');
+      await ActScreen.findByText('Logged');
 
       return { debug: debug.mock.calls.length, info: info.mock.calls.length };
     } finally {
@@ -432,26 +433,32 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
         />
       </MemoryRouter>,
     );
-    await screen.findByText('data: jwt-alice');
+    await ActScreen.findByText('data: jwt-alice');
 
-    authService.saveAuth({
-      userId: 8,
-      username: 'bob',
-      token: { value: 'jwt-bob', type: 'Bearer' },
+    act(() => {
+      authService.saveAuth({
+        userId: 8,
+        username: 'bob',
+        token: { value: 'jwt-bob', type: 'Bearer' },
+      });
     });
 
-    await screen.findByText('data: jwt-bob');
+    await ActScreen.findByText('data: jwt-bob');
     expect(screen.queryByText('data: jwt-alice')).toBeNull();
   });
 
   test('is emptied when the session ends by any route', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    });
     await settle();
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
 
-    authService.cleanUp();
+    act(() => {
+      authService.cleanUp();
+    });
     await settle();
 
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
@@ -459,12 +466,16 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   test('is emptied after the redirect, not at once, when the session ends', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    });
     await settle();
     const clear = spyOn(queryClient, 'resetQueries');
 
-    authService.cleanUp();
+    act(() => {
+      authService.cleanUp();
+    });
     expect(clear).not.toHaveBeenCalled();
     await settle();
 
@@ -474,28 +485,38 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   test('is emptied at once when another user signs in over the first, canAccess answers included', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    });
     await settle();
     queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
 
-    authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    act(() => {
+      authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    });
 
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
     expect(
       queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
     ).toBeUndefined();
+
+    await settle();
   });
 
   test('is emptied when the next user signs in within the same tick as the sign-out', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    });
     await settle();
     queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
 
-    authService.cleanUp();
-    authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    act(() => {
+      authService.cleanUp();
+      authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    });
     await settle();
 
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
@@ -506,13 +527,17 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   test('is kept when the token of the same user is refreshed', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    });
     await settle();
     queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
     const clear = spyOn(queryClient, 'resetQueries');
 
-    authService.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
+    });
     await settle();
 
     expect(clear).not.toHaveBeenCalled();
@@ -524,10 +549,12 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   test('is kept by the first sign-in of a visitor who had no session', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
+    await ActScreen.findByText('R');
     const clear = spyOn(queryClient, 'resetQueries');
 
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    });
     await settle();
 
     expect(clear).not.toHaveBeenCalled();
@@ -553,33 +580,43 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
         />
       </MemoryRouter>,
     );
-    await screen.findByText('R');
+    await ActScreen.findByText('R');
 
-    authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    act(() => {
+      authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    });
 
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+
+    await settle();
   });
 
   test('is emptied when another tab signs in another user', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    });
     await settle();
     queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
 
     // What another tab does: it writes the keys, and this tab hears the `storage` events.
-    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    act(() => {
+      new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
 
-    for (const key of ['@app/auth/token', '@app/auth/identity']) {
-      globalThis.dispatchEvent(
-        Object.assign(new Event('storage'), { key, storageArea: localStorage }),
-      );
-    }
+      for (const key of ['@app/auth/token', '@app/auth/identity']) {
+        globalThis.dispatchEvent(
+          Object.assign(new Event('storage'), { key, storageArea: localStorage }),
+        );
+      }
+    });
 
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
     expect(
       queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
     ).toBeUndefined();
+
+    await settle();
   });
 
   test('is emptied once, with the token of the new user, when another tab writes its session key by key', async () => {
@@ -594,8 +631,10 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
     const restoreStorage = new EventPerWriteStorage().install();
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt-alice', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt-alice', type: 'Bearer' } });
+    });
     await settle();
     const seen: Array<string | undefined> = [];
     const reset = spyOn(queryClient, 'resetQueries').mockImplementation(() => {
@@ -604,7 +643,9 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
       return Promise.resolve();
     });
 
-    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'jwt-bob', type: 'Bearer' } });
+    act(() => {
+      new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'jwt-bob', type: 'Bearer' } });
+    });
     await settle();
     restoreStorage();
 
@@ -614,8 +655,10 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   test('is emptied once, for the last of two switches close together, and ends with the token of the last user', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt-carol', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt-carol', type: 'Bearer' } });
+    });
     await settle();
     const seen: Array<string | undefined> = [];
     const reset = spyOn(queryClient, 'resetQueries').mockImplementation(() => {
@@ -631,13 +674,17 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
       );
     };
 
-    otherTab.saveAuth({ userId: 8, token: { value: 'jwt-alice', type: 'Bearer' } });
-    // The second switch has stored its identity when this tab handles the event of the first token.
-    localStorage.setItem('@app/auth/identity', JSON.stringify({ userId: 9 }));
-    tokenEvent();
+    act(() => {
+      otherTab.saveAuth({ userId: 8, token: { value: 'jwt-alice', type: 'Bearer' } });
+      // The second switch has stored its identity when this tab handles the event of the first token.
+      localStorage.setItem('@app/auth/identity', JSON.stringify({ userId: 9 }));
+      tokenEvent();
+    });
     await settle();
-    otherTab.saveAuth({ userId: 9, token: { value: 'jwt-bob', type: 'Bearer' } });
-    tokenEvent();
+    act(() => {
+      otherTab.saveAuth({ userId: 9, token: { value: 'jwt-bob', type: 'Bearer' } });
+      tokenEvent();
+    });
     await settle();
 
     expect(reset).toHaveBeenCalledTimes(1);
@@ -646,13 +693,17 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   test('stops listening when the application unmounts', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await ActScreen.findByText('R');
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    });
     await settle();
     const clear = spyOn(queryClient, 'resetQueries');
 
     cleanup();
-    authService.cleanUp();
+    act(() => {
+      authService.cleanUp();
+    });
     await settle();
 
     expect(clear).not.toHaveBeenCalled();
@@ -660,10 +711,12 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   test('is kept while the session lives', async () => {
     const { authService, queryClient } = renderWithSession();
-    await screen.findByText('R');
+    await ActScreen.findByText('R');
 
-    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
-    authService.saveAuth({ userId: 7, token: { value: 'jwt2', type: 'Bearer' } });
+    act(() => {
+      authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+      authService.saveAuth({ userId: 7, token: { value: 'jwt2', type: 'Bearer' } });
+    });
     await settle();
 
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
@@ -693,7 +746,7 @@ describe('ArdorApplication reduxStore', () => {
   test('is not needed: an application without one mounts and renders a route', async () => {
     renderApplication({ element: <p>Hello without a store</p> });
 
-    const result = await screen.findByText('Hello without a store');
+    const result = await ActScreen.findByText('Hello without a store');
     expect(result).toBeDefined();
   });
 
@@ -703,7 +756,7 @@ describe('ArdorApplication reduxStore', () => {
       element: <Greeting />,
     });
 
-    const result2 = await screen.findByText('Hello from the store');
+    const result2 = await ActScreen.findByText('Hello from the store');
     expect(result2).toBeDefined();
   });
 });
@@ -717,6 +770,7 @@ describe('ArdorApplication route access', () => {
     checkAuth: () => Promise<void>;
     canAccess: (params: { resource: string; action: string }) => Promise<boolean>;
     features?: Array<TFeature>;
+    logout?: () => Promise<void>;
   }) => {
     const features = opts.features ?? [];
     const container = new Container();
@@ -735,7 +789,7 @@ describe('ArdorApplication route access', () => {
         checkAuth: opts.checkAuth,
         checkError: () => Promise.resolve(),
         login: () => Promise.resolve(),
-        logout: () => Promise.resolve(),
+        logout: opts.logout ?? (() => Promise.resolve()),
         getPermissions: () => Promise.resolve(),
         canAccess: opts.canAccess,
       });
@@ -777,7 +831,7 @@ describe('ArdorApplication route access', () => {
       routes: [{ path: '/admin-only', element: <AdminPage /> }],
     });
 
-    const result = await screen.findByText('Admin only');
+    const result = await ActScreen.findByText('Admin only');
     expect(result).toBeDefined();
     expect(canAccess).toHaveBeenCalledTimes(0);
   });
@@ -796,13 +850,14 @@ describe('ArdorApplication route access', () => {
       ],
     });
 
-    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(1));
-    await act(async () => {});
+    await ActScreen.until(() => canAccess.mock.calls.length >= 1);
+    expect(canAccess).toHaveBeenCalledTimes(1);
+    await ActScreen.settle();
 
     expect(canAccess.mock.calls[0]?.[0]).toMatchObject({ resource: 'settings', action: 'edit' });
     expect(screen.queryByText('Admin only')).toBeNull();
     // The one default page holds here too, not a blank layout.
-    const title = await screen.findByRole('heading', { name: 'Access denied' });
+    const title = await ActScreen.findByRole('heading', { name: 'Access denied' });
     expect(title).toBeDefined();
   });
 
@@ -821,17 +876,19 @@ describe('ArdorApplication route access', () => {
       ],
     });
 
-    const result2 = await screen.findByText('Admin only');
+    const result2 = await ActScreen.findByText('Admin only');
     expect(result2).toBeDefined();
   });
 
   test('a route with access does not render, and asks nothing, while checkAuth rejects', async () => {
     const canAccess = mock(allowed);
+    const logout = mock(() => Promise.resolve());
 
     renderRoute({
       container: createGuardedContainer({
         checkAuth: () => Promise.reject(new Error('signed out')),
         canAccess,
+        logout,
       }),
       routes: [
         {
@@ -842,8 +899,10 @@ describe('ArdorApplication route access', () => {
       ],
     });
 
-    await act(async () => {});
+    // react-admin logs the user out, then redirects on a timer: the turn after the call applies it.
+    await ActScreen.until(() => logout.mock.calls.length > 0);
 
+    expect(logout).toHaveBeenCalled();
     expect(screen.queryByText('Admin only')).toBeNull();
     expect(canAccess).toHaveBeenCalledTimes(0);
   });
@@ -919,8 +978,9 @@ describe('ArdorApplication route access', () => {
       routes: guardedRoutes,
     });
 
-    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(1));
-    await act(async () => {});
+    await ActScreen.until(() => canAccess.mock.calls.length >= 1);
+    expect(canAccess).toHaveBeenCalledTimes(1);
+    await ActScreen.settle();
     expect(screen.queryByText('Admin only')).toBeNull();
   });
 
@@ -942,8 +1002,9 @@ describe('ArdorApplication route access', () => {
       routes: [{ path: '/from-component', Component: AdminPage, access }],
     });
 
-    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(1));
-    await act(async () => {});
+    await ActScreen.until(() => canAccess.mock.calls.length >= 1);
+    expect(canAccess).toHaveBeenCalledTimes(1);
+    await ActScreen.settle();
     expect(screen.queryByText('Admin only')).toBeNull();
     cleanup();
 
@@ -956,8 +1017,9 @@ describe('ArdorApplication route access', () => {
       }),
     });
 
-    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(2));
-    await act(async () => {});
+    await ActScreen.until(() => canAccess.mock.calls.length >= 2);
+    expect(canAccess).toHaveBeenCalledTimes(2);
+    await ActScreen.settle();
     expect(screen.queryByText('Admin only')).toBeNull();
   });
 });
@@ -1044,7 +1106,7 @@ describe('ArdorApplication route toggles', () => {
       ],
     });
 
-    const result = await screen.findByText('Accept invite');
+    const result = await ActScreen.findByText('Accept invite');
     expect(result).toBeDefined();
     expect(screen.queryByText('the layout')).toBeNull();
   });
@@ -1062,7 +1124,7 @@ describe('ArdorApplication route toggles', () => {
       ],
     });
 
-    const result = await screen.findByText('Login page');
+    const result = await ActScreen.findByText('Login page');
     expect(result).toBeDefined();
     expect(screen.queryByText('Invoice')).toBeNull();
   });
@@ -1078,7 +1140,7 @@ describe('ArdorApplication route toggles', () => {
       ],
     });
 
-    const result = await screen.findByText('Invoice');
+    const result = await ActScreen.findByText('Invoice');
     expect(result).toBeDefined();
   });
 
@@ -1089,7 +1151,7 @@ describe('ArdorApplication route toggles', () => {
       routes: [{ path: '/inside', element: <Page text="Inside" /> }],
     });
 
-    const result = await screen.findByText('Inside');
+    const result = await ActScreen.findByText('Inside');
     expect(result).toBeDefined();
     expect(screen.getByText('the layout')).toBeDefined();
   });
@@ -1109,7 +1171,7 @@ describe('ArdorApplication route toggles', () => {
       ],
     });
 
-    const result = await screen.findByText('Login page');
+    const result = await ActScreen.findByText('Login page');
     expect(result).toBeDefined();
     expect(screen.queryByText('My profile')).toBeNull();
     expect(canAccess).toHaveBeenCalledTimes(0);
@@ -1124,7 +1186,7 @@ describe('ArdorApplication route toggles', () => {
       routes: [{ path: '/profile', element: <Page text="My profile" />, auth: { use: true } }],
     });
 
-    const result = await screen.findByText('My profile');
+    const result = await ActScreen.findByText('My profile');
     expect(result).toBeDefined();
     expect(canAccess).toHaveBeenCalledTimes(0);
   });
@@ -1146,7 +1208,7 @@ describe('ArdorApplication route toggles', () => {
       ],
     });
 
-    const result = await screen.findByText('Login page');
+    const result = await ActScreen.findByText('Login page');
     expect(result).toBeDefined();
     expect(screen.queryByText('Kiosk')).toBeNull();
   });
@@ -1160,7 +1222,7 @@ describe('ArdorApplication route toggles', () => {
       routes: [{ path: '/status', element: <Page text="Status" />, auth: { use: false } }],
     });
 
-    const result = await screen.findByText('Status');
+    const result = await ActScreen.findByText('Status');
     expect(result).toBeDefined();
     expect(checkAuth).toHaveBeenCalledTimes(0);
   });
@@ -1180,7 +1242,7 @@ describe('ArdorApplication route toggles', () => {
       routes: [{ path: '/lazy', element: <LazyPage /> }],
     });
 
-    const fallback = await screen.findByText('loading');
+    const fallback = await ActScreen.findByText('loading');
     expect(fallback).toBeDefined();
     expect(screen.getByText('the layout')).toBeDefined();
 
@@ -1188,7 +1250,7 @@ describe('ArdorApplication route toggles', () => {
       resolvePage({ default: () => <Page text="Lazy page" /> });
     });
 
-    const result = await screen.findByText('Lazy page');
+    const result = await ActScreen.findByText('Lazy page');
     expect(result).toBeDefined();
     expect(screen.getByText('the layout')).toBeDefined();
   });
@@ -1241,7 +1303,7 @@ describe('ArdorApplication access-denied page', () => {
       </MemoryRouter>,
     );
 
-    const title = await screen.findByRole('heading', { name: 'Access denied' });
+    const title = await ActScreen.findByRole('heading', { name: 'Access denied' });
     expect(title).toBeDefined();
     expect(screen.getByText("You don't have permission to open this page.")).toBeDefined();
     expect(screen.getByRole('link', { name: 'Go to the home page' }).getAttribute('href')).toBe(
@@ -1262,7 +1324,7 @@ describe('ArdorApplication access-denied page', () => {
       </MemoryRouter>,
     );
 
-    const result = await screen.findByText('Ask your administrator');
+    const result = await ActScreen.findByText('Ask your administrator');
     expect(result).toBeDefined();
     expect(screen.queryByText('Access denied')).toBeNull();
   });
@@ -1380,7 +1442,7 @@ describe('ArdorApplication show and edit pages of a resource', () => {
           path,
         });
 
-        const title = await screen.findByRole('heading', { name: 'Access denied' });
+        const title = await ActScreen.findByRole('heading', { name: 'Access denied' });
         expect(title).toBeDefined();
         expect(screen.queryByText('Orders list')).toBeNull();
         expect(getOne).toHaveBeenCalledTimes(0);
@@ -1398,7 +1460,7 @@ describe('ArdorApplication show and edit pages of a resource', () => {
       path: '/orders/1/show',
     });
 
-    const title = await screen.findByText('Order 1');
+    const title = await ActScreen.findByText('Order 1');
     expect(title).toBeDefined();
     expect(showGetOne).toHaveBeenCalledTimes(1);
     cleanup();
@@ -1410,7 +1472,7 @@ describe('ArdorApplication show and edit pages of a resource', () => {
       path: '/orders/1',
     });
 
-    const editing = await screen.findByText('Editing 1');
+    const editing = await ActScreen.findByText('Editing 1');
     expect(editing).toBeDefined();
     expect(editGetOne).toHaveBeenCalledTimes(1);
   });
@@ -1424,7 +1486,7 @@ describe('ArdorApplication show and edit pages of a resource', () => {
       path: '/orders/1/show',
     });
 
-    const title = await screen.findByText('Order 1');
+    const title = await ActScreen.findByText('Order 1');
     expect(title).toBeDefined();
     expect(getOne).toHaveBeenCalledTimes(1);
     expect(counters.shown).toBe(1);
@@ -1440,10 +1502,10 @@ describe('ArdorApplication show and edit pages of a resource', () => {
       path: '/orders/1/show',
     });
 
-    await screen.findByText('Order 1');
+    await ActScreen.findByText('Order 1');
     rerender(tree);
     rerender(tree);
-    await act(async () => {});
+    await ActScreen.settle();
 
     expect(screen.getByText('Order 1')).toBeDefined();
     expect(counters.shown).toBe(1);
@@ -1468,11 +1530,11 @@ describe('ArdorApplication show and edit pages of a resource', () => {
     );
     const { rerender } = render(<App />);
 
-    await screen.findByText('Editing 1');
+    await ActScreen.findByText('Editing 1');
     fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'draft' } });
     rerender(<App />);
     rerender(<App />);
-    await act(async () => {});
+    await ActScreen.settle();
 
     expect(screen.getByLabelText('Note')).toHaveProperty('value', 'draft');
     expect(counters.edited).toBe(1);
