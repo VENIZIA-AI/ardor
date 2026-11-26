@@ -81,12 +81,12 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `TAuthProviderOptions` | `type` | The value of `CoreBindings.AUTH_PROVIDER_OPTIONS`: `{ use: false }`, or `{ use: true }` with the paths below. | `use`, `paths` |
 | `IAuthProviderOptions` | `interface` | Auth provider endpoint paths, the `use: true` half of `TAuthProviderOptions`. | `paths.signIn`, e.g. `'/auth/sign-in'`; `paths.checkAuth`; `paths.afterLogin` |
 | `IAuthTokenRecord` | `interface` | Auth token payload, returned by `resolveAuthToken()`. | `value`, `type`, `provider` |
-| `IAuthUser` | `interface` | The stored identity `getUser()` returns; every field is absent when nothing is stored; it has no index signature. | `userId`, `username`, `referenceId`, `provider` |
+| `IStoredAuthUser` | `interface` | The stored identity `getUser()` returns; every field is absent when nothing is stored; it has no index signature. | `userId`, `username`, `referenceId`, `provider` |
 | `IDataSourceRequestContext` | `interface` | Request context supplied to `HttpDataSource` auth hooks. | `paths` |
 | `IDataSourceAuth` | `interface` | Bridge settings returned by `getDataSourceAuth()`. | `authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey` |
-| `IApplicationInfo` | `interface` | Application metadata, bound under `CoreBindings.APPLICATION_INFO`. | `name`, `version`, `description`, `id`, `author`; no other key |
+| `IApplicationInfo` | `interface` | Application metadata, bound under `CoreBindings.APPLICATION_INFO`. | `name`, `version`, `description`, `id`, `author`; IGNIS's `IApplicationInfo`, so keys of your own are accepted as `unknown` |
 | `IFeatureBase` | `interface` | Base feature configuration, bound under `CoreBindings.FEATURES`. | `name`, `configurations`, `artifacts`, `permissions` |
-| `IArtifactIndex` | `interface` | Artifact registry index emitted by code generation and verified at application `start()`. | - |
+| `IArdorArtifactIndex` | `interface` | Artifact registry index emitted by code generation and verified at application `start()`. | - |
 | `IPermissionProvider` | `interface` | Authorization checker contract, bound under `CoreBindings.PERMISSION_PROVIDER`. | `canAccess` |
 | `IArdorApplication` | `interface` | Application lifecycle contract implemented by `AbstractArdorApplication`. | - |
 
@@ -149,7 +149,7 @@ Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/featu
 | `IAuthProvider` | `interface` | ARDOR auth provider extending react-admin with `getRoles` and `refreshToken`. | - |
 | `II18nProviderOptions` | `interface` | i18n configuration options, bound under `CoreBindings.I18N_PROVIDER_OPTIONS`. | `i18nSources`, `languages` |
 | `TI18nSource` | `type` | The messages of one locale, loaded the first time the locale is used. | an object, or a loader `() => Promise<object>` |
-| `IApplication` | `interface` | Props accepted by `<ArdorApplication>`, plus the `CoreAdmin` props. | `container`, `logger`, `reduxStore`, `suspense`, `accessDenied`, `resources`, `routes`, `features` |
+| `IArdorApplicationProps` | `interface` | Props accepted by `<ArdorApplication>`, plus the `CoreAdmin` props. | `container`, `logger`, `reduxStore`, `suspense`, `accessDenied`, `resources`, `routes`, `features` |
 | `TFeature` | `type` | Full admin feature specification extending `IFeatureBase` with resources, custom routes, and messages. | - |
 | `TFeatureMessages` | `type` | Feature message dictionary or lazy message bundle loaders keyed by locale. | - |
 

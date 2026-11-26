@@ -10,12 +10,11 @@ export default [
   ...houseConfigs,
   ...PublishedPackageConfigs.build(),
   {
-    // The browser kernel's own types: same names as IGNIS's server types, different shapes
-    // (string | number ids, an optional-field identity, an application info with an id, an artifact index of plain classes).
+    // `IdType` is IGNIS's without `bigint`, which `JSON.stringify` and react-admin refuse.
     files: ['src/common/types.ts'],
     rules: {
       'venizia/no-shadow-framework-type': NoShadowFrameworkTypeRule.build({
-        allow: ['IdType', 'IAuthUser', 'IArtifactIndex', 'IApplicationInfo'],
+        allow: ['IdType'],
       }),
     },
   },

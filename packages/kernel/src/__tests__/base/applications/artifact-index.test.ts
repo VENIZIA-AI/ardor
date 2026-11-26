@@ -6,7 +6,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 
 import { TestArdorApplication } from './test-application';
 import { component, configuration, service } from '@/base/metadata';
-import type { IApplicationInfo, IArtifactIndex } from '@/common';
+import type { IApplicationInfo, IArdorArtifactIndex } from '@/common';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 @service()
@@ -36,7 +36,7 @@ class ForgottenEmitter {}
 class ForgottenConfiguration {}
 
 // The exact shape `ignis-artifacts generate` emits, empty kinds included.
-const generated: IArtifactIndex = {
+const generated: IArdorArtifactIndex = {
   configurations: [IndexedConfiguration],
   dataSources: [],
   components: [IndexedComponent],
@@ -45,13 +45,13 @@ const generated: IArtifactIndex = {
   controllers: [],
 };
 
-const createApplication = (opts: { artifacts: Array<IArtifactIndex> }) => {
+const createApplication = (opts: { artifacts: Array<IArdorArtifactIndex> }) => {
   class IndexedApplication extends TestArdorApplication {
     getAppInfo(): IApplicationInfo {
       return { name: 'artifact-index', version: '1.0.0', description: 'generated artifact index' };
     }
 
-    override artifacts(): Array<IArtifactIndex> {
+    override artifacts(): Array<IArdorArtifactIndex> {
       return opts.artifacts;
     }
 
@@ -69,7 +69,7 @@ class FakeArtifactGroup {
   readonly folder: string | undefined = undefined;
   readonly site: string | undefined = undefined;
 
-  constructor(readonly content: IArtifactIndex | undefined) {}
+  constructor(readonly content: IArdorArtifactIndex | undefined) {}
 
   get services(): never {
     throw new Error('a group has no services until it is resolved');
@@ -156,7 +156,7 @@ describe('AbstractArdorApplication.artifacts', () => {
   describe('with an IGNIS artifact group', () => {
     test('starts, checking the inlined content', async () => {
       const application = createApplication({
-        artifacts: [new FakeArtifactGroup({ services: [IndexedService] }) as IArtifactIndex],
+        artifacts: [new FakeArtifactGroup({ services: [IndexedService] }) as IArdorArtifactIndex],
       });
       await application.start();
 
@@ -182,7 +182,7 @@ describe('AbstractArdorApplication.artifacts', () => {
           },
         });
         const application = createApplication({
-          artifacts: [new FakeArtifactGroup(undefined) as IArtifactIndex],
+          artifacts: [new FakeArtifactGroup(undefined) as IArdorArtifactIndex],
         });
         await application.start();
 
@@ -195,7 +195,7 @@ describe('AbstractArdorApplication.artifacts', () => {
 
       test('throws the IGNIS error naming @venizia/ignis-boot/auto when no resolver is installed', async () => {
         const application = createApplication({
-          artifacts: [new FakeArtifactGroup(undefined) as IArtifactIndex],
+          artifacts: [new FakeArtifactGroup(undefined) as IArdorArtifactIndex],
         });
 
         const result = await RejectionUtility.rejectionOf({ task: application.start() });
@@ -209,7 +209,7 @@ describe('AbstractArdorApplication.artifacts', () => {
 
     test('throws when the inlined content lists a class that was never discovered', async () => {
       const application = createApplication({
-        artifacts: [new FakeArtifactGroup({ services: [ForgottenService] }) as IArtifactIndex],
+        artifacts: [new FakeArtifactGroup({ services: [ForgottenService] }) as IArdorArtifactIndex],
       });
 
       const result = await RejectionUtility.rejectionOf({ task: application.start() });
@@ -228,12 +228,12 @@ describe('AbstractArdorApplication.artifacts', () => {
       readonly isArtifactGroup = true as const;
       readonly folder: string | undefined = undefined;
       readonly site: string | undefined = undefined;
-      readonly content: IArtifactIndex | undefined = undefined;
+      readonly content: IArdorArtifactIndex | undefined = undefined;
       resolveCalls = 0;
 
-      constructor(private readonly resolver: () => Promise<IArtifactIndex>) {}
+      constructor(private readonly resolver: () => Promise<IArdorArtifactIndex>) {}
 
-      async resolve(): Promise<IArtifactIndex> {
+      async resolve(): Promise<IArdorArtifactIndex> {
         this.resolveCalls++;
 
         return this.resolver();
@@ -251,7 +251,7 @@ describe('AbstractArdorApplication.artifacts', () => {
 
         return { services: [LateService] };
       });
-      const application = createApplication({ artifacts: [group as IArtifactIndex] });
+      const application = createApplication({ artifacts: [group as IArdorArtifactIndex] });
       await application.start();
 
       expect(group.resolveCalls).toBe(1);
@@ -263,7 +263,7 @@ describe('AbstractArdorApplication.artifacts', () => {
 
     test('checks the index it resolved', async () => {
       const group = new ResolvingGroup(async () => ({ services: [ForgottenService] }));
-      const application = createApplication({ artifacts: [group as IArtifactIndex] });
+      const application = createApplication({ artifacts: [group as IArdorArtifactIndex] });
 
       const result = await RejectionUtility.rejectionOf({ task: application.start() });
       expect(result).toMatchObject({
@@ -276,7 +276,7 @@ describe('AbstractArdorApplication.artifacts', () => {
     test('does not resolve a group that carries content', async () => {
       const group = new ResolvingGroup(async () => ({ services: [ForgottenService] }));
       Object.assign(group, { content: { services: [IndexedService] } });
-      const application = createApplication({ artifacts: [group as IArtifactIndex] });
+      const application = createApplication({ artifacts: [group as IArdorArtifactIndex] });
       await application.start();
 
       expect(group.resolveCalls).toBe(0);
@@ -292,7 +292,7 @@ describe('AbstractArdorApplication.artifacts', () => {
         return { services: [PickedService] };
       });
       Object.assign(slice, { kinds: ['services'] });
-      const application = createApplication({ artifacts: [slice as IArtifactIndex] });
+      const application = createApplication({ artifacts: [slice as IArdorArtifactIndex] });
       await application.start();
 
       expect(slice.resolveCalls).toBe(1);
@@ -306,7 +306,7 @@ describe('AbstractArdorApplication.artifacts', () => {
     test('starts with an empty slice, which is not an error', async () => {
       const slice = new ResolvingGroup(async () => ({}));
       Object.assign(slice, { kinds: ['controllers'] });
-      const application = createApplication({ artifacts: [slice as IArtifactIndex] });
+      const application = createApplication({ artifacts: [slice as IArdorArtifactIndex] });
 
       const result = await application.start();
       expect(result).toBeUndefined();
@@ -317,7 +317,7 @@ describe('AbstractArdorApplication.artifacts', () => {
       const group = new ResolvingGroup(async () => {
         throw new Error('scan failed');
       });
-      const application = createApplication({ artifacts: [group as IArtifactIndex] });
+      const application = createApplication({ artifacts: [group as IArdorArtifactIndex] });
 
       const result = await RejectionUtility.rejectionOf({ task: application.start() });
       expect(result).toMatchObject({ message: 'scan failed' });
@@ -327,7 +327,7 @@ describe('AbstractArdorApplication.artifacts', () => {
   describe('with an index that holds an entry which is not a class', () => {
     // What a cycle leaves behind: a bundler's eager class list is built while the module of the class
     // is still evaluating, so the slot holds undefined.
-    const withEntry = (entry: unknown): IArtifactIndex => {
+    const withEntry = (entry: unknown): IArdorArtifactIndex => {
       return { services: [IndexedService, entry as never] };
     };
 
@@ -357,7 +357,7 @@ describe('AbstractArdorApplication.artifacts', () => {
 
     test('also checks the content of a group', async () => {
       const application = createApplication({
-        artifacts: [new FakeArtifactGroup(withEntry(undefined)) as IArtifactIndex],
+        artifacts: [new FakeArtifactGroup(withEntry(undefined)) as IArdorArtifactIndex],
       });
 
       const result = await RejectionUtility.rejectionOf({ task: application.start() });

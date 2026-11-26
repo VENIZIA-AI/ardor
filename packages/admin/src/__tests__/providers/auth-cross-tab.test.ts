@@ -5,16 +5,19 @@ import {
   CoreBindings,
   DefaultAuthService,
   type IAuthTokenRecord,
-  type IAuthUser,
+  type IStoredAuthUser,
 } from '@venizia/ardor-kernel';
 import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
 class RecordingAuthProvider extends DefaultAuthProvider {
-  started: Array<{ token: IAuthTokenRecord; user: IAuthUser }> = [];
+  started: Array<{ token: IAuthTokenRecord; user: IStoredAuthUser }> = [];
   cleared: Array<TSessionClearReason> = [];
 
-  protected override onSessionStarted(opts: { token: IAuthTokenRecord; user: IAuthUser }): void {
+  protected override onSessionStarted(opts: {
+    token: IAuthTokenRecord;
+    user: IStoredAuthUser;
+  }): void {
     this.started.push(opts);
   }
 

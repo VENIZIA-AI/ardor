@@ -12,7 +12,7 @@ import {
   CoreBindings,
   DefaultAuthService,
   type IAuthTokenRecord,
-  type IAuthUser,
+  type IStoredAuthUser,
   type ISignInSession,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
@@ -20,7 +20,7 @@ import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 interface IStartedCall {
   readonly token: IAuthTokenRecord;
-  readonly user: IAuthUser;
+  readonly user: IStoredAuthUser;
 }
 
 interface IHooks {

@@ -350,3 +350,86 @@ const-classes-extend-const-class:
     steps:
       - Pin the four ARDOR packages to 0.5.0-6 or earlier and restore the files from git.
   data: 'Nothing stored changes. The values are the same strings. `isValid` takes `unknown` now and narrows to the union of the values; `values()` answers them as a tuple, base class first. `LocalStorageKeys` keeps its `SCHEME_SET` and its `isValid(value: string)`.'
+
+stored-auth-user-rename:
+  symbols: [IAuthUser]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod namespace --write` inside the package; it renames `IAuthUser` imported from an ARDOR package to `IStoredAuthUser`. An import of the same name from an IGNIS package stays as it is.'
+      - 'Run `bun check`; rename by hand what is left: a re-export (`export type { IAuthUser } from`), `import(...)` types and a namespace import.'
+      - 'Rename by hand each `declare module` block of an ARDOR package that adds fields to `IAuthUser`: the codemod does not change it, and TypeScript then declares a new type of the old name instead of reporting an error.'
+    before: |-
+      import type { IAuthUser } from '@venizia/ardor';
+      const readName = (opts: { user: IAuthUser }) => opts.user.username;
+    after: |-
+      import type { IStoredAuthUser } from '@venizia/ardor';
+      const readName = (opts: { user: IStoredAuthUser }) => opts.user.username;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-12 or earlier and rename IStoredAuthUser back to IAuthUser.
+  data: Nothing stored changes. Only the name of the type changes.
+  codemod: namespace
+
+ardor-artifact-index-rename:
+  symbols: [IArtifactIndex]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod namespace --write` inside the package; it renames `IArtifactIndex` imported from an ARDOR package to `IArdorArtifactIndex`. An import of the same name from an IGNIS package stays as it is.'
+      - 'Run `bun check`; rename by hand what is left: a re-export (`export type { IArtifactIndex } from`), `import(...)` types and a namespace import.'
+      - 'Rename by hand each `declare module` block of an ARDOR package that adds fields to `IArtifactIndex`: the codemod does not change it, and TypeScript then declares a new type of the old name instead of reporting an error.'
+    before: |-
+      import type { IArtifactIndex } from '@venizia/ardor';
+      const indexes: Array<IArtifactIndex> = [];
+    after: |-
+      import type { IArdorArtifactIndex } from '@venizia/ardor';
+      const indexes: Array<IArdorArtifactIndex> = [];
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-12 or earlier and rename IArdorArtifactIndex back to IArtifactIndex.
+  data: Nothing stored changes. Only the name of the type changes.
+  codemod: namespace
+
+application-props-rename:
+  symbols: [IApplication]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod namespace --write` inside the package; it renames `IApplication` imported from an ARDOR package to `IArdorApplicationProps`. An import of the same name from an IGNIS package stays as it is.'
+      - 'Run `bun check`; rename by hand what is left: a re-export (`export type { IApplication } from`), `import(...)` types and a namespace import.'
+      - 'Rename by hand each `declare module` block of an ARDOR package that adds fields to `IApplication`: the codemod does not change it, and TypeScript then declares a new type of the old name instead of reporting an error.'
+    before: |-
+      import type { IApplication } from '@venizia/ardor';
+      const readResources = (opts: { props: IApplication }) => opts.props.resources;
+    after: |-
+      import type { IArdorApplicationProps } from '@venizia/ardor';
+      const readResources = (opts: { props: IArdorApplicationProps }) => opts.props.resources;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-12 or earlier and rename IArdorApplicationProps back to IApplication.
+  data: Nothing stored changes. Only the name of the type changes.
+  codemod: namespace
+
+application-info-open-keys:
+  symbols: [IApplicationInfo]
+  upgrade:
+    steps:
+      - 'Run `bun check`; each "Index signature for type ''string'' is missing" at an `IApplicationInfo` is a value typed by your own `interface` or class.'
+      - 'Make that type a `type` alias, or let the interface extend `IApplicationInfo`. A class instance is copied into an object: `{ ...info }` for plain fields.'
+      - 'Replace `Omit<IApplicationInfo, K>` with `Pick<IApplicationInfo, ...>` of the fields you keep.'
+    before: |-
+      interface IShopInfo {
+        name: string;
+        version: string;
+        description: string;
+      }
+      const read = (opts: { info: IShopInfo }): IApplicationInfo => opts.info;
+    after: |-
+      type TShopInfo = {
+        name: string;
+        version: string;
+        description: string;
+      };
+      const read = (opts: { info: TShopInfo }): IApplicationInfo => opts.info;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-12 or earlier. A `type` alias fits that release too; remove any key of your own from an `IApplicationInfo` literal.
+  data: Nothing stored changes. Only what TypeScript accepts changes.

@@ -1,8 +1,4 @@
-import {
-  NoShadowFrameworkTypeRule,
-  PublishedPackageConfigs,
-  reactHouseConfigs,
-} from '@venizia/dev-configs/linters';
+import { PublishedPackageConfigs, reactHouseConfigs } from '@venizia/dev-configs/linters';
 
 // oxlint runs the shared rules; ESLint runs what oxlint cannot: the naming convention, the house rules,
 // `no-leaked-render` and the async style (`no-inline-await`, `no-return-await`, and for hooks
@@ -16,14 +12,5 @@ export default [
     // spell the keys exactly as ra-core looks them up.
     files: ['src/common/locales/**/*.ts'],
     rules: { '@typescript-eslint/naming-convention': 'off' },
-  },
-  {
-    // The props of `ArdorApplication`, not IGNIS's `IApplication` (the server host interface).
-    files: ['src/common/types.ts'],
-    rules: {
-      'venizia/no-shadow-framework-type': NoShadowFrameworkTypeRule.build({
-        allow: ['IApplication'],
-      }),
-    },
   },
 ];

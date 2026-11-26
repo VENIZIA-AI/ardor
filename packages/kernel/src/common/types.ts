@@ -10,6 +10,7 @@ import type {
 } from '@venizia/ignis-helpers/common';
 import type { TBuildInfoRecord } from '@venizia/ignis-helpers/core';
 import type { TClass } from '@venizia/ignis-inversion';
+import type * as Ignis from '@venizia/ignis-kernel';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import type { AbstractArdorApplication } from '@/base/applications/abstract';
@@ -23,8 +24,8 @@ import type {
   StorageAreas,
 } from './constants';
 
-/** A record id: a string or a number. */
-export type IdType = string | number;
+/** A record id: a string or a number. IGNIS's `IdType` without `bigint`, which `JSON.stringify` and react-admin refuse. */
+export type IdType = Ignis.NumberIdType | Ignis.StringIdType;
 
 // The utility types are IGNIS's: one declaration, re-exported by name so ARDOR's surface is unchanged.
 export type {
@@ -126,7 +127,7 @@ export interface ICustomParams {
  * The identity `saveAuth` stores and `getUser` reads back: every field is absent when nothing is
  * stored. It has no index signature, so an interface of your own that has these fields fits it.
  */
-export interface IAuthUser {
+export interface IStoredAuthUser {
   userId?: IdType;
   username?: string;
   referenceId?: IdType;
@@ -309,7 +310,7 @@ export interface IFeatureBase {
    * `start()` checks each was discovered.
    * @default {}
    */
-  artifacts?: IArtifactIndex;
+  artifacts?: IArdorArtifactIndex;
   /**
    * The permission names the feature's pages use, in the application's vocabulary: metadata for a
    * role editor to list. Descriptive only, it enforces nothing; `access` on a route or a menu entry
@@ -322,17 +323,14 @@ export interface IFeatureBase {
  * The index `ignis-artifacts generate` (from `@venizia/ignis-boot`) emits: every stereotyped class,
  * by value, per kind. Referencing them keeps a bundler from dropping a module nothing else imports,
  * and `start()` checks each was discovered. `controllers` stays empty in a browser application.
+ *
+ * The field names come from the installed IGNIS. A group a newer IGNIS adds passes this type, but
+ * `start()` does not check it.
  */
-export interface IArtifactIndex {
-  configurations?: ReadonlyArray<TClass<unknown>>;
-  dataSources?: ReadonlyArray<TClass<unknown>>;
-  components?: ReadonlyArray<TClass<unknown>>;
-  repositories?: ReadonlyArray<TClass<unknown>>;
-  services?: ReadonlyArray<TClass<unknown>>;
-  controllers?: ReadonlyArray<TClass<unknown>>;
-  /** The classes of the types the application declared with `ArtifactTypes.define`, by type name. */
-  custom?: Readonly<Record<string, ReadonlyArray<TClass<unknown>>>>;
-}
+export interface IArdorArtifactIndex
+  extends
+    Partial<Record<Exclude<keyof Ignis.IArtifactIndex, 'custom'>, ReadonlyArray<TClass<unknown>>>>,
+    Pick<Ignis.IArtifactIndex, 'custom'> {}
 
 /**
  * Answers whether the current actor may act on a resource. Bound by the application under
@@ -422,18 +420,17 @@ export type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends nev
         }[keyof T]
       : never;
 
-/** What an application is: bound under `CoreBindings.APPLICATION_INFO`, and the name a tracing id starts with. */
-export interface IApplicationInfo {
-  name: string;
-  version: string;
-  description: string;
+/**
+ * What an application is: bound under `CoreBindings.APPLICATION_INFO`, and the name a tracing id starts
+ * with. IGNIS's `IApplicationInfo`, so it takes keys of your own, plus ARDOR's `id`.
+ */
+export interface IApplicationInfo extends Ignis.IApplicationInfo {
   /**
    * Scopes the session and store keys in browser storage to this application (`LocalStorageKeys.scoped`),
    * so two applications on one origin do not share a session. Give every application of an origin an id.
    * Without one the keys are the unscoped ones.
    */
   id?: string;
-  author?: { name: string; email: string; url?: string };
 }
 
 /** The `build-info.json` that the `buildInfoFile` Vite plugin of `@venizia/ardor/vite` writes: IGNIS's build stamp and the installed versions of the framework packages. */

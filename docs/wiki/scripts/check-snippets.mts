@@ -3,6 +3,8 @@
  * that names an export ARDOR does not have, or calls it with the wrong shape, fails the build - a
  * docs page is a claim about the API, and this is what makes the claim checkable.
  *
+ * A dated changelog file is history: it names the API of its day, so its fences are not read.
+ *
  * Fences opt out with an info string of `ts no-check` (a deliberately partial fragment) and the
  * block is still counted, so the report shows how much of the site is verified.
  *
@@ -17,6 +19,9 @@ import { makeScratch } from '../../../scripts/scratch';
 const WIKI = resolve(import.meta.dir, '..');
 const REPO = resolve(WIKI, '..', '..');
 const CONTENT = join(WIKI, 'content');
+
+/** `changelogs/<YYYY-MM-DD>-<slug>.md`. The version folders are not dated and stay checked. */
+const DATED_CHANGELOG = /^changelogs\/\d{4}-\d{2}-\d{2}-[^/]*\.md$/;
 
 const FENCE = /^```(tsx|typescript|ts)([^\n]*)\n([\s\S]*?)^```/gm;
 
@@ -57,6 +62,10 @@ const collect = async (): Promise<TSnippet[]> => {
   const snippets: TSnippet[] = [];
 
   for await (const file of new Glob('**/*.md').scan(CONTENT)) {
+    if (DATED_CHANGELOG.test(file)) {
+      continue;
+    }
+
     const text = await Bun.file(join(CONTENT, file)).text();
 
     for (const match of text.matchAll(FENCE)) {

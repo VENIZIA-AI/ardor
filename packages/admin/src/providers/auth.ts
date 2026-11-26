@@ -11,7 +11,7 @@ import {
   type TAuthProviderOptions,
   type IApplicationInfo,
   type IAuthTokenRecord,
-  type IAuthUser,
+  type IStoredAuthUser,
   type ISignInSession,
   type IPermissionProvider,
   LocalStorageKeys,
@@ -340,7 +340,7 @@ export class DefaultAuthProvider<
    */
   protected onSessionStarted(_opts: {
     token: IAuthTokenRecord;
-    user: IAuthUser;
+    user: IStoredAuthUser;
   }): void | Promise<void> {
     return undefined;
   }
@@ -387,7 +387,7 @@ export class DefaultAuthProvider<
   /** Announces a session unless it is the one announced last. The claim is made before the hook is awaited. */
   private startSession(opts: {
     token: IAuthTokenRecord;
-    user: IAuthUser;
+    user: IStoredAuthUser;
     isExternal?: boolean;
   }): Promise<void> {
     const session = [opts.user?.userId, opts.token.value].join('|');

@@ -40,7 +40,7 @@ compiles.
 `AbstractArdorApplication.features()` returns the list; `preConfigure()` calls `registerFeatures()`
 after `registerArtifacts()` and before `bindingList()` (`packages/kernel/src/base/applications/abstract.ts`).
 It throws on a duplicate `name`, and on a listed configuration class, or a class in the feature's
-`artifacts` (`IArtifactIndex`, the shape of the application's `artifacts()`), absent from the discovered list:
+`artifacts` (`IArdorArtifactIndex`, the shape of the application's `artifacts()`), absent from the discovered list:
 every ARDOR package is `sideEffects: false`, so a configuration module nothing references by value can
 be dropped by the bundler, and its bindings vanish silently. The list is that reference. Then it binds
 the list under `CoreBindings.FEATURES` - always, empty included, so readers never check `isBound`.
@@ -49,13 +49,13 @@ the list under `CoreBindings.FEATURES` - always, empty included, so readers neve
 
 `ArdorApplication` reads the list (`Features.read({ container })`) and `Features.mount({ features,
 resources, routes })` puts the application's own `resources` / `routes` first, then each feature's.
-`IApplication.routes` carries the same name as `TFeature.routes`. A resource name mounted twice throws,
+`IArdorApplicationProps.routes` carries the same name as `TFeature.routes`. A resource name mounted twice throws,
 naming both owners: react-admin keeps one and drops the other silently. A route path mounted twice, or
 equal to `/<resource name>` (the leading slash is ignored), throws the same way; a route with neither
 `id` nor `path` throws, since `id ?? path` is its React key. Only `FeatureMessagesHelper` and
 `MountedFeaturesContext` are internal to admin (imported by path, not exported); the public surface is
 `TFeature`, `TFeatureMessages`, `TArdorRoute`, `IRouteAccess`, `IMenuEntry`, the `Features` class (`define`,
-`read`, `mount`), `useFeatures`, `useMenuEntries`, plus the kernel's types (`IArtifactIndex` among them) and keys.
+`read`, `mount`), `useFeatures`, `useMenuEntries`, plus the kernel's types (`IArdorArtifactIndex` among them) and keys.
 
 A route entry is `RouteProps` plus three optional toggles (`TArdorRoute`): `access: { resource, action }`,
 `auth: { use: boolean }` and `layout: { use: false }`. react-admin runs neither `checkAuth` nor

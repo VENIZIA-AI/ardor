@@ -160,7 +160,7 @@ describe('saveAuth and credential retrieval', () => {
     expect(service.getUser()).toMatchObject({ userId: 3, tenant: 'acme' });
   });
 
-  test('an override of getUser may return an interface of its own that has the fields of IAuthUser', () => {
+  test('an override of getUser may return an interface of its own that has the fields of IStoredAuthUser', () => {
     interface IStubUser {
       userId: number;
       role: string;

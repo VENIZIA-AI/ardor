@@ -2,7 +2,11 @@ import 'reflect-metadata';
 
 import AutoArtifacts from '@venizia/ignis-boot/auto';
 
-import { BaseArdorApplication, type IApplicationInfo, type IArtifactIndex } from '@venizia/ardor';
+import {
+  BaseArdorApplication,
+  type IApplicationInfo,
+  type IArdorArtifactIndex,
+} from '@venizia/ardor';
 
 // The decorated classes live in their own files and this module imports none of them: the build lists
 // every one under src/ in AutoArtifacts, and importing it here keeps the list out of any shared kit.
@@ -11,7 +15,7 @@ export class Application extends BaseArdorApplication {
     return { name: 'vert-admin', version: '0.0.0', description: 'ARDOR admin over IGNIS vert' };
   }
 
-  override artifacts(): Array<IArtifactIndex> {
+  override artifacts(): Array<IArdorArtifactIndex> {
     return [AutoArtifacts];
   }
 
