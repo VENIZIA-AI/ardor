@@ -30,6 +30,7 @@ export const createSandboxGuard = (opts: { sandbox: string }): Bun.BunPlugin => 
         }
 
         let resolved: string;
+
         try {
           resolved = realpathSync(
             Bun.resolveSync(args.path, args.importer ? dirname(args.importer) : sandbox),
@@ -45,6 +46,7 @@ export const createSandboxGuard = (opts: { sandbox: string }): Bun.BunPlugin => 
         if (resolved !== sandbox && !resolved.startsWith(sandbox + sep)) {
           throw new Error(`'${args.path}' resolved outside the sandbox: ${resolved}`);
         }
+
         return undefined;
       });
     },

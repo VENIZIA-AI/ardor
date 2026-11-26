@@ -79,6 +79,7 @@ describe('nginx.conf.template', () => {
     for (const candidate of withHeaders) {
       expect(candidate.body).toContain('include /etc/nginx/snippets/security-headers.conf;');
     }
+
     expect(TEMPLATE).toMatch(/^\s{2}include \/etc\/nginx\/snippets\/security-headers\.conf;/m);
   });
 

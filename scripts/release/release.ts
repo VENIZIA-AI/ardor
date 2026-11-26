@@ -94,11 +94,13 @@ const listPublishedVersions = async (opts: { packageName: string }): Promise<str
     command: ['npm', 'view', opts.packageName, 'versions', '--json'],
     allowFailure: true,
   });
+
   if (exitCode !== 0 || !stdout) {
     return [];
   }
 
   const parsed = JSON.parse(stdout) as string | string[];
+
   return Array.isArray(parsed) ? parsed : [parsed];
 };
 
@@ -114,6 +116,7 @@ const collectState = async (opts: {
       command: ['git', 'show', `origin/${opts.branch}:${manifestPath}`],
       allowFailure: true,
     });
+
     if (shown.exitCode !== 0) {
       continue;
     }
@@ -148,8 +151,10 @@ const assertReleasable = async (opts: { isDryRun: boolean; branch: string }): Pr
   const complain = (message: string): void => {
     if (opts.isDryRun) {
       console.log(`  ! ${message}`);
+
       return;
     }
+
     throw new Error(message);
   };
 
@@ -159,11 +164,13 @@ const assertReleasable = async (opts: { isDryRun: boolean; branch: string }): Pr
 
   if (!isStable) {
     const { stdout: branch } = await run({ command: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'] });
+
     if (branch !== target) {
       complain(`On '${branch}', not '${target}'. The workflow releases from '${target}'.`);
     }
 
     const { stdout: dirty } = await run({ command: ['git', 'status', '--porcelain'] });
+
     if (dirty) {
       complain(
         `Working tree is not clean - ${dirty.split('\n').length} path(s). The workflow builds from the remote, so uncommitted work would NOT be released.`,
@@ -178,6 +185,7 @@ const assertReleasable = async (opts: { isDryRun: boolean; branch: string }): Pr
     if (ahead > 0) {
       complain(`${ahead} commit(s) not pushed. The workflow builds origin/${target}; push first.`);
     }
+
     if (behind > 0) {
       complain(
         `${behind} commit(s) behind origin/${target}. Pull first, or you will read stale versions.`,
@@ -192,6 +200,7 @@ const assertReleasable = async (opts: { isDryRun: boolean; branch: string }): Pr
   // calls the chain and the chain holds the pack and the publish, so both are read.
   const workflow = await readFromRemote({ branch: target, path: WORKFLOW_PATH });
   const chain = await readFromRemote({ branch: target, path: CHAIN_PATH });
+
   if (!isTrustedPublishWorkflow({ workflow, chain })) {
     complain(
       `origin/${target} must hold a ${WORKFLOW_PATH} that runs ${CHAIN_PATH}, which must publish a tarball packed by \`bun pm pack\` with \`npm publish --provenance\` - npm ships catalog: verbatim.`,
@@ -215,10 +224,11 @@ const resolveLatestRunId = async (): Promise<string> => {
   });
 
   const runs = JSON.parse(stdout) as Array<{ databaseId: number }>;
+
   return runs[0] ? String(runs[0].databaseId) : '';
 };
 
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => Bun.sleep(ms);
 
 /** Polls until a run newer than `previousRunId` appears, so we watch OUR dispatch and not an older one. */
 const waitForNewRun = async (opts: { previousRunId: string }): Promise<string> => {
@@ -226,6 +236,7 @@ const waitForNewRun = async (opts: { previousRunId: string }): Promise<string> =
     await sleep(4_000);
 
     const latest = await resolveLatestRunId();
+
     if (latest && latest !== opts.previousRunId) {
       return latest;
     }
@@ -277,6 +288,7 @@ const releaseRun = async (opts: {
 
   const runId = await waitForNewRun({ previousRunId });
   console.log(`  run ${runId} - waiting...`);
+
   if (opts.kind === ReleaseKinds.STABLE) {
     console.log(
       `  one approval is waiting on release-approval: approve the deployment in the run on GitHub (gh run view ${runId} --web)`,
@@ -284,6 +296,7 @@ const releaseRun = async (opts: {
   }
 
   const conclusion = await waitForRunCompletion({ runId });
+
   if (conclusion !== 'success') {
     throw new Error(
       `Run ${runId} finished '${conclusion}'. See: gh run view ${runId} --log-failed`,
@@ -358,12 +371,14 @@ const main = async (): Promise<void> => {
 
   if (plan.length === 0 && !mergeBackOwed) {
     console.log(`Nothing to release - every package is already at ${resolved.version}.`);
+
     return;
   }
 
   console.log(
     `Release plan (${target} -> ${resolved.version}, a ${kind} from ${branch}), in dependency order:\n`,
   );
+
   for (const state of states) {
     const note = resolved.skipped.includes(state.name) ? 'already there, left alone' : 'to release';
     console.log(
@@ -400,6 +415,7 @@ const main = async (): Promise<void> => {
       sha: head.stdout,
     });
   }
+
   const dispatch = ReleasePlan.dispatch({
     plan: packages,
     version: resolved.version,
@@ -408,15 +424,18 @@ const main = async (): Promise<void> => {
     ref: branch,
   });
   console.log(`\n${ReleasePlan.describe({ dispatch })}`);
+
   if (label !== undefined) {
     console.log(`The run is titled: Release · ${label}`);
   }
+
   if (isStable) {
     console.log('A stable waits for one approval on release-approval, given in the run on GitHub.');
   }
 
   if (isDryRun) {
     console.log('\n--dry-run: nothing dispatched.');
+
     return;
   }
 
@@ -424,6 +443,7 @@ const main = async (): Promise<void> => {
     console.log(
       `\nThis publishes ${plan.length} package(s) to npm${isStable ? ' after one approval' : ''}. Re-run with --yes to proceed.`,
     );
+
     return;
   }
 

@@ -18,5 +18,6 @@ if (!result.success) {
   for (const log of result.logs) {
     console.error(String(log));
   }
+
   process.exit(1);
 }

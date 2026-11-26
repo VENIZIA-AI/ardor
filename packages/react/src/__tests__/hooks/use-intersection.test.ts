@@ -201,6 +201,20 @@ describe('useIntersection', () => {
     expect(result.current).toMatchObject({ isIntersecting: true });
   });
 
+  test('a delivery from an observer that was replaced changes nothing', () => {
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const ref = refOf(first);
+    const { result, rerender } = renderHook(() => useIntersection({ target: ref }));
+
+    ref.current = second;
+    rerender();
+    // What the browser queued for the old observer before it was disconnected.
+    deliver(intersectionEntryOf({ target: second, isIntersecting: true, ratio: 1 }), 0);
+
+    expect(result.current).toBeUndefined();
+  });
+
   test('unmount disconnects', () => {
     const element = document.createElement('div');
     const { unmount } = renderHook(() => useIntersection({ target: element }));

@@ -56,6 +56,7 @@ describe('ReleaseVerify.verifyRun', () => {
       ],
       listVersions: async ({ packageName }) => {
         events.push(`read ${packageName}`);
+
         return published[packageName] ?? [];
       },
       pull: async () => {

@@ -16,6 +16,7 @@ const ROOT = resolve(import.meta.dir, '..', '..', '..');
 
 const cli = (...args: string[]) => {
   const proc = Bun.spawnSync(['bun', join(ROOT, 'scripts/release/release-version.ts'), ...args]);
+
   return { code: proc.exitCode, out: proc.stdout.toString().trim(), err: proc.stderr.toString() };
 };
 

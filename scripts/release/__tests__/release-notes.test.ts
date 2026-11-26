@@ -100,8 +100,10 @@ describe.skipIf(!vulcanRuns)('ReleaseNotes agrees with `vulcan migrate notes`', 
     );
   });
 
-  test('every folder: the same notes, and the same decision on the migration file', () => {
-    for (const version of FOLDERS) {
+  // One test per folder: each starts the command twice, so a single test would grow with every release.
+  test.each(FOLDERS)(
+    '%s: the same notes, and the same decision on the migration file',
+    (version) => {
       const log = readFileSync(join(CHANGELOGS, version, 'log.md'), 'utf8');
       const migration = readIf(join(CHANGELOGS, version, 'migration.yaml'));
       const notes = vulcan(['migrate', 'notes', '--version', version]);
@@ -109,6 +111,6 @@ describe.skipIf(!vulcanRuns)('ReleaseNotes agrees with `vulcan migrate notes`', 
 
       expect(ReleaseNotes.notesOf({ log, names: NAMES, version })).toBe(notes?.stdout ?? '');
       expect(ReleaseNotes.hasBlocks({ migration })).toBe((attached?.stdout.trim() ?? '') !== '');
-    }
-  });
+    },
+  );
 });

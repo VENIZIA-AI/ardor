@@ -14,6 +14,7 @@ type TFetch = (url: string, init?: { method?: string }) => Promise<{ ok: boolean
 /** `https://registry.npmjs.org/@scope/name/-/name-1.2.3.tgz`: the file is named by the unscoped name. */
 const tarballUrl = (opts: { packageName: string; version: string }): string => {
   const unscoped = opts.packageName.split('/').pop() ?? opts.packageName;
+
   return `${REGISTRY}/${opts.packageName}/-/${unscoped}-${opts.version}.tgz`;
 };
 
@@ -34,7 +35,7 @@ const waitForTarball = async (opts: {
     packageName,
     version,
     fetchFn = fetch,
-    sleepFn = (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+    sleepFn = (ms) => Bun.sleep(ms),
     intervalMs = 5_000,
     attempts = 180,
   } = opts;
@@ -79,13 +80,7 @@ const waitForCompletion = async (opts: {
   intervalMs?: number;
   onWaiting?: (opts: { runId: string; polls: number }) => void;
 }): Promise<string> => {
-  const {
-    runId,
-    readRun,
-    sleepFn = (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
-    intervalMs = 10_000,
-    onWaiting,
-  } = opts;
+  const { runId, readRun, sleepFn = (ms) => Bun.sleep(ms), intervalMs = 10_000, onWaiting } = opts;
 
   let waitingPolls = 0;
 
