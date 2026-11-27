@@ -18,7 +18,7 @@ const SPREAD =
 const MERGED =
   'the literal is spread or assigned into another object, where one noAuth replaces another: merge noAuth by hand';
 const SPLIT =
-  'another object of this file holds the other half or a noAuth, and a merge would keep one noAuth: write one noAuth: { paths, regex } by hand';
+  'this file makes a noAuth elsewhere or holds the other half alone, and a merge would keep one noAuth: write one noAuth: { paths, regex } by hand';
 const HAS_GROUP = 'the literal already has noAuth: move it inside by hand';
 const NOT_VALUE = 'not a plain value: move it into noAuth by hand';
 const COMMENT = 'a comment sits inside what would move: move it into noAuth by hand';
@@ -198,12 +198,23 @@ export class NoAuthTransform {
     return holders;
   }
 
-  /** Whether the node is `x.noAuth = ...`, `x['noAuth'] = ...` or a class field `noAuth`. */
+  /**
+   * Whether the node is `x.noAuth = ...`, `x['noAuth'] = ...`, a class field `noAuth` or a constructor
+   * parameter property of that name.
+   */
   private static makesGroup(opts: { ts: TTypeScript; node: TS.Node }): boolean {
     const { ts, node } = opts;
 
     if (ts.isPropertyDeclaration(node)) {
       return NoAuthTransform.keyOf({ ts, name: node.name }) === GROUP;
+    }
+
+    if (ts.isParameter(node)) {
+      return (
+        ts.isParameterPropertyDeclaration(node, node.parent) &&
+        ts.isIdentifier(node.name) &&
+        node.name.text === GROUP
+      );
     }
 
     if (

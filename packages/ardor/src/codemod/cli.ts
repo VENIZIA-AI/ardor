@@ -129,9 +129,9 @@ imports from ARDOR it rewrites an object literal that holds them as plain values
 Listed with their line and left for you: a literal that has a spread or noAuth, that is spread or
 Object.assigned into another object, that is typed INoAuthOptions, or that has a comment, a getter,
 a method or a computed name in what would move; every literal when the file makes a noAuth elsewhere
-(a literal, an assignment or a class field); a literal with one option when another literal of the
-file holds the other one; reads (options.noAuthPaths), destructurings, type and class members; and a
-file that imports nothing from ARDOR.
+(a literal, an assignment, a class field or a constructor parameter property); a literal with one
+option when another literal of the file holds the other one; reads (options.noAuthPaths),
+destructurings, type and class members; and a file that imports nothing from ARDOR.
 
 A rewritten literal is printed as a note unless it goes straight to its consumer. Check every place
 that merges two options objects, in any file: a spread keeps only the last noAuth, the request then

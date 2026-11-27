@@ -68,7 +68,9 @@ describe('NoAuthTransform: one half beside the other anywhere in the file', () =
     const result = run(`${IMPORT}${code}\n`);
 
     expect(result.text).toMatch(/\{ noAuthPaths: q \}/);
-    expect(reasons(`${IMPORT}${code}\n`).join('\n')).toContain('another object of this file');
+    expect(reasons(`${IMPORT}${code}\n`).join('\n')).toContain(
+      'this file makes a noAuth elsewhere',
+    );
   });
 
   test.each([
@@ -86,11 +88,15 @@ describe('NoAuthTransform: one half beside the other anywhere in the file', () =
     ],
     ['an element assignment', "o['noAuth'] = { regex: r };\nf({ noAuthPaths: q });"],
     ['a class field', 'class A { noAuth = { regex: r }; }\nf({ noAuthPaths: q });'],
+    [
+      'a constructor parameter property',
+      'class Base { constructor(public noAuth = { regex: r }) {} }\nconst extra = { noAuthPaths: q, noAuthPathRegex: s };\nconst o = { ...extra, ...new Base() };',
+    ],
   ])('lists a literal with both options beside a noAuth made by %s', (_name, code) => {
     const text = `${IMPORT}${code}\n`;
 
     expect(run(text).text).toBe(text);
-    expect(reasons(text).join('\n')).toContain('another object of this file');
+    expect(reasons(text).join('\n')).toContain('this file makes a noAuth elsewhere');
   });
 
   test('reading noAuth does not count as making one', () => {
@@ -182,7 +188,7 @@ describe('NoAuthTransform: a rewrite never drops half or breaks the code', () =>
     [
       'the two halves in two literals',
       'const a = () => ({ noAuthPaths: p });\nconst b = () => ({ noAuthPathRegex: r });',
-      'another object of this file',
+      'this file makes a noAuth elsewhere',
     ],
     ['a computed name', "f({ ['noAuthPaths']: p, noAuthPathRegex: r });", 'by hand'],
     ['a comment inside a moved property', 'f({ noAuthPaths: /* why */ p });', 'comment'],
