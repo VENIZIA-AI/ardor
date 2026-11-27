@@ -264,7 +264,7 @@
     },
     "packages/kernel": {
       "name": "@venizia/ardor-kernel",
-      "version": "0.5.0-12",
+      "version": "0.5.0-13",
       "devDependencies": {
         "@size-limit/preset-small-lib": "catalog:",
         "@types/bun": "catalog:",
