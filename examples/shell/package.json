@@ -10,7 +10,7 @@
     "typecheck": "bun check --no-pretty -p tsconfig.json",
     "lint": "devz lint",
     "lint:fix": "devz lint --fix",
-    "test": "NODE_ENV=test bun test --isolate --preload ./src/__tests__/setup.ts",
+    "test": "NODE_ENV=test bun test --max-concurrency=10 --isolate --preload ./src/__tests__/setup.ts",
     "clean": "sh scripts/clean.sh"
   },
   "dependencies": {

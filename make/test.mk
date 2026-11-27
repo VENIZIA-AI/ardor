@@ -12,7 +12,7 @@ CLEAN_INSTALL_TARGETS := $(addprefix clean-install-,$(PACKAGES))
 # TEST TARGETS (Bun test runner only)
 # The one home of the test command is the package's `make test` (make/project.mk): CI calls these
 # targets, and so should you. BUN_TEST_FLAGS is an optional pass-through (`--isolate`,
-# `--parallel`). Needs a build first (B-05). A package with no suite says so and passes.
+# `--parallel=<5..10>`). Needs a build first (B-05). A package with no suite says so and passes.
 # ----------------------------------------------------------------------------
 export BUN_TEST_FLAGS
 
@@ -31,7 +31,7 @@ test-examples:
 # The repository gate scripts' own regression tests - nothing else runs them.
 test-scripts:
 	@echo "🔍 Running the repository gate scripts' regression tests..."
-	@bun test scripts/release/__tests__ scripts/preset/__tests__ scripts/checks/__tests__
+	@bun test --max-concurrency=10 scripts/release/__tests__ scripts/preset/__tests__ scripts/checks/__tests__
 
 # ----------------------------------------------------------------------------
 # GATES - what the Test job of package-release.yml runs, in this order: it calls `make gates` for the packages of
@@ -72,7 +72,7 @@ purity:
 # The positive controls of the shared purity engine, run against ARDOR's fixtures and claims. They live outside every package, so nothing else runs them.
 purity-test:
 	@echo "🔍 Running the purity gate's regression tests..."
-	@bun test scripts/checks/purity/__tests__
+	@bun test --max-concurrency=10 scripts/checks/purity/__tests__
 
 $(addprefix purity-,$(PACKAGES)): purity-%:
 	@echo "🔍 Checking browser purity for $(call PKG_NAME,$*)..."
