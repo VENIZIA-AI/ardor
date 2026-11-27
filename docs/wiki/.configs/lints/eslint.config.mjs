@@ -8,7 +8,10 @@ export default [
   {
     files: ['**/*.{ts,tsx,mts,cts}'],
     ignores: ['**/__tests__/**', '**/*.test.{ts,tsx}'],
-    rules: { [ConstClassValuesRule.NAME]: ConstClassValuesRule.build() },
+    rules: {
+      [ConstClassValuesRule.NAME]: ConstClassValuesRule.build(),
+      '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
+    },
   },
   { ignores: ['site/**'] },
 ];

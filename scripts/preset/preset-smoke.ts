@@ -541,9 +541,8 @@ const assertRootLayout = (opts: { directory: string }) => {
 };
 
 const assertScriptStandard = (opts: { directory: string }) => {
-  const scripts = Object.keys(
-    (readJson({ path: join(opts.directory, 'package.json') }).scripts ?? {}) as TRecord,
-  );
+  const declared = readJson({ path: join(opts.directory, 'package.json') }).scripts;
+  const scripts = isRecord(declared) ? Object.keys(declared) : [];
 
   assert({
     condition: APP_SCRIPTS.every((name) => scripts.includes(name)),
@@ -561,7 +560,11 @@ const freePort = (): number => {
 
   void server.stop(true);
 
-  return port as number;
+  if (port === undefined) {
+    throw new Error('[freePort] the server on port 0 names no port');
+  }
+
+  return port;
 };
 
 const HELLO = { message: 'Hello from IGNIS!' };
@@ -1836,12 +1839,9 @@ const main = async () => {
       // still pins an older dev-configs hits that refusal: the catalog moves first, as the message says.
       const devConfigs = '@venizia/dev-configs';
       const devConfigsRange = peerRange({ presetRoot, name: devConfigs });
-      const pinned = String(
-        (
-          (readJson({ path: join(project, 'package.json') }).workspaces as TRecord | undefined)
-            ?.catalog as TRecord | undefined
-        )?.[devConfigs] ?? '',
-      );
+      const { workspaces } = readJson({ path: join(project, 'package.json') });
+      const catalog = isRecord(workspaces) ? workspaces.catalog : undefined;
+      const pinned = String((isRecord(catalog) ? catalog[devConfigs] : undefined) ?? '');
 
       // A pin equal to a version the preset lists is no refusal (VULCAN 0.4.9): `init` wrote it from that preset.
       if (
