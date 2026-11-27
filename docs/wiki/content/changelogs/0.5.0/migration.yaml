@@ -556,7 +556,7 @@ request-methods-removed:
   upgrade:
     steps:
       - 'Add `@venizia/ignis-helpers` to the dependencies of each package that does not list it.'
-      - 'Run `bun run ardor codemod http-methods src` to preview, then add `--write`. It rewrites the type `TRequestMethod` and a value where ARDOR itself sends it (`send({ params })`, `doRequest({ ... })`, an `ISendParams`), and lists with file and line what it left.'
+      - "Run `bun run ardor codemod http-methods src` to preview, then add `--write`. It rewrites the type `TRequestMethod` and a value where ARDOR itself sends it (the `params` of a data provider `send`, a network service `doRequest`, an `ISendParams`; the receiver must be typed as ARDOR's), and lists with file and line what it left."
       - 'Fix what it listed. Where ARDOR hands you a method (an override of `request` or `doRequest`, a transport), it is uppercase: compare `method.toLowerCase() === HTTP.Methods.X`. In your own `fetch` call write `HTTP.Methods.X.toUpperCase()`. Replace `isValid` and `values()` with `Object.values(HTTP.Methods)`.'
       - 'Search for comparisons with an uppercase text or `HTTP.Methods` in an override of `send`: it receives what the caller wrote, which is lowercase when the caller writes `HTTP.Methods.X`.'
     before: |-

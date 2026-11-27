@@ -157,15 +157,19 @@ Moves RequestMethods and TRequestMethod of the ARDOR packages to HTTP.Methods an
 does not list it.
 
 The old values are uppercase and HTTP.Methods is lowercase, so it rewrites a value only where ARDOR
-itself sends it: the method of a doRequest({ ... }) argument, of the params of a send({ params })
-argument, and of a literal declared as ISendParams (a type annotation or satisfies):
+itself sends it: the method of the params of a data provider's send, of a network service's
+doRequest argument, and of a literal declared as ISendParams (a type annotation or satisfies). It
+reads syntax, so a receiver is ARDOR's only when its declared type is IDataProvider,
+DefaultRestDataProvider, CountRestDataProvider or DefaultNetworkRequestService imported from ARDOR,
+when it is this inside a class that extends one, or provider.getNetworkService(). In a file that
+declares its own doRequest, no doRequest call is rewritten.
 
   provider.send({ resource, params: { method: RequestMethods.PATCH } })
     ->  provider.send({ resource, params: { method: HTTP.Methods.PATCH } })
 
 Listed with their line and left for you, with the old import: every other use of a value (a
-comparison, a case clause, a list, a computed key, another literal, a call of fetch or of
-this.request); isValid and values (HTTP.Methods is a plain object); a re-export; and a file that
+comparison, a case clause, a list, a computed key, another literal, a call of fetch, of
+this.request or on any other receiver); isValid and values (HTTP.Methods is a plain object); a re-export; and a file that
 already uses the name HTTP or THttpMethod for something else. ARDOR hands an override of request or
 doRequest the uppercase method: compare method.toLowerCase() === HTTP.Methods.GET. An override of
 send, and of doRequest when your own code calls it, receives what the caller wrote.

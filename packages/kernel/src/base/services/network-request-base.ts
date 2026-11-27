@@ -27,7 +27,7 @@ import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
 
 const isWireMethod = (value: string): value is Uppercase<THttpMethod> =>
-  value === value.toUpperCase();
+  Object.values(HTTP.Methods).some((method) => method.toUpperCase() === value);
 
 /**
  * What `DefaultNetworkRequestService` is built on: which requests go without a token, the token, the
@@ -45,13 +45,13 @@ export abstract class AbstractNetworkRequestService extends BaseService {
 
   /**
    * The method in uppercase, as ARDOR hands it to an override and to the transport. A browser's
-   * `fetch` uppercases most methods, but not `patch`.
+   * `fetch` uppercases most methods, but not `patch`. Throws for what `HTTP.Methods` does not hold.
    */
   static toWireMethod(opts: { method: THttpMethod }): Uppercase<THttpMethod> {
-    const method = opts.method.toUpperCase();
+    const method = String(opts.method).toUpperCase();
 
     if (!isWireMethod(method)) {
-      throw getError({ message: `[toWireMethod] Not an uppercase method: ${method}` });
+      throw getError({ message: `[toWireMethod] Not an HTTP method: ${String(opts.method)}` });
     }
 
     return method;
