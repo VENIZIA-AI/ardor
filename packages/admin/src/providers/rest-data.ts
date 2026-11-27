@@ -111,7 +111,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     super({ scope: DefaultRestDataProvider.name });
     DefaultNetworkRequestService.assertNoAuthOptions({
       options: restDataProviderOptions,
-      owner: DefaultRestDataProvider.name,
+      owner: new.target.name,
     });
     DefaultNetworkRequestService.assertTimeout({ timeout: restDataProviderOptions.timeout });
   }

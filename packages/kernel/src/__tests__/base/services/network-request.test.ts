@@ -1983,6 +1983,28 @@ describe('noAuth options', () => {
     },
   );
 
+  test.each([
+    [{ path: [], regexp: 1 }, 'unknown key path, regexp'],
+    [['/auth'], 'got an array'],
+    ['/auth', 'got a string'],
+    [null, 'got null'],
+    [/auth/, 'got a RegExp'],
+  ])('says what is wrong with the shape of %p', (noAuth, problem) => {
+    const options: object = { noAuth };
+
+    expect(() =>
+      DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+    ).toThrow(`[Owner] noAuth takes { paths, regex }: invalid shape (${problem})`);
+  });
+
+  test('the message names the class that was built', () => {
+    class ShopNetworkService extends DefaultNetworkRequestService {}
+
+    expect(() => new ShopNetworkService({ name: 'n', ...{ noAuthPaths: [] } })).toThrow(
+      '[ShopNetworkService] noAuthPaths was replaced',
+    );
+  });
+
   test('the message names both keys in the plural, and one in the singular', () => {
     const both: object = { noAuthPaths: [], noAuthPathRegex: /./ };
 

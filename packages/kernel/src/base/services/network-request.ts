@@ -119,7 +119,7 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
 
     DefaultNetworkRequestService.assertNoAuthOptions({
       options: opts,
-      owner: DefaultNetworkRequestService.name,
+      owner: new.target.name,
     });
     DefaultNetworkRequestService.assertTimeout({ timeout });
     this.timeout = timeout;

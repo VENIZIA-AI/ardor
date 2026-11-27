@@ -96,7 +96,7 @@ export abstract class AbstractNetworkRequestService extends BaseService {
     }
   }
 
-  /** What is wrong with a `noAuth` value: its `shape`, `paths` or `regex`; `undefined` when nothing is. */
+  /** What is wrong with a `noAuth` value: its shape, `paths` or `regex`; `undefined` when nothing is. */
   private static findInvalidNoAuth(opts: { noAuth: unknown }): string | undefined {
     const { noAuth } = opts;
 
@@ -104,19 +104,29 @@ export abstract class AbstractNetworkRequestService extends BaseService {
       return undefined;
     }
 
-    const isGroup =
-      typeof noAuth === 'object' &&
-      noAuth !== null &&
-      !Array.isArray(noAuth) &&
-      !(noAuth instanceof RegExp) &&
-      Object.keys(noAuth).every((key) => key === 'paths' || key === 'regex');
-
-    if (!isGroup) {
-      return 'shape';
+    if (Array.isArray(noAuth)) {
+      return 'shape (got an array)';
     }
 
-    const paths = 'paths' in noAuth ? noAuth.paths : undefined;
-    const regex = 'regex' in noAuth ? noAuth.regex : undefined;
+    if (noAuth instanceof RegExp) {
+      return 'shape (got a RegExp)';
+    }
+
+    if (noAuth === null) {
+      return 'shape (got null)';
+    }
+
+    if (typeof noAuth !== 'object') {
+      return `shape (got a ${typeof noAuth})`;
+    }
+
+    const { paths, regex, ...rest }: { paths?: unknown; regex?: unknown } = noAuth;
+    const unknownKeys = Object.keys(rest);
+
+    if (unknownKeys.length) {
+      return `shape (unknown key ${unknownKeys.join(', ')})`;
+    }
+
     const isPattern = (value: unknown) => typeof value === 'string' || value instanceof RegExp;
 
     // A text in place of the list would match by substring, and leave more requests without a token.

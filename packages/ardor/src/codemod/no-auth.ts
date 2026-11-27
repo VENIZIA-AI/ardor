@@ -32,9 +32,9 @@ const MERGE_NOTE =
 /** Calls whose object argument is the options themselves, never merged afterwards. */
 const DIRECT_CALLEES = new Set(['DefaultNetworkRequestService', 'DefaultRestDataProvider']);
 
-/** A literal that holds something a merge could replace. */
+/** A literal that holds something a merge could replace, or another place that makes a `noAuth`. */
 interface IHolder {
-  literal: TS.ObjectLiteralExpression;
+  node: TS.Node;
   /** The removed options it holds. */
   names: Set<string>;
   /** Whether it has `noAuth` already. */
@@ -171,7 +171,7 @@ export class NoAuthTransform {
     });
   }
 
-  /** Every literal of the file that holds a removed option or `noAuth`. */
+  /** Every literal of the file that holds a removed option or `noAuth`, and every other maker of `noAuth`. */
   private static objectsOf(opts: { ts: TTypeScript; sourceFile: TS.SourceFile }): IHolder[] {
     const { ts, sourceFile } = opts;
     const holders: IHolder[] = [];
@@ -184,8 +184,10 @@ export class NoAuthTransform {
         const hasGroup = NoAuthTransform.hasGroup({ ts, literal: node });
 
         if (names.size > 0 || hasGroup) {
-          holders.push({ literal: node, names, hasGroup });
+          holders.push({ node, names, hasGroup });
         }
+      } else if (NoAuthTransform.makesGroup({ ts, node })) {
+        holders.push({ node, names: new Set(), hasGroup: true });
       }
 
       ts.forEachChild(node, visit);
@@ -194,6 +196,35 @@ export class NoAuthTransform {
     visit(sourceFile);
 
     return holders;
+  }
+
+  /** Whether the node is `x.noAuth = ...`, `x['noAuth'] = ...` or a class field `noAuth`. */
+  private static makesGroup(opts: { ts: TTypeScript; node: TS.Node }): boolean {
+    const { ts, node } = opts;
+
+    if (ts.isPropertyDeclaration(node)) {
+      return NoAuthTransform.keyOf({ ts, name: node.name }) === GROUP;
+    }
+
+    if (
+      !ts.isBinaryExpression(node) ||
+      node.operatorToken.kind < ts.SyntaxKind.FirstAssignment ||
+      node.operatorToken.kind > ts.SyntaxKind.LastAssignment
+    ) {
+      return false;
+    }
+
+    const { left } = node;
+
+    if (ts.isPropertyAccessExpression(left)) {
+      return left.name.text === GROUP;
+    }
+
+    return (
+      ts.isElementAccessExpression(left) &&
+      ts.isStringLiteralLike(left.argumentExpression) &&
+      left.argumentExpression.text === GROUP
+    );
   }
 
   private static hasGroup(opts: { ts: TTypeScript; literal: TS.ObjectLiteralExpression }): boolean {
@@ -246,16 +277,15 @@ export class NoAuthTransform {
 
     const names = new Set(members.map(({ name }) => name));
 
-    // One half here, and elsewhere the other one or a `noAuth`: nothing shows whether they are merged.
-    const isHalf =
-      names.size === 1 &&
-      objects.some(
-        (other) =>
-          other.literal !== literal &&
-          (other.hasGroup || [...other.names].some((name) => !names.has(name))),
-      );
+    // A `noAuth` elsewhere would replace this one whole, and so would the other half of a lone option:
+    // nothing shows whether the objects are merged.
+    const isSplit = objects.some(
+      (other) =>
+        other.node !== literal &&
+        (other.hasGroup || (names.size === 1 && [...other.names].some((name) => !names.has(name)))),
+    );
 
-    if (isHalf) {
+    if (isSplit) {
       return SPLIT;
     }
 
@@ -412,9 +442,16 @@ export class NoAuthTransform {
       ts.getTrailingCommentRanges(text, child.end) !== undefined ||
       child.getChildren(sourceFile).some(inside);
 
+    // TypeScript reads a block comment between a comma and a property of the same line as trailing.
+    const isBeside = (ts.getTrailingCommentRanges(text, node.pos) ?? []).some(
+      (range) =>
+        range.kind === ts.SyntaxKind.MultiLineCommentTrivia &&
+        !text.slice(range.end, node.getStart(sourceFile)).includes('\n'),
+    );
     const isAround =
       isRemoved &&
-      (ts.getLeadingCommentRanges(text, node.pos) !== undefined ||
+      (isBeside ||
+        ts.getLeadingCommentRanges(text, node.pos) !== undefined ||
         /^[ \t]*,?[ \t]*\/[/*]/.test(text.slice(node.end)));
 
     return isAround || inside(node);

@@ -1123,6 +1123,15 @@ describe('noAuth options', () => {
     },
   );
 
+  test('the message names the provider class that was built', () => {
+    class ShopRestDataProvider extends DefaultRestDataProvider {}
+    const options = { url: 'http://localhost', ...{ noAuthPaths: [] } };
+
+    expect(() => new ShopRestDataProvider(options, applicationInfo)).toThrow(
+      '[ShopRestDataProvider] noAuthPaths was replaced',
+    );
+  });
+
   test('noAuth.paths and noAuth.regex reach the network service', async () => {
     const provider = new DefaultRestDataProvider(
       { url: baseUrl, noAuth: { paths: ['open'], regex: '^public' } },

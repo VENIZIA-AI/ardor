@@ -71,6 +71,47 @@ describe('NoAuthTransform: one half beside the other anywhere in the file', () =
     expect(reasons(`${IMPORT}${code}\n`).join('\n')).toContain('another object of this file');
   });
 
+  test.each([
+    [
+      'variables',
+      'const base = { noAuth: { regex: r } };\nconst extra = { noAuthPaths: q, noAuthPathRegex: s };\nconst o = { ...extra, ...base };',
+    ],
+    [
+      'methods',
+      'class A {\n  base() { return { noAuth: { regex: r } }; }\n  extra() { return { noAuthPaths: q, noAuthPathRegex: s }; }\n  options() { return { ...this.extra(), ...this.base() }; }\n}',
+    ],
+    [
+      'an assignment to noAuth',
+      'o.noAuth = { regex: r };\nf({ noAuthPaths: q, noAuthPathRegex: s });',
+    ],
+    ['an element assignment', "o['noAuth'] = { regex: r };\nf({ noAuthPaths: q });"],
+    ['a class field', 'class A { noAuth = { regex: r }; }\nf({ noAuthPaths: q });'],
+  ])('lists a literal with both options beside a noAuth made by %s', (_name, code) => {
+    const text = `${IMPORT}${code}\n`;
+
+    expect(run(text).text).toBe(text);
+    expect(reasons(text).join('\n')).toContain('another object of this file');
+  });
+
+  test('reading noAuth does not count as making one', () => {
+    const result = run(`${IMPORT}use(o.noAuth);\nf({ noAuthPaths: q });\n`);
+
+    expect(result.renamed).toBe(1);
+  });
+
+  test('lists a block comment on the line of the second option', () => {
+    const text = `${IMPORT}f({ noAuthPaths: p, /* c */ noAuthPathRegex: r });\n`;
+
+    expect(run(text).text).toBe(text);
+    expect(reasons(text).join('\n')).toContain('comment');
+  });
+
+  test('a line comment after the first option stays beside it', () => {
+    const text = `${IMPORT}f({\n  noAuthPaths: p, // paths\n  noAuthPathRegex: r,\n});\n`;
+
+    expect(run(text).text).toContain('noAuth: { paths: p, regex: r }, // paths\n');
+  });
+
   test('two literals with the same single option are both rewritten', () => {
     const result = run(`${IMPORT}f({ noAuthPaths: a });\nf({ noAuthPaths: b });\n`);
 

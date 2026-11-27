@@ -127,9 +127,10 @@ imports from ARDOR it rewrites an object literal that holds them as plain values
   { url, noAuthPaths: ['/auth/sign-in'] }  ->  { url, noAuth: { paths: ['/auth/sign-in'] } }
 
 Listed with their line and left for you: a literal that has a spread or noAuth, that is spread or
-Object.assigned into another object, that holds one option while another literal of the file holds
-the other one or noAuth, that is typed INoAuthOptions, or that has a comment, a getter, a method or a computed
-name in what would move; reads (options.noAuthPaths), destructurings, type and class members; and a
+Object.assigned into another object, that is typed INoAuthOptions, or that has a comment, a getter,
+a method or a computed name in what would move; every literal when the file makes a noAuth elsewhere
+(a literal, an assignment or a class field); a literal with one option when another literal of the
+file holds the other one; reads (options.noAuthPaths), destructurings, type and class members; and a
 file that imports nothing from ARDOR.
 
 A rewritten literal is printed as a note unless it goes straight to its consumer. Check every place
