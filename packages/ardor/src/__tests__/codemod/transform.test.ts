@@ -420,9 +420,11 @@ const SHADOWED_TYPE_RENAMES: Array<[string, string]> = [
   ['IAuthUser', 'IStoredAuthUser'],
   ['IArtifactIndex', 'IArdorArtifactIndex'],
   ['IApplication', 'IArdorApplicationProps'],
+  ['IReactAdminDataProvider', 'TReactAdminDataProvider'],
+  ['IReactAdminAuthProvider', 'TReactAdminAuthProvider'],
 ];
 
-describe('NamespaceTransform: the types renamed away from an IGNIS name', () => {
+describe('NamespaceTransform: the renamed types', () => {
   test.each(SHADOWED_TYPE_RENAMES)('renames %s from an ARDOR package to %s', (before, after) => {
     const result = run(
       [

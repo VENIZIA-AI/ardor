@@ -360,8 +360,6 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
     );
   }
 
-  // --- Requests --------------------------------------------------------------------------------
-
   /**
    * Spread into an `HttpDataSource`'s settings, so its requests carry the session headers and the
    * timezone as read at send time (and the channel and tracing id, given the data provider's
@@ -371,30 +369,34 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
     opts?: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
   ): IDataSourceAuth {
     return {
-      authTokenResolver: (context) => {
-        const { paths } = context;
-        const sent = this.sentSessions.get(context);
+      resolvers: {
+        authToken: (context) => {
+          const { paths } = context;
+          const sent = this.sentSessions.get(context);
 
-        // The retry of a request whose user has gone must not carry the token of whoever signed in since.
-        if (sent && this.readSessionChange({ sent }) === false) {
-          return undefined;
-        }
+          // The retry of a request whose user has gone must not carry the token of whoever signed in since.
+          if (sent && this.readSessionChange({ sent }) === false) {
+            return undefined;
+          }
 
-        const token = this.isNoAuthPath({ resource: paths[0], paths })
-          ? undefined
-          : this.resolveAuthToken();
+          const token = this.isNoAuthPath({ resource: paths[0], paths })
+            ? undefined
+            : this.resolveAuthToken();
 
-        // Both hooks receive this very object, and a retry sends again under the session of that moment.
-        this.sentSessions.set(context, { userId: this.readSession().userId, token: token?.value });
+          // Both hooks receive this very object, and a retry sends again under the session of that moment.
+          this.sentSessions.set(context, {
+            userId: this.readSession().userId,
+            token: token?.value,
+          });
 
-        return token;
-      },
-      headersResolver: () => {
-        return Object.fromEntries(
-          HttpHeaders.merge({
-            layers: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
-          }),
-        );
+          return token;
+        },
+        headers: () =>
+          Object.fromEntries(
+            HttpHeaders.merge({
+              layers: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
+            }),
+          ),
       },
       onUnauthorized: (context, info) => {
         if (!this.recovery.canRecover({ paths: context.paths })) {

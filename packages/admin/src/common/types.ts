@@ -56,7 +56,7 @@ export interface IRestRequestOptions<TResource extends string = string> {
 }
 
 /** The nine data methods of react-admin, as ra-core declares them. */
-export type IReactAdminDataProvider<TResource extends string = string> = Pick<
+export type TReactAdminDataProvider<TResource extends string = string> = Pick<
   DataProvider<TResource>,
   | 'getList'
   | 'getOne'
@@ -88,7 +88,7 @@ export interface ISendRequest<TResource extends string = string> {
 /** react-admin's data provider with a free-form `send` and access to the network service and its auth. */
 export interface IDataProvider<
   TResource extends string = string,
-> extends IReactAdminDataProvider<TResource> {
+> extends TReactAdminDataProvider<TResource> {
   /**
    * `true` makes react-admin pass the `signal` of its queries to the read methods, so a read it no
    * longer needs (a newer filter or page) is aborted. `DefaultRestDataProvider` sets it.
@@ -106,7 +106,7 @@ export interface IDataProvider<
 }
 
 /** The auth methods of react-admin, as ra-core declares them; `getPermissions` is required here. */
-export type IReactAdminAuthProvider = Required<
+export type TReactAdminAuthProvider = Required<
   Pick<AuthProvider, 'login' | 'logout' | 'checkAuth' | 'checkError' | 'getPermissions'>
 > &
   Pick<AuthProvider, 'getIdentity' | 'canAccess'>;
@@ -123,7 +123,7 @@ export interface IAuthRejection {
 }
 
 /** The auth provider of an ARDOR application: react-admin's methods, the user's roles and a token refresh. */
-export interface IAuthProvider extends IReactAdminAuthProvider {
+export interface IAuthProvider extends TReactAdminAuthProvider {
   /**
    * The roles of the signed-in user, as the browser holds them: they only show or hide interface, and
    * the backend must check every permission on every request.

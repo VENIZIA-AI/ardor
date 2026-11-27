@@ -109,6 +109,8 @@ export class TypeExportRenames {
     IAuthUser: 'IStoredAuthUser',
     IArtifactIndex: 'IArdorArtifactIndex',
     IApplication: 'IArdorApplicationProps',
+    IReactAdminDataProvider: 'TReactAdminDataProvider',
+    IReactAdminAuthProvider: 'TReactAdminAuthProvider',
   };
 
   static find(opts: { name: string }): string | undefined {

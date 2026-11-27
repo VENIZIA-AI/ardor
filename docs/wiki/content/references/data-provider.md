@@ -41,7 +41,7 @@ To replace the provider with a subclass, bind the subclass class under the key i
 | `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
 | `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |
 | `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
-| `IReactAdminDataProvider<TResource>` | type | The standard nine-method react-admin data provider interface. |
+| `TReactAdminDataProvider<TResource>` | type | The standard nine-method react-admin data provider interface. |
 | `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
 | `INetworkResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
 | `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |
@@ -217,7 +217,7 @@ An aborted request rejects with the signal's reason (an `AbortError`). It is not
 `IDataProvider` extends react-admin's nine data methods with three more methods, `send`, `getNetworkService` and `getDataSourceAuth`, and the optional `supportAbortSignal` flag:
 1. `send({ resource, params, schema? })`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh. The answer's `data` is `unknown`; with a `schema` (an object whose `parse` checks the value, a zod schema included) it is what the schema checked and typed, and what the schema refuses throws a `FetchSchemaError` (502) that names paths and rules, never the data. A schema sees the data as read: the rows of a list, the `Blob` of a file. A textual body is read as JSON whatever its type says. A request that carries a schema rejects, with issue `invalid_json` and without calling the schema, a textual body that is no JSON, a 204, and an empty body with no content type that is no attachment. Whatever `parse` throws is read as a refusal, so a bug inside it gives the same 502. To tell a refusal apart, compare `error.normalized.code` with `core.fetch.schema_mismatch`.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
-3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
+3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`resolvers.authToken`, `resolvers.headers`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 
 ```ts
 import { HTTP } from '@venizia/ignis-helpers/common';

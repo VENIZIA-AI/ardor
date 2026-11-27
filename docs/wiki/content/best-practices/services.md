@@ -250,7 +250,7 @@ Do the same in a service. Throw, do not return `null` or `undefined` on failure.
 
 ## Keep react-admin types out
 
-A service in the kernel layer should not import from `ra-core`. `GetListParams`, `RaRecord`, and friends belong to `IReactAdminDataProvider` in the admin package. That is the adapter between react-admin and your services.
+A service in the kernel layer should not import from `ra-core`. `GetListParams`, `RaRecord`, and friends belong to `TReactAdminDataProvider` in the admin package. That is the adapter between react-admin and your services.
 
 Inside a service, `ISendParams` and `INetworkResponse` are enough. They describe what goes over the wire. If a service signature needs a react-admin type, the react-admin logic has leaked one layer too far. Move it into the data provider.
 

@@ -83,7 +83,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `IAuthTokenRecord` | `interface` | Auth token payload, returned by `resolveAuthToken()`. | `value`, `type`, `provider` |
 | `IStoredAuthUser` | `interface` | The stored identity `getUser()` returns; every field is absent when nothing is stored; it has no index signature. | `userId`, `username`, `referenceId`, `provider` |
 | `IDataSourceRequestContext` | `interface` | Request context supplied to `HttpDataSource` auth hooks. | `paths` |
-| `IDataSourceAuth` | `interface` | Bridge settings returned by `getDataSourceAuth()`. | `authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey` |
+| `IDataSourceAuth` | `interface` | Bridge settings returned by `getDataSourceAuth()`. | `resolvers` (`authToken`, `headers`), `onUnauthorized`, `errorRootKey` |
 | `IApplicationInfo` | `interface` | Application metadata, bound under `CoreBindings.APPLICATION_INFO`. | `name`, `version`, `description`, `id`, `author`; extends IGNIS's `IApplicationInfo`, so your own keys read as `unknown` |
 | `IFeatureBase` | `interface` | Base feature configuration, bound under `CoreBindings.FEATURES`. | `name`, `configurations`, `artifacts`, `permissions` |
 | `IArdorArtifactIndex` | `interface` | Artifact registry index emitted by code generation and verified at application `start()`. | - |
@@ -142,9 +142,9 @@ Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/featu
 
 | Type | Kind | Definition and usage | Shape |
 |---|---|---|---|
-| `IReactAdminDataProvider<TResource>` | `type` | Nine standard react-admin data methods with positional arguments `(resource, params)`. | - |
+| `TReactAdminDataProvider<TResource>` | `type` | Nine standard react-admin data methods with positional arguments `(resource, params)`. | - |
 | `IDataProvider<TResource>` | `interface` | ARDOR data provider contract extending react-admin with `send`, `getNetworkService`, and `getDataSourceAuth`. | - |
-| `IReactAdminAuthProvider` | `type` | Standard react-admin auth provider contract. | `login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`, `canAccess` |
+| `TReactAdminAuthProvider` | `type` | Standard react-admin auth provider contract. | `login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`, `canAccess` |
 | `IAuthProvider` | `interface` | ARDOR auth provider extending react-admin with `getRoles` and `refreshToken`. | - |
 | `II18nProviderOptions` | `interface` | i18n configuration options, bound under `CoreBindings.I18N_PROVIDER_OPTIONS`. | `i18nSources`, `languages` |
 | `TI18nSource` | `type` | The messages of one locale, loaded the first time the locale is used. | an object, or a loader `() => Promise<object>` |
