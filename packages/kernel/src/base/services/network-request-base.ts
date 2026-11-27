@@ -73,7 +73,7 @@ export abstract class AbstractNetworkRequestService extends BaseService {
    *
    * @example
    * ```ts
-   * super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' }) });
+   * super({ baseUrl: '/api', resolvers: { authToken: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' }) } });
    * ```
    */
   static createAuthTokenReader(opts: { id?: string } = {}): () => IAuthTokenRecord | undefined {

@@ -272,8 +272,11 @@ export interface IDataSourceUnauthorizedInfo {
  * paths, and one shared refresh per 401 burst. The hooks run on every send, the retry included.
  */
 export interface IDataSourceAuth {
-  authTokenResolver: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
-  headersResolver: (context: IDataSourceRequestContext) => Record<string, string>;
+  /** A `resolvers` of your own replaces both: spread this one into it to keep the token. */
+  resolvers: {
+    authToken: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
+    headers: (context: IDataSourceRequestContext) => Record<string, string>;
+  };
   onUnauthorized: (
     context: IDataSourceRequestContext,
     info: IDataSourceUnauthorizedInfo,

@@ -8,7 +8,7 @@ export class ApiDataSource extends HttpDataSource {
   constructor() {
     super({
       baseUrl: '/api',
-      authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage,
+      resolvers: { authToken: DefaultNetworkRequestService.readAuthTokenFromStorage },
     });
   }
 }

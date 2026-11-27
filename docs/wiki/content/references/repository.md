@@ -31,7 +31,7 @@ Pass them to `super({ ... })` from the repository's constructor.
 
 ## Bridging credentials with getDataSourceAuth()
 
-To share credentials, session headers, timezone settings, and 401 recovery with the REST data provider, spread `dataProvider.getDataSourceAuth()` (returning `authTokenResolver`, `headersResolver`, `onUnauthorized`, and `errorRootKey`) into the `HttpDataSource` settings (see [Data provider](data-provider)). The datasource asks the container for the data provider, which is the one react-admin uses:
+To share credentials, session headers, timezone settings, and 401 recovery with the REST data provider, spread `dataProvider.getDataSourceAuth()` (returning `resolvers.authToken`, `resolvers.headers`, `onUnauthorized`, and `errorRootKey`) into the `HttpDataSource` settings (see [Data provider](data-provider)). The datasource asks the container for the data provider, which is the one react-admin uses:
 
 ```ts
 import { CoreBindings, datasource, type IDataProvider, inject } from '@venizia/ardor';
@@ -166,7 +166,7 @@ export class TaskRepository extends HttpRepository<TaskRecord> {
 
 ## Reading the session token
 
-`DefaultNetworkRequestService.readAuthTokenFromStorage` reads the session of an application with no `id`. An application with an `id` (`IApplicationInfo.id`, see [Two applications on one origin](./binding-keys#two-applications-on-one-origin)) keeps its session under other keys: pass `authTokenResolver: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' })` (the same key `authService.getAuth()` reads), or build the datasource from the data provider's `getDataSourceAuth()`, as above.
+`DefaultNetworkRequestService.readAuthTokenFromStorage` reads the session of an application with no `id`. An application with an `id` (`IApplicationInfo.id`, see [Two applications on one origin](./binding-keys#two-applications-on-one-origin)) keeps its session under other keys: pass `resolvers: { authToken: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' }) }` (the same key `authService.getAuth()` reads), or build the datasource from the data provider's `getDataSourceAuth()`, as above.
 
 ## Related
 

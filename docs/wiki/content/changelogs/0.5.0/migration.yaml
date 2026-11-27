@@ -176,7 +176,7 @@ ignis-0-5-peers:
   downgrade:
     steps:
       - Pin the four ARDOR packages to 0.4.8 or earlier, and the IGNIS packages to the 0.4 line.
-  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (while IGNIS 0.5.0 is a prerelease the ranges are `^0.5.0-12` for `@venizia/ignis-connectors`, `^0.5.0-11` for `@venizia/ignis-kernel`, `^0.5.0-10` for `@venizia/ignis-helpers` and `@venizia/ignis-boot`, and `^0.5.0-4` for the other IGNIS packages); an app on a 0.4 IGNIS line does not satisfy them. The app preset needs `@venizia/dev-configs` `^0.5.0-9` while it is a prerelease.
+  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (while IGNIS 0.5.0 is a prerelease the ranges are `^0.5.0-13` for `@venizia/ignis-connectors`, `^0.5.0-12` for `@venizia/ignis-kernel`, `^0.5.0-11` for `@venizia/ignis-helpers` and `@venizia/ignis-boot`, and `^0.5.0-5` for the other IGNIS packages); an app on a 0.4 IGNIS line does not satisfy them. The app preset needs `@venizia/dev-configs` `^0.5.0-9` while it is a prerelease.
 
 data-source-auth-attempt:
   symbols:
@@ -573,6 +573,22 @@ request-methods-removed:
       - Pin the four ARDOR packages to 0.5.0-13 and import RequestMethods and TRequestMethod from ARDOR again.
   data: Nothing stored changes. The same methods are sent.
   codemod: http-methods
+
+data-source-resolvers:
+  symbols: [IDataSourceAuth, DefaultNetworkRequestService.getDataSourceAuth]
+  upgrade:
+    steps:
+      - 'Upgrade `@venizia/ignis-connectors` and the four ARDOR packages together.'
+      - 'In every `HttpDataSource` settings, move `authTokenResolver` to `resolvers.authToken` and `headersResolver` to `resolvers.headers`. A call of `auth.authTokenResolver` is `auth.resolvers.authToken`.'
+      - 'Check each place that spreads `getDataSourceAuth()` and also writes `resolvers`: spread `auth.resolvers` inside yours, or the token is no longer sent.'
+    before: |-
+      super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage });
+    after: |-
+      super({ baseUrl: '/api', resolvers: { authToken: DefaultNetworkRequestService.readAuthTokenFromStorage } });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-13, and the IGNIS packages to the versions used with it, and write the old setting names again.
+  data: Nothing stored changes. The same headers and token are sent.
 
 react-admin-provider-types-rename:
   symbols: [IReactAdminDataProvider, IReactAdminAuthProvider]

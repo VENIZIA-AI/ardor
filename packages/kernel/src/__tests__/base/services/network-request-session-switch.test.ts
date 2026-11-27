@@ -245,7 +245,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         const auth = createEnding().getDataSourceAuth();
         const context = contextOf();
 
-        expect(auth.authTokenResolver(context)?.value).toBe('stale');
+        expect(auth.resolvers.authToken(context)?.value).toBe('stale');
         const isRefreshed = await auth.onUnauthorized(context, { attempt: 1 });
 
         expect(isRefreshed).toBe(false);
@@ -307,7 +307,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createBare().getDataSourceAuth();
       const context = contextOf();
 
-      expect(auth.authTokenResolver(context)?.value).toBe('stale');
+      expect(auth.resolvers.authToken(context)?.value).toBe('stale');
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
       const error = await RejectionUtility.rejectionOf({
@@ -315,7 +315,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
-      expect(auth.authTokenResolver(context)).toBeUndefined();
+      expect(auth.resolvers.authToken(context)).toBeUndefined();
     });
 
     test('a token that its own refreshToken override saved is retried, as before', async () => {
@@ -329,11 +329,11 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createBare({ refreshes: true }).getDataSourceAuth();
       const context = contextOf();
 
-      expect(auth.authTokenResolver(context)?.value).toBe('stale');
+      expect(auth.resolvers.authToken(context)?.value).toBe('stale');
       const isRefreshed = await auth.onUnauthorized(context, { attempt: 1 });
 
       expect(isRefreshed).toBe(true);
-      expect(auth.authTokenResolver(context)?.value).toBe('fresh');
+      expect(auth.resolvers.authToken(context)?.value).toBe('fresh');
     });
   });
 
@@ -342,7 +342,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createService().getDataSourceAuth();
       const context = contextOf();
 
-      auth.authTokenResolver(context);
+      auth.resolvers.authToken(context);
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
       const error = await RejectionUtility.rejectionOf({
@@ -358,7 +358,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createService().getDataSourceAuth();
       const context = contextOf();
 
-      auth.authTokenResolver(context);
+      auth.resolvers.authToken(context);
       signIn({ userId: 7, username: 'alice', token: 'fresh' });
 
       const result2 = await auth.onUnauthorized(context, { attempt: 1 });
@@ -370,7 +370,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createService().getDataSourceAuth();
       const context = contextOf();
 
-      auth.authTokenResolver(context);
+      auth.resolvers.authToken(context);
       authService.cleanUp();
 
       const error = await RejectionUtility.rejectionOf({
@@ -385,10 +385,10 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createService().getDataSourceAuth();
       const context = contextOf();
 
-      expect(auth.authTokenResolver(context)?.value).toBe('stale');
+      expect(auth.resolvers.authToken(context)?.value).toBe('stale');
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      expect(auth.authTokenResolver(context)).toBeUndefined();
+      expect(auth.resolvers.authToken(context)).toBeUndefined();
     });
 
     test('through a real HttpDataSource the call rejects with the session-changed code, not the raw 401', async () => {
@@ -412,7 +412,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createService().getDataSourceAuth();
       const context = contextOf();
 
-      auth.authTokenResolver(context);
+      auth.resolvers.authToken(context);
 
       const result4 = await auth.onUnauthorized(context, { attempt: 1 });
       expect(result4).toBe(true);
@@ -439,7 +439,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createService().getDataSourceAuth();
       const context = contextOf();
 
-      auth.authTokenResolver(context);
+      auth.resolvers.authToken(context);
 
       const isRetried = await auth.onUnauthorized(context, { attempt: 2 });
       expect(isRetried).toBe(false);
@@ -450,7 +450,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const auth = createService().getDataSourceAuth();
       const context = contextOf();
 
-      auth.authTokenResolver(context);
+      auth.resolvers.authToken(context);
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
       const error = await RejectionUtility.rejectionOf({
