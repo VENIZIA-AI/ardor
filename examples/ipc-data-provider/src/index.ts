@@ -126,7 +126,7 @@ export class IpcConfiguration {
   // The base class still needs its options; the URL is never used by the IPC send.
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
-    return { url: 'ipc://local', noAuthPathRegex: /./ };
+    return { url: 'ipc://local', noAuth: { regex: /./ } };
   }
 
   // No react-admin shell here: nothing signs in through an auth provider.

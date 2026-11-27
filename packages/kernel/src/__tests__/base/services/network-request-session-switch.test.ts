@@ -262,7 +262,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const service = new DefaultNetworkRequestService({
         name: 'session-switch-no-auth',
         baseUrl,
-        noAuthPaths: ['items'],
+        noAuth: { paths: ['items'] },
         authRecovery: { refreshTokenPath: REFRESH_PATH },
         authService,
       });

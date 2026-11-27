@@ -12,7 +12,7 @@ const applicationInfo: IApplicationInfo = {
 };
 
 const restDataProviderOptions = (opts: { baseUrl: string }): IRestDataProviderOptions => {
-  return { url: opts.baseUrl, noAuthPathRegex: /./ };
+  return { url: opts.baseUrl, noAuth: { regex: /./ } };
 };
 
 const METHODS = [

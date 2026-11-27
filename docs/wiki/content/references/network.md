@@ -119,7 +119,7 @@ export class AuditReportService {
 The data provider constructs the service using options injected from `CoreBindings.REST_DATA_PROVIDER_OPTIONS`:
 - `url` becomes `baseUrl`
 - `headers` becomes base headers
-- `noAuthPaths` and `noAuthPathRegex` configure unauthenticated endpoints
+- `noAuth.paths` and `noAuth.regex` configure unauthenticated endpoints
 - `authRecovery` configures token refresh exclusion paths
 - `timeout` aborts a request that has not answered in time
 
@@ -132,15 +132,15 @@ The configuration relies on the following defaults and container keys:
 
 ## Options
 
-`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions; authService?: DefaultAuthService; timeout?: TRequestTimeoutOptions }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
+`DefaultNetworkRequestService` accepts constructor options conforming to `{ noAuth?: INoAuthOptions; name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions; authService?: DefaultAuthService; timeout?: TRequestTimeoutOptions }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
 | `name` | `string` | *(required)* | Identifier scope for logger tagging and the transport instance. |
 | `baseUrl` / `url` | `string` | `''` | Base endpoint URL prepended to all request paths. |
 | `headers` | `HeadersInit` | `{}` | Base headers included in every HTTP request. |
-| `noAuthPaths` | `string[]` | `undefined` | Exact resource paths that bypass the `Authorization` header. |
-| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Patterns tested against `resource` or joined paths to bypass authorization. |
+| `noAuth.paths` | `string[]` | `undefined` | Exact resource paths that bypass the `Authorization` header. |
+| `noAuth.regex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Patterns tested against `resource` or joined paths to bypass authorization. |
 | `authRecovery.refreshTokenPath` | `string` | `undefined` | Path substring excluded from 401 recovery retries. |
 | `authService` | `DefaultAuthService` | `undefined` | The auth service the default `refreshToken` saves the new token through. |
 | `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel sent in the `x-request-channel` header. |
@@ -149,8 +149,8 @@ The configuration relies on the following defaults and container keys:
 - **`name`:** Used for logger tagging and the underlying `NativeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`.
 - **`baseUrl` / `url`:** Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`.
 - **`headers`:** Keys are converted to lowercase and merged with runtime headers.
-- **`noAuthPaths`:** Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`.
-- **`noAuthPathRegex`:** A regular expression pattern or patterns. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints.
+- **`noAuth.paths`:** Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`.
+- **`noAuth.regex`:** A regular expression pattern or patterns. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints.
 - **`authRecovery.refreshTokenPath`:** Excluded from 401 recovery retries to prevent recursive refresh loops. It is also the path the default `refreshToken` posts to.
 - **`authService`:** `DefaultRestDataProvider.value(container)` gives it the optional `CoreBindings.DEFAULT_AUTH_SERVICE` binding; without it the default `refreshToken` makes no request.
 - **Your own `refreshToken`:** with no `authService`, an override that saves a new token itself must keep the identity of the session it refreshed, or return the new token, so the transport can tell a refresh from another user's sign-in in another tab during it; the default path does.
@@ -199,7 +199,7 @@ export async function readHealth(controller: AbortController): Promise<unknown> 
   const network = new DefaultNetworkRequestService({
     name: 'health',
     baseUrl: 'https://api.example.com',
-    noAuthPathRegex: /./,
+    noAuth: { regex: /./ },
   });
 
   const response = await network.doRequest({
@@ -226,7 +226,7 @@ Headers are assembled in layers:
 3. **Tracing headers:** `x-request-channel` is set to `restDataProviderOptions.requestTracingChannel` (default `RequestChannel.WEB` which is `'100_WEB'`). `x-request-id` is generated via `buildRequestTracingId({ applicationInfo })`, defaulting to `${applicationInfo.name}_${uuidV4()}`.
 4. **Authorization header:** When `isNoAuthPath({ resource })` returns `false`, `getRequestAuthorizationHeader()` retrieves the authentication token via the protected `resolveAuthToken()` hook. With an `authService` (the data provider passes its own), the hook reads `authService.getAuth()`; without one, `DefaultNetworkRequestService.readAuthTokenFromStorage()` reads `LocalStorageKeys.KEY_AUTH_TOKEN` (`@app/auth/token`) from `localStorage`. The header is set as `${type} ${value}`, with `Bearer` as the type when it is empty or absent. If `provider` is defined on the token record, an `x-auth-provider` header is attached.
 
-If an endpoint path matches an entry in `noAuthPaths` or matches a pattern in `noAuthPathRegex`, the `Authorization` header is omitted:
+If an endpoint path matches an entry in `noAuth.paths` or matches a pattern in `noAuth.regex`, the `Authorization` header is omitted:
 
 ```ts
 import { DefaultNetworkRequestService } from '@venizia/ardor';
@@ -235,8 +235,7 @@ export function configureHeaders(): Record<string, string> {
   const network = new DefaultNetworkRequestService({
     name: 'api',
     baseUrl: 'https://api.example.com',
-    noAuthPaths: ['/auth/sign-in'],
-    noAuthPathRegex: [/^public\//],
+    noAuth: { paths: ['/auth/sign-in'], regex: [/^public\//] },
   });
 
   network.setHeaders({ headers: { 'x-tenant-id': 'tenant-42' } });
@@ -309,7 +308,7 @@ When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doR
 - `error.cause`: Underlying cause details (`server.details?.cause`).
 
 When a request receives a 401 Unauthorized status, `doRequest` triggers token recovery if `AuthRecoveryHelper.canRecover({ paths })` returns `true`:
-- The resource must not match `noAuthPaths` or `noAuthPathRegex`.
+- The resource must not match `noAuth.paths` or `noAuth.regex`.
 - The path must not contain `authRecovery.refreshTokenPath`.
 
 Recovery calls `refresh()`, which delegates to the protected `refreshToken()` hook:

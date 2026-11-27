@@ -81,48 +81,48 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
   /** The session each data source request was sent under, keyed by the context object IGNIS hands to both hooks. */
   private readonly sentSessions = new WeakMap<object, ISentSession>();
 
-  constructor(
-    opts: INoAuthOptions & {
-      /** The name of the underlying network request helper. */
-      name: string;
-      /**
-       * An empty one makes `doRequest` refuse, unless it is given its own `baseUrl`.
-       * @default ''
-       */
-      baseUrl?: string;
-      /**
-       * Sent with every request; a name set later with `setHeaders` replaces it.
-       * @default {}
-       */
-      headers?: HeadersInit;
-      /** Enables the refresh-and-retry after a 401. */
-      authRecovery?: IAuthRecoveryOptions;
-      /** What the default `refreshToken` saves the new token through. */
-      authService?: DefaultAuthService;
-      /**
-       * Aborts each request that has not answered in time. Throws here for an invalid `milliseconds`.
-       * @default { use: false }
-       */
-      timeout?: TRequestTimeoutOptions;
-    },
-  ) {
+  constructor(opts: {
+    /** Which requests go without a token. */
+    noAuth?: INoAuthOptions;
+    /** The name of the underlying network request helper. */
+    name: string;
+    /**
+     * An empty one makes `doRequest` refuse, unless it is given its own `baseUrl`.
+     * @default ''
+     */
+    baseUrl?: string;
+    /**
+     * Sent with every request; a name set later with `setHeaders` replaces it.
+     * @default {}
+     */
+    headers?: HeadersInit;
+    /** Enables the refresh-and-retry after a 401. */
+    authRecovery?: IAuthRecoveryOptions;
+    /** What the default `refreshToken` saves the new token through. */
+    authService?: DefaultAuthService;
+    /**
+     * Aborts each request that has not answered in time. Throws here for an invalid `milliseconds`.
+     * @default { use: false }
+     */
+    timeout?: TRequestTimeoutOptions;
+  }) {
     super({ scope: DefaultNetworkRequestService.name });
     const {
       name,
       baseUrl = '',
       headers = {},
-      noAuthPaths,
-      noAuthPathRegex,
+      noAuth = {},
       authRecovery,
       authService,
       timeout = { use: false },
     } = opts;
 
+    DefaultNetworkRequestService.assertNoAuthOptions({ options: opts });
     DefaultNetworkRequestService.assertTimeout({ timeout });
     this.timeout = timeout;
     this.headers = HttpHeaders.merge({ layers: [headers] });
-    this.noAuthPaths = noAuthPaths;
-    this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
+    this.noAuthPaths = noAuth.paths;
+    this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuth.regex });
     this.baseUrl = baseUrl;
     this.authRecovery = authRecovery;
     this.authService = authService;

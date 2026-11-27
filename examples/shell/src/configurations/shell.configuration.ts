@@ -26,7 +26,7 @@ declare module '@venizia/ardor' {
 export class ShellConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
-    return { url: ApiPaths.BASE, noAuthPaths: [ApiPaths.SIGN_IN] };
+    return { url: ApiPaths.BASE, noAuth: { paths: [ApiPaths.SIGN_IN] } };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })

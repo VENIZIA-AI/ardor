@@ -110,7 +110,7 @@ const createProvider = (opts: { baseUrl: string }): CountRestDataProvider => {
   const { baseUrl } = opts;
   const restDataProviderOptions: IRestDataProviderOptions = {
     url: baseUrl,
-    noAuthPathRegex: /./,
+    noAuth: { regex: /./ },
   };
   const applicationInfo: IApplicationInfo = {
     name: 'test-ardor-application',

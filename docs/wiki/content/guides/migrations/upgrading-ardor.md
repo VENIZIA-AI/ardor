@@ -35,8 +35,9 @@ Every ARDOR release is listed in the [changelogs](../../changelogs/) with who is
 | `ardor codemod auth-options` | Adds `use: true` to the auth provider options of an app with sign-in | 0.4.8 |
 | `ardor codemod base-application-import` | Imports `BaseArdorApplication` from `@venizia/ardor-admin` | 0.4.8 |
 | `ardor codemod default-providers` | Lists the default providers an app builds by hand; it only lists, you edit them | 0.4.8 |
+| `ardor codemod no-auth` | Moves `noAuthPaths` and `noAuthPathRegex` into `noAuth: { paths, regex }` | 0.5.0 |
 
-All four take the same flags and safety rules, listed under [Flags and exit codes](#flags-and-exit-codes), except `--hooks` (only `namespace`) and `--write` (not `default-providers`). Commit your work first, preview each one, write, and run your formatter:
+All five take the same flags and safety rules, listed under [Flags and exit codes](#flags-and-exit-codes), except `--hooks` (only `namespace`) and `--write` (not `default-providers`). Commit your work first, preview each one, write, and run your formatter:
 
 ```bash
 bun run ardor codemod auth-options src
@@ -107,6 +108,26 @@ What to write, by case:
 ```
 
 The exit code is 0, or 1 with `--check` when it found a place. `--write` is a usage error (exit 2): you make the change by hand.
+
+### no-auth
+
+0.5.0 groups the two no-auth options. A data provider or network service that is given `noAuthPaths` or `noAuthPathRegex` at the top of its options, or a `noAuth` that is not `{ paths, regex }`, throws when it is built.
+
+```diff
+-    return { url: '/api', noAuthPaths: ['/auth/sign-in'], noAuthPathRegex: /^public\// };
++    return { url: '/api', noAuth: { paths: ['/auth/sign-in'], regex: /^public\// } };
+```
+
+```bash
+bun run ardor codemod no-auth src
+bun run ardor codemod no-auth src --write
+```
+
+- It rewrites an object literal that holds the options as plain values, in a file that imports from ARDOR.
+- It lists as `left`, and does not change: a literal that has a spread or `noAuth`, that is spread or `Object.assign`ed into another object, that holds one option while another literal of the file holds only the other, that is typed `INoAuthOptions`, or that has a comment, a getter, a method or a computed name in what would move. It also lists reads such as `options.noAuthPaths`, destructurings, type and class members, and files that import nothing from ARDOR.
+- It reads `.ts`, `.tsx`, `.mts` and `.cts` files only. Search JavaScript and JSON yourself.
+- A rewritten literal prints a `note` unless a method returns it or it goes straight to `toValue`, `super` or a constructor. **Check each place that merges two options objects**, in any file: a spread keeps only the last `noAuth`, and the codemod cannot see a merge of objects from two files. Merge them yourself: `noAuth: { ...base.noAuth, ...extra.noAuth }`. Nothing throws for a half lost this way, and the request carries the token.
+- The protected members of a `DefaultNetworkRequestService` subclass (`this.noAuthPaths`) keep their names.
 
 ### namespace
 

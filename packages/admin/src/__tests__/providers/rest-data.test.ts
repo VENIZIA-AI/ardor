@@ -14,6 +14,7 @@ import {
   CoreBindings,
   DefaultAuthService,
   DefaultNetworkRequestService,
+  LocalStorageKeys,
 } from '@venizia/ardor-kernel';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
@@ -56,7 +57,7 @@ const createProvider = (opts: { baseUrl: string }): DefaultRestDataProvider => {
   const { baseUrl } = opts;
   const restDataProviderOptions: IRestDataProviderOptions = {
     url: baseUrl,
-    noAuthPathRegex: /./,
+    noAuth: { regex: /./ },
   };
   const applicationInfo: IApplicationInfo = {
     name: 'ardor-admin-test',
@@ -1048,7 +1049,7 @@ describe('buildListFilter', () => {
     }
 
     const provider = new OneRowProvider(
-      { url: baseUrl, noAuthPathRegex: /./ },
+      { url: baseUrl, noAuth: { regex: /./ } },
       { name: 'ardor-admin-test', version: '1.0.0', description: 'x' },
     );
 
@@ -1105,5 +1106,41 @@ describe('per-call headers', () => {
     });
 
     expect(recordedRequests[0].headers.get('content-type')).toBe('text/plain');
+  });
+});
+
+describe('noAuth options', () => {
+  const applicationInfo: IApplicationInfo = { name: 'app', version: '1.0.0', description: 'app' };
+
+  test.each([{ noAuthPaths: ['/auth/sign-in'] }, { noAuthPathRegex: /./ }])(
+    'the provider refuses the removed key of %p when it is built',
+    (legacy) => {
+      const options = { url: 'http://localhost', ...legacy };
+
+      expect(() => new DefaultRestDataProvider(options, applicationInfo)).toThrow(
+        'replaced by noAuth: { paths, regex }',
+      );
+    },
+  );
+
+  test('noAuth.paths and noAuth.regex reach the network service', async () => {
+    const provider = new DefaultRestDataProvider(
+      { url: baseUrl, noAuth: { paths: ['open'], regex: '^public' } },
+      applicationInfo,
+    );
+    const service = provider.getNetworkService();
+    const props = (resource: string) =>
+      service.getRequestProps({
+        resource,
+        restDataProviderOptions: { url: baseUrl },
+        applicationInfo,
+      });
+
+    localStorage.setItem(LocalStorageKeys.scoped({}).token, JSON.stringify({ value: 't' }));
+
+    expect(new Headers(props('open').headers).has('authorization')).toBe(false);
+    expect(new Headers(props('public-things').headers).has('authorization')).toBe(false);
+    expect(new Headers(props('orders').headers).has('authorization')).toBe(true);
+    localStorage.clear();
   });
 });

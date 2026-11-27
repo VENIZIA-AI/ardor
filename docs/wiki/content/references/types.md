@@ -73,7 +73,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `IGetRequestPropsParams` | `interface` | Inputs to `getRequestProps`, used by `DefaultNetworkRequestService`. | - |
 | `IGetRequestPropsResult` | `interface` | Output headers and body from `getRequestProps`, used by network request callers. | - |
 | `ICustomParams` | `interface` | Parameter bag merged into react-admin calls via `params`. | - |
-| `INoAuthOptions` | `interface` | Unauthenticated paths configuration, used in network services. | `noAuthPaths`, e.g. `['/auth/sign-in']`; `noAuthPathRegex` |
+| `INoAuthOptions` | `interface` | Unauthenticated paths configuration, used in network services. | `paths`, e.g. `['/auth/sign-in']`; `regex` |
 | `TNoAuthPathRegex` | `type` | Regex patterns matched against no-auth request paths. | `string \| RegExp \| Array<string \| RegExp>` |
 | `IAuthRecoveryOptions` | `interface` | Configuration for session refresh endpoint, used in network auth recovery. | `refreshTokenPath`, e.g. `'/auth/refresh'` |
 | `IRestDataProviderOptions` | `interface` | Configuration options for REST data provider (URL, headers, channel, auth recovery, no-auth). | - |

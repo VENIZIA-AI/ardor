@@ -105,16 +105,16 @@ describe('errors the network service used to swallow', () => {
     expect(logged).toContain('failure-boom');
   });
 
-  test('an invalid noAuthPathRegex pattern logs the pattern and the error', async () => {
+  test('an invalid noAuth.regex pattern logs the pattern and the error', async () => {
     const logged = await captureConsole(() => {
       return new DefaultNetworkRequestService({
         name: 'bad-regex-test',
         baseUrl: 'http://127.0.0.1:1',
-        noAuthPathRegex: ['('],
+        noAuth: { regex: ['('] },
       });
     });
 
-    expect(logged).toContain('noAuthPathRegex');
+    expect(logged).toContain('noAuth.regex');
     expect(logged).toContain('SyntaxError');
   });
 

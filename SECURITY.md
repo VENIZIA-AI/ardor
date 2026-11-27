@@ -53,7 +53,7 @@ When using ARDOR in your applications, follow these recommendations:
 ### Authentication & Authorization
 
 - Leave the auth token where `DefaultAuthService` stores it; never log it or copy it elsewhere
-- Keep `noAuthPaths` to the routes that really need no session; never widen them to make a request work
+- Keep `noAuth.paths` to the routes that really need no session; never widen them to make a request work
 - Enforce access control on the server - `canAccess` only shapes the UI
 
 ### Dependencies

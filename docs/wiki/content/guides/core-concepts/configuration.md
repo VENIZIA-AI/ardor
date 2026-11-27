@@ -20,7 +20,7 @@ import {
 export class ExampleConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
-    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
+    return { url: '/api', noAuth: { paths: ['/auth/sign-in'] } };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
@@ -188,7 +188,7 @@ export class CustomManualApplication extends BaseArdorApplication {
     // Replaces the REST options of a @configuration() class; the address comes from config.js.
     this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
       url: RuntimeConfig.getRequired({ key: 'VITE_API_URL' }),
-      noAuthPaths: ['/auth/sign-in'],
+      noAuth: { paths: ['/auth/sign-in'] },
     });
   }
 }
@@ -220,7 +220,7 @@ import {
 export class ApiConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
-    return { url: 'https://api.example.com', noAuthPaths: ['/auth/sign-in'] };
+    return { url: 'https://api.example.com', noAuth: { paths: ['/auth/sign-in'] } };
   }
 }
 

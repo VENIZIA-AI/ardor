@@ -68,7 +68,7 @@ const createClients = (opts: { token?: IAuthTokenRecord } = {}) => {
   const service = new TokenService({
     name: 'two-clients',
     baseUrl,
-    noAuthPathRegex: opts.token ? undefined : /./,
+    noAuth: { regex: opts.token ? undefined : /./ },
   });
   service.token = opts.token;
   const source = new HttpDataSource({
@@ -304,7 +304,7 @@ describe('where the two clients differ, as the docs say', () => {
     const service = new DefaultNetworkRequestService({
       name: 'relative',
       baseUrl: '/api',
-      noAuthPathRegex: /./,
+      noAuth: { regex: /./ },
     });
     const source = new HttpDataSource({ name: 'relative-source', baseUrl: '/api' });
 

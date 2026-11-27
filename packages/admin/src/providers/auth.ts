@@ -50,7 +50,7 @@ export { type ILoginParams, SessionClearReasons, type TSessionClearReason } from
  *   }
  *
  *   bindContext(): void {
- *     this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api', noAuthPaths: ['/auth/sign-in'] });
+ *     this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api', noAuth: { paths: ['/auth/sign-in'] } });
  *     // Sign-in is off unless the options say use: true.
  *     this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
  *     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(AppAuthProvider).setScope(BindingScopes.SINGLETON);

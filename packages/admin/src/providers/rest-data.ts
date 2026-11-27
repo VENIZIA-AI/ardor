@@ -90,7 +90,7 @@ const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> 
  * export class DataConfiguration {
  *   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
  *   options() {
- *     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
+ *     return { url: '/api', noAuth: { paths: ['/auth/sign-in'] } };
  *   }
  * }
  * ```
@@ -109,6 +109,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     protected applicationInfo: IApplicationInfo,
   ) {
     super({ scope: DefaultRestDataProvider.name });
+    DefaultNetworkRequestService.assertNoAuthOptions({ options: restDataProviderOptions });
     DefaultNetworkRequestService.assertTimeout({ timeout: restDataProviderOptions.timeout });
   }
 
@@ -122,8 +123,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return new DefaultNetworkRequestService({
       name: 'default-application-network-service',
       baseUrl: this.restDataProviderOptions.url,
-      noAuthPaths: this.restDataProviderOptions.noAuthPaths,
-      noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
+      noAuth: this.restDataProviderOptions.noAuth,
       headers: this.restDataProviderOptions.headers,
       authRecovery: this.restDataProviderOptions.authRecovery,
       authService: this.authService,

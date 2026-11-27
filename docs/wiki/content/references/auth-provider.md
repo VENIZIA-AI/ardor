@@ -5,7 +5,7 @@ description: DefaultAuthProvider and DefaultAuthService - sign-in contract, stor
 
 # Auth provider
 
-`DefaultAuthProvider` bridges react-admin authentication with the backend API through the REST data provider, storing authentication tokens, identity records, and role sets in `localStorage` via `DefaultAuthService`. `BaseArdorApplication` binds `DefaultAuthProvider`, `DefaultAuthService` and the data provider itself. Your application binds only the options, in a [configuration](../guides/core-concepts/configuration) class: `AUTH_PROVIDER_OPTIONS` with `use: true` turns sign-in on, and `REST_DATA_PROVIDER_OPTIONS` names the sign-in route in `noAuthPaths`.
+`DefaultAuthProvider` bridges react-admin authentication with the backend API through the REST data provider, storing authentication tokens, identity records, and role sets in `localStorage` via `DefaultAuthService`. `BaseArdorApplication` binds `DefaultAuthProvider`, `DefaultAuthService` and the data provider itself. Your application binds only the options, in a [configuration](../guides/core-concepts/configuration) class: `AUTH_PROVIDER_OPTIONS` with `use: true` turns sign-in on, and `REST_DATA_PROVIDER_OPTIONS` names the sign-in route in `noAuth.paths`.
 
 ```ts
 import {
@@ -22,7 +22,7 @@ export class AuthConfiguration {
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: 'https://api.example.com',
-      noAuthPaths: ['/auth/sign-in'],
+      noAuth: { paths: ['/auth/sign-in'] },
     };
   }
 
@@ -82,7 +82,7 @@ When `paths.checkAuth` is omitted, `checkAuth` verifies token existence in `loca
 
 The default sign-in flow adheres to the IGNIS authentication protocol:
 
-- **Route:** `POST` to `paths.signIn` (default `/auth/sign-in`) sent through `restDataProvider.send()`. The route must also be listed in `noAuthPaths` on `IRestDataProviderOptions` so the request travels without an `Authorization` header.
+- **Route:** `POST` to `paths.signIn` (default `/auth/sign-in`) sent through `restDataProvider.send()`. The route must also be listed in `noAuth.paths` on `IRestDataProviderOptions` so the request travels without an `Authorization` header.
 - **Request Body:** Created by `buildSignInBody({ params })` from login form parameters (`params.username` and `params.password`):
 
 ```json
@@ -348,7 +348,7 @@ A 401 whose rejection has `logoutUser: false` keeps the stored session: the prov
 
 `ArdorApplication` resolves `CoreBindings.DEFAULT_AUTH_PROVIDER` only when `CoreBindings.AUTH_PROVIDER_OPTIONS` is `{ use: true }`. An application with no sign-in binds `{ use: false }`, or nothing; `ArdorApplication` then runs without an auth provider. In this configuration, react-admin mounts no login page, runs no `checkAuth` guards, and treats all routes as public, except that a route with `access` fails at mount and names the route. A provider of your own under `DEFAULT_AUTH_PROVIDER` with no `AUTH_PROVIDER_OPTIONS` fails at start, because sign-in would be off and the provider ignored. `ArdorApplication` does not resolve the default auth provider.
 
-To ensure the REST data provider does not attach `Authorization` headers to outgoing requests, configure `noAuthPathRegex: /./` in `IRestDataProviderOptions`:
+To ensure the REST data provider does not attach `Authorization` headers to outgoing requests, configure `noAuth: { regex: /./ }` in `IRestDataProviderOptions`:
 
 ```ts
 import {
@@ -365,7 +365,7 @@ export class PublicConfiguration {
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: 'https://api.example.com',
-      noAuthPathRegex: /./,
+      noAuth: { regex: /./ },
     };
   }
 

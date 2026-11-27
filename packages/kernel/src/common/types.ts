@@ -90,7 +90,7 @@ export type TRequestType = TStringConstValue<typeof RequestTypes>;
 
 /** What `DefaultNetworkRequestService.getRequestProps` takes. */
 export interface IGetRequestPropsParams {
-  /** Decides whether the request goes without a token (`noAuthPaths`, `noAuthPathRegex`). */
+  /** Decides whether the request goes without a token (`noAuth`). */
   resource: string;
   /**
    * Whether the response carries a count.
@@ -173,7 +173,7 @@ export type TAuthProviderOptions = { use: false } | ({ use: true } & IAuthProvid
 /** How a request recovers from a 401. */
 export interface IAuthRecoveryOptions {
   /**
-   * A request to this path never starts a refresh: it is the refresh. Listing it in `noAuthPaths`
+   * A request to this path never starts a refresh: it is the refresh. Listing it in `noAuth.paths`
    * as well keeps the expired token off that request.
    * @example
    * ```ts
@@ -187,7 +187,7 @@ export interface IAuthRecoveryOptions {
    *       url: 'https://api.example.com',
    *       // The refresh path is also a no-auth path: the expired token stays off that request, so the
    *       // server identifies the session another way, such as a cookie.
-   *       noAuthPaths: ['/auth/sign-in', '/auth/refresh'],
+   *       noAuth: { paths: ['/auth/sign-in', '/auth/refresh'] },
    *       authRecovery: { refreshTokenPath: '/auth/refresh' },
    *     };
    *   }
@@ -201,26 +201,28 @@ export interface IAuthRecoveryOptions {
 export type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>;
 
 /**
- * Data only. A request that matches goes without an `Authorization` header; to send none at all (an
- * API with no sign-in) set `noAuthPathRegex: /./`.
+ * Data only: the `noAuth` options. A request that matches goes without an `Authorization` header; to
+ * send none at all (an API with no sign-in) set `noAuth: { regex: /./ }`.
  */
 export interface INoAuthOptions {
   /**
    * Exact resource paths which will be requested without authorization header.
    */
-  noAuthPaths?: Array<string>;
+  paths?: Array<string>;
 
   /**
    * Pattern(s) of resource paths which will be requested without authorization header.
    * Accept `RegExp` or `string` (which will be compiled with `new RegExp(...)`).
    */
-  noAuthPathRegex?: TNoAuthPathRegex;
+  regex?: TNoAuthPathRegex;
 }
 
 /** Data only: where and how the REST data provider sends. */
-export interface IRestDataProviderOptions extends INoAuthOptions {
+export interface IRestDataProviderOptions {
   /** The base URL requests are sent to. */
   url: string;
+  /** Which requests go without a token. Absent: every request carries the stored one. */
+  noAuth?: INoAuthOptions;
   /**
    * Sent in `x-request-channel`.
    * @default RequestChannel.WEB

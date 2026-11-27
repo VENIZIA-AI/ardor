@@ -26,7 +26,7 @@ export class AdminConfiguration {
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: '/v1/api',
-      noAuthPaths: [VertPaths.SIGN_IN],
+      noAuth: { paths: [VertPaths.SIGN_IN] },
       authRecovery: { refreshTokenPath: VertPaths.REFRESH_TOKEN },
     };
   }

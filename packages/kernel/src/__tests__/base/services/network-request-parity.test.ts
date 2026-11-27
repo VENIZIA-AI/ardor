@@ -92,7 +92,7 @@ const createService = (opts: { headers?: HeadersInit; isOpen?: boolean } = {}) =
     name: 'parity-test',
     baseUrl,
     headers: opts.headers,
-    noAuthPathRegex: opts.isOpen ? /./ : undefined,
+    noAuth: { regex: opts.isOpen ? /./ : undefined },
   });
 };
 

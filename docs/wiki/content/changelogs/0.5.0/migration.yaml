@@ -478,3 +478,22 @@ unchecked-response-types-removed:
     steps:
       - 'Pin the four ARDOR packages to 0.5.0-12 or earlier, remove each `schema` property and name the type with a type argument again.'
   data: Nothing stored or sent changes. A response that does not fit its schema is now refused where it passed through before.
+
+no-auth-options:
+  symbols: [INoAuthOptions, IRestDataProviderOptions, DefaultNetworkRequestService]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod no-auth src` to preview, then add `--write`. It rewrites the object literals it can move whole, and lists with file and line what it left. It reads TypeScript files only: search JavaScript and JSON yourself.'
+      - 'At each listed place, write `noAuth: { paths, regex }`; read `options.noAuth?.paths` and `options.noAuth?.regex` where you read the old names.'
+      - 'Check every place that merges two options objects, in any file. Where both set `noAuth`, merge them: `noAuth: { ...base.noAuth, ...extra.noAuth }`. A plain spread keeps only the last one, nothing throws, and a request meant to go without a token then carries it.'
+      - 'Run `bun check`, then start the app: a provider or service given an old name, or a `noAuth` of another shape, throws and says so.'
+      - 'A subclass of `DefaultNetworkRequestService` keeps `this.noAuthPaths`, `this.noAuthPathRegexes`, `isNoAuthPath` and `compileNoAuthPathRegex`.'
+    before: |-
+      return { url: '/api', noAuthPaths: ['/auth/sign-in'], noAuthPathRegex: /^public/ };
+    after: |-
+      return { url: '/api', noAuth: { paths: ['/auth/sign-in'], regex: /^public/ } };
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-12 or earlier and write `noAuthPaths` and `noAuthPathRegex` again.'
+  data: Nothing stored changes. Once every old option is moved and merged, the same requests carry a token as before.
+  codemod: no-auth
