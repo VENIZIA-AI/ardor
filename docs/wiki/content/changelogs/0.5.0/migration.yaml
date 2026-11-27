@@ -176,7 +176,7 @@ ignis-0-5-peers:
   downgrade:
     steps:
       - Pin the four ARDOR packages to 0.4.8 or earlier, and the IGNIS packages to the 0.4 line.
-  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (while IGNIS 0.5.0 is a prerelease the ranges are `^0.5.0-12` for `@venizia/ignis-connectors`, `^0.5.0-11` for `@venizia/ignis-kernel`, `^0.5.0-10` for `@venizia/ignis-helpers` and `@venizia/ignis-boot`, and `^0.5.0-4` for the other IGNIS packages); an app on a 0.4 IGNIS line does not satisfy them. The app preset needs `@venizia/dev-configs` `^0.5.0-8` while it is a prerelease.
+  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (while IGNIS 0.5.0 is a prerelease the ranges are `^0.5.0-12` for `@venizia/ignis-connectors`, `^0.5.0-11` for `@venizia/ignis-kernel`, `^0.5.0-10` for `@venizia/ignis-helpers` and `@venizia/ignis-boot`, and `^0.5.0-4` for the other IGNIS packages); an app on a 0.4 IGNIS line does not satisfy them. The app preset needs `@venizia/dev-configs` `^0.5.0-9` while it is a prerelease.
 
 data-source-auth-attempt:
   symbols:
