@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**83 targets.**
+**85 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -31,6 +31,7 @@ generated:
 | `make clean-install-kernel` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make clean-install-react` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make codemod-bin` | - | Build only the ardor codemod bin, which changelog-check runs. |
+| `make conflict-markers-check` | - | Fail when a tracked file holds a git conflict marker |
 | `make copies-check` | - | Gate: every @venizia/* package resolves to one version (no stable IGNIS copy next to a prerelease). |
 | `make cycles-check` | - | Gate: no import cycle in any dist. Needs a build. |
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
@@ -42,6 +43,7 @@ generated:
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
 | `make layer-check` | - | Gate: no package imports a layer above it. |
+| `make layout-check` | - | Gate: no source folder mixes files and folders; a long file is a warning. |
 | `make links-check` | - | Gate: every ARDOR sibling resolves to the workspace, not to the registry. |
 | `make lint` | `lint-packages lint-scripts` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
@@ -96,4 +98,4 @@ generated:
 | `make vulcan-doctor` | - | Gate: the project follows VULCAN (config, layout, rules, make, adapters, style). |
 | `make vulcan-sync` | - | Write your agent adapters: CLAUDE.md, .claude/settings.json, skill links. |
 | `make wiki-anchors-check` | - | Gate: every wiki '#fragment' link resolves. Needs a build (make docs). |
-| `make wiki-links-check` | - | Gate: every source path the wiki and knowledge bundle name exists. |
+| `make wiki-links-check` | `conflict-markers-check` | Gate: every source path the wiki and knowledge bundle name exists. |
