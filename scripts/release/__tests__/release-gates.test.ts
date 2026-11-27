@@ -523,8 +523,8 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
   });
 
   test('the actions are pinned by commit with the tag IGNIS uses, and bun and Node are exact', () => {
-    expect(workflow).toMatch(/actions\/checkout@[0-9a-f]{40} # v6\.0\.3/);
-    expect(workflow).toMatch(/actions\/setup-node@[0-9a-f]{40} # v6\.4\.0/);
+    expect(workflow).toMatch(/actions\/checkout@[0-9a-f]{40} # v7\.0\.1/);
+    expect(workflow).toMatch(/actions\/setup-node@[0-9a-f]{40} # v7\.1\.0/);
     expect(workflow).toContain('bun-version: 1.4.5');
     expect(workflow).toContain('node-version: 24.22.1');
     expect(workflow).not.toContain('bun-version: latest');
@@ -1868,7 +1868,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       guard: 'actionsByCommit',
       name: 'an action goes back to a tag',
       mutate: (text) =>
-        text.replace(/actions\/checkout@[0-9a-f]{40} # v6\.0\.3/, 'actions/checkout@v6.0.3'),
+        text.replace(/actions\/checkout@[0-9a-f]{40} # v7\.0\.1/, 'actions/checkout@v7.0.1'),
     },
     {
       guard: 'oneRun',

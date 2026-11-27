@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         # Checkout runs `git init`, which prints a hint when no default branch name is configured.
         env:
           GIT_CONFIG_COUNT: 1
@@ -92,7 +92,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         # Checkout runs `git init`, which prints a hint when no default branch name is configured.
         env:
           GIT_CONFIG_COUNT: 1
@@ -104,7 +104,7 @@ jobs:
 
       # The clean-install gate loads every entry under Node's ESM loader as well as Bun's.
       - name: Setup Node.js
-        uses: actions/setup-node@v6.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
 
