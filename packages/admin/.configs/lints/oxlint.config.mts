@@ -1,4 +1,4 @@
 import { defineConfig } from 'oxlint';
-import { BrowserOxlintConfigs } from '@venizia/dev-configs/linters/oxlint';
+import { ReactOxlintConfigs } from '@venizia/dev-configs/linters/oxlint';
 
-export default defineConfig(BrowserOxlintConfigs.create());
+export default defineConfig(ReactOxlintConfigs.create());

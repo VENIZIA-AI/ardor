@@ -360,11 +360,10 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
     );
   }
 
-  // --- Requests --------------------------------------------------------------------------------
-
   /**
-   * Spread into `HttpDataSource` settings: requests carry the session headers as read at send time
-   * (channel and tracing id given the provider's options), a 401 joins `refresh`, no-auth no token.
+   * Spread into an `HttpDataSource`'s settings, so its requests carry the session headers and the
+   * timezone as read at send time (and the channel and tracing id, given the data provider's
+   * options), and a 401 joins this service's shared `refresh`. A no-auth path gets no token.
    */
   getDataSourceAuth(
     opts?: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,

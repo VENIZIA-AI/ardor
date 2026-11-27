@@ -7,7 +7,6 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   // The backend app `vulcan package add --api` chose, unless .env sets API_URL; empty when there is none, and
   // then nothing is proxied.
-  // eslint-disable-next-line @venizia/prefer-framework-api -- the dev server's proxy target: the paired backend on this machine, never shipped to a browser.
   const apiUrl: string = env.API_URL || '{{apiUrl}}';
   const proxy: Record<string, string> = apiUrl === '' ? {} : { '/api': apiUrl };
 
