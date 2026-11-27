@@ -15,6 +15,7 @@ import {
   type IRestDataProviderOptions,
   type ISendParams,
   provide,
+  RequestBodyEncoder,
   RequestMethods,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
@@ -110,6 +111,10 @@ export class IpcDataProvider extends DefaultRestDataProvider {
     schema?: IResponseSchema;
   }): Promise<INetworkResponse> {
     const { resource, params, schema } = opts;
+
+    // This override does not call the base method, so it runs the base's check of the removed names.
+    RequestBodyEncoder.assertPayload({ options: params, owner: this.constructor.name });
+
     const answered = invoke({ command: resource, params });
 
     if (!schema) {

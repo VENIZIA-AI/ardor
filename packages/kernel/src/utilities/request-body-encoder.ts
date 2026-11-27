@@ -23,7 +23,8 @@ export class RequestBodyEncoder {
   /**
    * Throws for options that carry `body` or `bodyType`, which `payload` replaced, and for a
    * `payload` that is not `{ data, type? }`: either one would send something else than the caller
-   * meant. A `type` of your own is accepted, for an `encodeBody` override that reads it.
+   * meant. At run time any text `type` passes, for an `encodeBody` override that reads one;
+   * `IRequestPayload` types only the `RequestBodyTypes` values.
    */
   static assertPayload(opts: {
     options: object;

@@ -268,7 +268,6 @@ describe('the bodies a request carries', () => {
         data: { title: 'a', tags: ['x'], at: new Date('2026-01-02T03:04:05.000Z') },
         type: RequestBodyTypes.JSON,
       },
-
       restDataProviderOptions: { url: baseUrl },
       applicationInfo: APPLICATION_INFO,
     });
@@ -303,7 +302,6 @@ describe('the bodies a request carries', () => {
         },
         type: RequestBodyTypes.FORM_URL_ENCODED,
       },
-
       restDataProviderOptions: { url: baseUrl },
       applicationInfo: APPLICATION_INFO,
     });

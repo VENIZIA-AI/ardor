@@ -64,6 +64,10 @@ export class IpcDataProvider extends DefaultRestDataProvider {
     schema?: IResponseSchema;
   }): Promise<INetworkResponse> {
     const { resource, params, schema } = opts;
+
+    // This override does not call the base method, so it runs the base's check of the removed names.
+    RequestBodyEncoder.assertPayload({ options: params, owner: this.constructor.name });
+
     const answered = invoke({ command: resource, params });
 
     if (!schema) {
@@ -75,7 +79,7 @@ export class IpcDataProvider extends DefaultRestDataProvider {
 }
 ```
 
-That's the entire override. No fetch, no headers, no URL construction. `resource` becomes the
+That's the entire override. It calls `RequestBodyEncoder.assertPayload` because it replaces the base `send`: without it a caller that still passes `body` would be sent without its data. No fetch, no headers, no URL construction. `resource` becomes the
 command name; `params` is passed straight through.
 
 ## Step 3: what still comes from the base class

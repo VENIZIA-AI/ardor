@@ -599,7 +599,6 @@ describe('DefaultNetworkRequestService', () => {
           },
           type: RequestBodyTypes.FORM_DATA,
         },
-
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -626,7 +625,6 @@ describe('DefaultNetworkRequestService', () => {
             data: { attachment: new File(['x'], 'note.txt', { type: 'text/plain' }) },
             type: RequestBodyTypes.FORM_URL_ENCODED,
           },
-
           applicationInfo: createApplicationInfo(),
           restDataProviderOptions: createRestDataProviderOptions(),
         }),
@@ -649,7 +647,6 @@ describe('DefaultNetworkRequestService', () => {
           },
           type: RequestBodyTypes.FORM_URL_ENCODED,
         },
-
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -682,7 +679,6 @@ describe('DefaultNetworkRequestService', () => {
           },
           type: RequestBodyTypes.FORM_DATA,
         },
-
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -715,7 +711,6 @@ describe('DefaultNetworkRequestService', () => {
           },
           type: RequestBodyTypes.FORM_DATA,
         },
-
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -739,7 +734,6 @@ describe('DefaultNetworkRequestService', () => {
       const props = service.getRequestProps({
         resource: 'upload',
         payload: { data: { items: [file, 'plain', 0] }, type: RequestBodyTypes.FORM_DATA },
-
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -773,7 +767,6 @@ describe('DefaultNetworkRequestService', () => {
           },
           type: RequestBodyTypes.FORM_URL_ENCODED,
         },
-
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });

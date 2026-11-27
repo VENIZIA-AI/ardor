@@ -318,7 +318,6 @@ describe('what a request carries, through doRequest', () => {
         data: { name: 'a', file: new File(['content'], 'a.txt') },
         type: RequestBodyTypes.FORM_DATA,
       },
-
       restDataProviderOptions: { url: baseUrl, noAuth: { regex: /./ } },
       applicationInfo: info,
     });
