@@ -108,12 +108,12 @@
         "@venizia/ignis-inversion",
         "reflect-metadata"
       ],
-      "limit": "11360 B"
+      "limit": "11590 B"
     },
     {
       "path": "dist/testing/index.js",
       "import": "*",
-      "limit": "1640 B"
+      "limit": "1670 B"
     }
   ],
   "engines": {

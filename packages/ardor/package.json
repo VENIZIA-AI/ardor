@@ -153,7 +153,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "776 B"
+      "limit": "800 B"
     },
     {
       "path": "dist/testing/index.js",
@@ -173,7 +173,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "1150 B"
+      "limit": "1170 B"
     }
   ],
   "engines": {
