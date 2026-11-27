@@ -296,8 +296,8 @@ const signInWith = (opts: {
   container
     .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
     .toValue({
-      send: (request: { resource: string; params: { body: unknown } }) => {
-        opts.sent?.push({ resource: request.resource, body: request.params.body });
+      send: (request: { resource: string; params: { payload?: { data: unknown } } }) => {
+        opts.sent?.push({ resource: request.resource, body: request.params.payload?.data });
 
         return Promise.resolve({ data: opts.data ?? defaultSession });
       },

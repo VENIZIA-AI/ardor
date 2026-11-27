@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (103)
+### `@venizia/ardor-kernel` (104)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -63,6 +63,7 @@ generated:
 - `injectable` const
 - `INoAuthOptions` interface
 - `IPermissionProvider` interface
+- `IRequestPayload` interface
 - `IResponseSchema` interface
 - `IRestDataProviderOptions` interface
 - `IRolePermissionProviderOptions` interface
@@ -260,7 +261,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (205)
+### `@venizia/ardor` (206)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -338,6 +339,7 @@ generated:
 - `IPermissionProvider` interface
 - `IReactAdminAuthProvider` type
 - `IReactAdminDataProvider` type
+- `IRequestPayload` interface
 - `IResponseSchema` interface
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface

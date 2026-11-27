@@ -201,7 +201,7 @@ export async function buildReport(opts: {
   const { dataProvider, signal } = opts;
   const response = await dataProvider.send({
     resource: 'reports/build',
-    params: { method: RequestMethods.POST, body: { year: 2026 }, signal },
+    params: { method: RequestMethods.POST, payload: { data: { year: 2026 } }, signal },
   });
 
   return response.data;
@@ -250,8 +250,7 @@ export async function exportProducts(dataProvider: IDataProvider): Promise<strin
     resource: 'products/export',
     params: {
       method: RequestMethods.POST,
-      bodyType: RequestBodyTypes.JSON,
-      body: { format: 'csv' },
+      payload: { data: { format: 'csv' }, type: RequestBodyTypes.JSON },
       query: { notify: 'true' },
       requestCountData: RequestCountData.DATA_ONLY,
     },

@@ -68,7 +68,8 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `TRequestType` | `type` | Operation types union (`RequestTypes`), used by data provider operations. | - |
 | `TRequestBodyType` | `type` | Payload format union, used in requests. | `'none' \| 'form-data' \| 'x-www-form-urlencoded' \| 'json' \| 'binary'` |
 | `TEnvironment` | `type` | Environment names union, used for runtime environment checks. | `'development' \| 'production'` |
-| `ISendParams` | `interface` | Parameters object for `dataProvider.send`, used for arbitrary endpoint calls. | `method`, `requestType`, `bodyType`, `body`, `query`, `headers`, `requestCountData`, `extra`, `signal` |
+| `IRequestPayload` | `interface` | A request body before it is encoded: the `payload` of `ISendParams`. | `data`, `type` (a `RequestBodyTypes` value) |
+| `ISendParams` | `interface` | Parameters object for `dataProvider.send`, used for arbitrary endpoint calls. | `method`, `requestType`, `payload`, `query`, `headers`, `requestCountData`, `extra`, `signal` |
 | `INetworkResponse<T>` | `interface` | Envelope returned by `dataProvider.send` and the network service. | `data`, and `total`, `count`, `filename`, `contentDisposition`, `extra` where the response has them |
 | `IGetRequestPropsParams` | `interface` | Inputs to `getRequestProps`, used by `DefaultNetworkRequestService`. | - |
 | `IGetRequestPropsResult` | `interface` | Output headers and body from `getRequestProps`, used by network request callers. | - |

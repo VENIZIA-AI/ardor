@@ -44,15 +44,21 @@ export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
 /** One of the `Environments` values. */
 export type TEnvironment = TStringConstValue<typeof Environments>;
 
+/** A request body before it is encoded: what to send, and how. */
+export interface IRequestPayload {
+  data: unknown;
+  /** How `data` is encoded; it goes through as JSON when absent. */
+  type?: TRequestBodyType;
+}
+
 /** What `IDataProvider.send` takes. */
 export interface ISendParams {
   /** Required: `send` throws without it. */
   method?: TRequestMethod;
   /** How the response is read. `RequestTypes.SEND` when absent. */
   requestType?: TRequestType;
-  /** How `body` is encoded; it goes through as JSON when absent. */
-  bodyType?: TRequestBodyType;
-  body?: unknown;
+  /** The body of the request. */
+  payload?: IRequestPayload;
   /** Sent as the query string of the request. */
   query?: Record<string, unknown>;
   /** Added to the headers of this request. */
@@ -97,9 +103,8 @@ export interface IGetRequestPropsParams {
    * @default RequestCountData.DATA_ONLY
    */
   requestCountData?: TConstValue<typeof RequestCountData>;
-  body?: unknown;
-  /** How `body` is encoded. */
-  bodyType?: TRequestBodyType;
+  /** The body of the request, encoded by `getRequestProps`. */
+  payload?: IRequestPayload;
   /** Gives the request channel. */
   restDataProviderOptions: IRestDataProviderOptions;
   /** Gives the name the tracing id starts with. */

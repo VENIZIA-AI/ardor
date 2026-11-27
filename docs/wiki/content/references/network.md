@@ -247,7 +247,7 @@ export function configureHeaders(): Record<string, string> {
 
 ## Encode a body and read a file name yourself
 
-`RequestBodyEncoder.encode({ bodyType, body })` builds the body the service sends, and its overloads type the result: a `FormData` for `form-data`, a `URLSearchParams` for `x-www-form-urlencoded`, and the body you passed for `json`, `none`, `binary` or no type. A `bodyType` that is only a `string` gives `body: unknown`. The result of the first two goes to any API that takes `string | object` without a cast.
+`RequestBodyEncoder.encode({ payload })`, with `payload` as `{ data, type }`, builds the body the service sends, and its overloads type the result: a `FormData` for `form-data`, a `URLSearchParams` for `x-www-form-urlencoded`, and the data you passed for `json`, `none`, `binary` or no type. A `payload.type` that is only a `string` gives `body: unknown`. The result of the first two goes to any API that takes `string | object` without a cast.
 
 `NetworkResponseReader.readFilename({ headers })` returns the file name a `Content-Disposition` header names: `filename*=` (UTF-8, decoded) first, then `filename=`, or `undefined`. `NetworkResponseReader.read` returns the same name as `filename`.
 
@@ -255,7 +255,9 @@ export function configureHeaders(): Record<string, string> {
 import { RequestBodyEncoder, RequestBodyTypes, NetworkResponseReader } from '@venizia/ardor';
 
 export const toUpload = (data: Record<string, unknown>): FormData => {
-  const { body } = RequestBodyEncoder.encode({ bodyType: RequestBodyTypes.FORM_DATA, body: data });
+  const { body } = RequestBodyEncoder.encode({
+    payload: { data, type: RequestBodyTypes.FORM_DATA },
+  });
 
   return body;
 };

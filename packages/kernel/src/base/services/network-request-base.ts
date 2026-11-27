@@ -362,9 +362,13 @@ export abstract class AbstractNetworkRequestService extends BaseService {
     };
   }
 
-  /** The body as it is sent and the content type to send it under. Override to encode another way. */
+  /**
+   * The body as it is sent and the content type to send it under. Override to encode another way. It
+   * takes `body` and `bodyType`, not a `payload`: an override written for these names would otherwise
+   * receive the wrapper and send it.
+   */
   protected encodeBody(opts: { bodyType?: string; body: unknown }): IEncodedBody {
-    return RequestBodyEncoder.encode(opts);
+    return RequestBodyEncoder.encode({ payload: { data: opts.body, type: opts.bodyType } });
   }
 
   /**
@@ -372,9 +376,10 @@ export abstract class AbstractNetworkRequestService extends BaseService {
    * of the encoded body) and the encoded body of a request. Throws as `getRequestHeader` does.
    */
   getRequestProps(params: IGetRequestPropsParams) {
+    RequestBodyEncoder.assertPayload({ options: params, owner: this.constructor.name });
+
     const {
-      bodyType,
-      body,
+      payload,
       resource,
       restDataProviderOptions,
       applicationInfo,
@@ -395,7 +400,7 @@ export abstract class AbstractNetworkRequestService extends BaseService {
       }),
     );
 
-    const encoded = this.encodeBody({ bodyType, body });
+    const encoded = this.encodeBody({ bodyType: payload?.type, body: payload?.data });
 
     const props: IGetRequestPropsResult = {
       headers: encoded.contentType

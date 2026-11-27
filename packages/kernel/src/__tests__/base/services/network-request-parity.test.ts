@@ -264,8 +264,10 @@ describe('the bodies a request carries', () => {
     const service = createService({ isOpen: true });
     const props = service.getRequestProps({
       resource: 'items',
-      bodyType: RequestBodyTypes.JSON,
-      body: { title: 'a', tags: ['x'], at: new Date('2026-01-02T03:04:05.000Z') },
+      payload: {
+        data: { title: 'a', tags: ['x'], at: new Date('2026-01-02T03:04:05.000Z') },
+        type: RequestBodyTypes.JSON,
+      },
       restDataProviderOptions: { url: baseUrl },
       applicationInfo: APPLICATION_INFO,
     });
@@ -290,13 +292,15 @@ describe('the bodies a request carries', () => {
     const service = createService({ isOpen: true });
     const props = service.getRequestProps({
       resource: 'sign-in',
-      bodyType: RequestBodyTypes.FORM_URL_ENCODED,
-      body: {
-        username: 'a b',
-        remember: true,
-        at: new Date('2026-01-02T03:04:05.000Z'),
-        meta: { k: 1 },
-        skipped: null,
+      payload: {
+        data: {
+          username: 'a b',
+          remember: true,
+          at: new Date('2026-01-02T03:04:05.000Z'),
+          meta: { k: 1 },
+          skipped: null,
+        },
+        type: RequestBodyTypes.FORM_URL_ENCODED,
       },
       restDataProviderOptions: { url: baseUrl },
       applicationInfo: APPLICATION_INFO,

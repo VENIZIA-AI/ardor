@@ -38,9 +38,8 @@ export interface IRestRequestOptions<TResource extends string = string> {
    * @default [resource]
    */
   paths?: Array<string>;
-  /** The request body; encoded by `bodyType`. */
-  body?: unknown;
-  bodyType?: ISendParams['bodyType'];
+  /** The body of the request. */
+  payload?: ISendParams['payload'];
   /** The query string. */
   query?: Record<string, unknown>;
   /** The list extras, sent in a header. */

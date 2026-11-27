@@ -21,26 +21,61 @@ type TPassThroughBodyType =
  */
 export class RequestBodyEncoder {
   /**
+   * Throws for options that carry `body` or `bodyType`, which `payload` replaced, and for a
+   * `payload` that is not `{ data, type? }`: either one would send something else than the caller
+   * meant. At run time any text `type` passes, for an `encodeBody` override that reads one;
+   * `IRequestPayload` types only the `RequestBodyTypes` values.
+   */
+  static assertPayload(opts: {
+    options: object;
+    /** The class that was given the options, named in the message. */
+    owner: string;
+  }): void {
+    const { options, owner } = opts;
+    const removed = ['body', 'bodyType'].filter((key) => key in options);
+
+    if (removed.length) {
+      const verb = removed.length > 1 ? 'were' : 'was';
+
+      throw getError({
+        message: `[${owner}] ${removed.join(' and ')} ${verb} replaced by payload: { data, type }`,
+      });
+    }
+
+    const payload = 'payload' in options ? options.payload : undefined;
+    const invalid = RequestBodyEncoder.findInvalidPayload({ payload });
+
+    if (invalid) {
+      throw getError({ message: `[${owner}] payload takes { data, type? }: invalid ${invalid}` });
+    }
+  }
+
+  /**
    * The body as it is sent and the content type to send it under. The overloads give the type of what
    * is built: a `FormData` for `form-data` (no content type: `fetch` adds the multipart one), a
-   * `URLSearchParams` for `x-www-form-urlencoded`, and the body you passed for `json`, `none`,
-   * `binary` or no type. A `bodyType` known only as a `string` answers `IEncodedBody`.
+   * `URLSearchParams` for `x-www-form-urlencoded`, and the data you passed for `json`, `none`,
+   * `binary` or no type. A `payload.type` known only as a `string` answers `IEncodedBody`.
    */
-  static encode(opts: { bodyType: typeof RequestBodyTypes.FORM_DATA; body: unknown }): {
+  static encode(opts: { payload: { data: unknown; type: typeof RequestBodyTypes.FORM_DATA } }): {
     body: FormData;
     contentType?: undefined;
   };
-  static encode(opts: { bodyType: typeof RequestBodyTypes.FORM_URL_ENCODED; body: unknown }): {
+  static encode(opts: {
+    payload: { data: unknown; type: typeof RequestBodyTypes.FORM_URL_ENCODED };
+  }): {
     body: URLSearchParams;
     contentType: string;
   };
-  static encode<TBody>(opts: { bodyType?: TPassThroughBodyType; body: TBody }): {
-    body: TBody;
+  static encode<TData>(opts: { payload: { data: TData; type?: TPassThroughBodyType } }): {
+    body: TData;
     contentType: string;
   };
-  static encode(opts: { bodyType?: string; body: unknown }): IEncodedBody;
-  static encode(opts: { bodyType?: string; body: unknown }): IEncodedBody {
-    const { bodyType, body } = opts;
+  static encode(opts: { payload?: { data: unknown; type?: string } }): IEncodedBody;
+  static encode(opts: { payload?: { data: unknown; type?: string } }): IEncodedBody {
+    RequestBodyEncoder.assertPayload({ options: opts, owner: RequestBodyEncoder.name });
+
+    const body = opts.payload?.data;
+    const bodyType = opts.payload?.type;
 
     switch (bodyType) {
       case RequestBodyTypes.FORM_URL_ENCODED: {
@@ -86,6 +121,40 @@ export class RequestBodyEncoder {
     }
   }
 
+  /** What is wrong with a `payload`: its shape or its type; `undefined` when nothing is. */
+  private static findInvalidPayload(opts: { payload: unknown }): string | undefined {
+    const { payload } = opts;
+
+    if (payload === undefined) {
+      return undefined;
+    }
+
+    if (Array.isArray(payload)) {
+      return 'shape (got an array)';
+    }
+
+    if (payload === null) {
+      return 'shape (got null)';
+    }
+
+    if (typeof payload !== 'object') {
+      return `shape (got a ${typeof payload})`;
+    }
+
+    if (!('data' in payload)) {
+      return 'shape (no data)';
+    }
+
+    const { data: _data, type, ...rest }: { data: unknown; type?: unknown } = payload;
+    const unknownKeys = Object.keys(rest);
+
+    if (unknownKeys.length) {
+      return `shape (unknown key ${unknownKeys.join(', ')})`;
+    }
+
+    return type === undefined || typeof type === 'string' ? undefined : 'type';
+  }
+
   /** The fields of a form body: those of an object, or the indexes of an array or a string. */
   private static entriesOf(opts: { body: unknown }): Array<[string, unknown]> {
     const { body } = opts;
@@ -109,7 +178,7 @@ export class RequestBodyEncoder {
     // A urlencoded body carries text only; a file here would be sent as `"{}"` with nothing said.
     if (value instanceof Blob) {
       throw getError({
-        message: `[getRequestProps] "${key}" is a file, which a ${bodyType} body cannot carry. Send it with bodyType "${RequestBodyTypes.FORM_DATA}".`,
+        message: `[getRequestProps] "${key}" is a file, which a ${bodyType} body cannot carry. Send it with payload.type "${RequestBodyTypes.FORM_DATA}".`,
       });
     }
 
