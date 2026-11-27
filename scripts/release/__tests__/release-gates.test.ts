@@ -522,7 +522,7 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
     expect(chainText).toContain("'--chain-released'");
   });
 
-  test('the actions are pinned by commit with the tag IGNIS uses, and bun and Node are exact', () => {
+  test('the actions are pinned by commit with their tag noted, and bun and Node are exact', () => {
     expect(workflow).toMatch(/actions\/checkout@[0-9a-f]{40} # v7\.0\.1/);
     expect(workflow).toMatch(/actions\/setup-node@[0-9a-f]{40} # v7\.1\.0/);
     expect(workflow).toContain('bun-version: 1.4.5');
