@@ -64,7 +64,6 @@ export type UserLeaf = TFullPaths<UserRecord>;
 
 | Type | Kind | Definition and usage | Shape |
 |---|---|---|---|
-| `TRequestMethod` | `type` | HTTP methods union, used in network requests. | `'HEAD' \| 'OPTIONS' \| 'GET' \| 'POST' \| 'PUT' \| 'PATCH' \| 'DELETE'` |
 | `TRequestType` | `type` | Operation types union (`RequestTypes`), used by data provider operations. | - |
 | `TRequestBodyType` | `type` | Payload format union, used in requests. | `'none' \| 'form-data' \| 'x-www-form-urlencoded' \| 'json' \| 'binary'` |
 | `TEnvironment` | `type` | Environment names union, used for runtime environment checks. | `'development' \| 'production'` |
@@ -101,7 +100,6 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `ICoreBindingTypes` | `interface` | Empty in the kernel. `@venizia/ardor-admin` merges the types of the provider keys and the i18n options into it. | `restDataProvider`, `authProvider`, `i18nProvider`, `i18nProviderOptions` (merged) |
 | `TCoreBindingType<TName>` | `type` | The type merged into `ICoreBindingTypes` under `TName`, or `unknown` when nothing merged it. | - |
 | `LocalStorageKeys` | `class` | The local storage keys for tokens, identities, and permissions, and the three prefixes. | `KEY_AUTH_*`, `PREFIX_AUTH`, `PREFIX_STORE`, `PREFIX_PREFS` |
-| `RequestMethods` | `class` | HTTP method constants; extends `ConstClass`, so `values()` and `isValid`. | `HEAD`, `OPTIONS`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
 | `RequestTypes` | `class` | Data operation constants; extends `ConstClass`, so `values()` and `isValid`. | `SEND`, and the nine react-admin verbs from `GET_LIST` to `DELETE_MANY` |
 | `RequestBodyTypes` | `class` | Request body formats; extends `ConstClass`, so `values()` and `isValid`. | `NONE`, `FORM_DATA`, `FORM_URL_ENCODED`, `JSON`, `BINARY` |
 | `Environments` | `class` | Environment constants; extends `ConstClass`, so `values()` and `isValid`. | `DEVELOPMENT`, `PRODUCTION` |

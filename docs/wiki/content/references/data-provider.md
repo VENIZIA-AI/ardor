@@ -46,7 +46,6 @@ To replace the provider with a subclass, bind the subclass class under the key i
 | `INetworkResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
 | `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |
 | `CoreBindings` | class | Container keys: `REST_DATA_PROVIDER_OPTIONS` and `DEFAULT_REST_DATA_PROVIDER`. |
-| `RequestMethods` | class | HTTP method string constants (`GET`, `POST`, `PATCH`, `DELETE`, etc.). |
 | `RequestBodyTypes` | class | Body serialization constants (`json`, `form-data`, `x-www-form-urlencoded`, `binary`, `none`). |
 | `RequestCountData` | class | Count request constants (`DATA_ONLY`, `DATA_WITH_COUNT`). |
 
@@ -189,10 +188,13 @@ Each react-admin method maps to one HTTP call:
 
 The provider returns `supportAbortSignal: true`, so react-admin passes the `signal` of its queries to `getList`, `getOne`, `getMany` and `getManyReference`. A read that a newer filter or page replaced is aborted instead of running on. The writes take no signal, because react-admin passes none. One caveat of react-admin: its batched `getMany` (the references that several fields ask for in one tick) passes the signal of one caller for the whole batch, so unmounting one `ReferenceField` can abort the query of a sibling.
 
+`params.method` of `send` is a `THttpMethod`: a value of `HTTP.Methods` from `@venizia/ignis-helpers/common` (lowercase) or the uppercase text. The request goes out in uppercase, and an override of `request` or `doRequest` receives it so; an override of `send` receives what the caller wrote.
+
 To abort a request you send yourself, pass a `signal` in `ISendParams`:
 
 ```ts
-import { type IDataProvider, RequestMethods } from '@venizia/ardor';
+import { HTTP } from '@venizia/ignis-helpers/common';
+import { type IDataProvider } from '@venizia/ardor';
 
 export async function buildReport(opts: {
   dataProvider: IDataProvider;
@@ -201,7 +203,7 @@ export async function buildReport(opts: {
   const { dataProvider, signal } = opts;
   const response = await dataProvider.send({
     resource: 'reports/build',
-    params: { method: RequestMethods.POST, payload: { data: { year: 2026 } }, signal },
+    params: { method: HTTP.Methods.POST, payload: { data: { year: 2026 } }, signal },
   });
 
   return response.data;
@@ -218,6 +220,7 @@ An aborted request rejects with the signal's reason (an `AbortError`). It is not
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 
 ```ts
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { getError } from '@venizia/ignis-inversion';
 
 import {
@@ -225,7 +228,6 @@ import {
   type IResponseSchema,
   RequestBodyTypes,
   RequestCountData,
-  RequestMethods,
 } from '@venizia/ardor';
 
 // What checks the answer: any object with `parse`, a zod schema included.
@@ -249,7 +251,7 @@ export async function exportProducts(dataProvider: IDataProvider): Promise<strin
     schema: exportAnswer,
     resource: 'products/export',
     params: {
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       payload: { data: { format: 'csv' }, type: RequestBodyTypes.JSON },
       query: { notify: 'true' },
       requestCountData: RequestCountData.DATA_ONLY,

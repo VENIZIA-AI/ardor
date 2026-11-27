@@ -1,10 +1,11 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 
 import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 import { DefaultAuthService } from '@/base/services/auth';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
-import { RequestMethods, RequestTypes } from '@/common';
+import { RequestTypes } from '@/common';
 import { FakeStorage } from '@/testing';
 import { LogWatch } from '@/__tests__/support/log-watch';
 
@@ -111,7 +112,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   const getItems = (service: DefaultNetworkRequestService) => {
     return service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       headers: service.getRequestHeader({ resource: 'items' }),
     });
@@ -518,7 +519,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
       await service.doRequest({
         paths: ['items'],
-        method: RequestMethods.POST,
+        method: HTTP.Methods.POST,
         type: RequestTypes.CREATE,
         body: JSON.stringify({ title: 'a' }),
       });
@@ -540,7 +541,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
       await service.doRequest({
         paths: ['items'],
-        method: RequestMethods.POST,
+        method: HTTP.Methods.POST,
         type: RequestTypes.CREATE,
         body,
       });
@@ -566,7 +567,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
       await service.doRequest({
         paths: ['items'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
         headers: { authorization: 'Bearer stale', 'x-auth-provider': 'ldap' },
       });
@@ -590,7 +591,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       const error = await RejectionUtility.rejectionOf({
         task: service.doRequest({
           paths: ['items'],
-          method: RequestMethods.POST,
+          method: HTTP.Methods.POST,
           type: RequestTypes.CREATE,
           body,
         }),

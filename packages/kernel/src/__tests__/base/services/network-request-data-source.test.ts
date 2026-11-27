@@ -6,7 +6,7 @@ import { HttpDataSource } from '@venizia/ignis-connectors/http';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
-import { type IAuthTokenRecord, RequestMethods, RequestTypes } from '@/common';
+import { type IAuthTokenRecord, RequestTypes } from '@/common';
 
 /**
  * The second HTTP client of ARDOR, IGNIS \`HttpDataSource\` spread with \`getDataSourceAuth()\`, next to
@@ -90,7 +90,7 @@ describe('where the two clients agree', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       headers: service.getRequestHeader({ resource: 'items' }),
     });
@@ -107,7 +107,7 @@ describe('where the two clients agree', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       type: RequestTypes.CREATE,
       body: { name: 'a', tags: [1, 2] },
     });
@@ -122,7 +122,7 @@ describe('where the two clients agree', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_LIST,
       query: { filter },
     });
@@ -138,7 +138,7 @@ describe('where the two clients agree', () => {
 
     const viaService = await service.doRequest({
       paths: ['items', '7'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
     });
     const result = await source.request({ paths: ['items', '7'], method: 'GET' });
@@ -164,7 +164,7 @@ describe('where the two clients agree', () => {
     const viaService = await RejectionUtility.rejectionOf({
       task: service.doRequest({
         paths: ['items', '9'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
       }),
     });
@@ -188,7 +188,7 @@ describe('where the two clients agree', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       query: { a: null, b: 'x' },
     });
@@ -205,7 +205,7 @@ describe('where the two clients differ, as the docs say', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       query: { ids: [1, 2] },
     });
@@ -220,7 +220,7 @@ describe('where the two clients differ, as the docs say', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       body: { a: 1 },
     });
@@ -238,7 +238,7 @@ describe('where the two clients differ, as the docs say', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       headers: { [HTTP.Headers.REQUEST_COUNT_DATA]: 'true' },
     });
@@ -265,7 +265,7 @@ describe('where the two clients differ, as the docs say', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       type: RequestTypes.CREATE,
       body: { a: 1 },
     });
@@ -281,7 +281,7 @@ describe('where the two clients differ, as the docs say', () => {
     const viaService = await RejectionUtility.rejectionOf({
       task: service.doRequest({
         paths: ['..', 'admin'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
       }),
     });
@@ -311,7 +311,7 @@ describe('where the two clients differ, as the docs say', () => {
     const viaService = await RejectionUtility.rejectionOf({
       task: service.doRequest({
         paths: ['items'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
       }),
     });

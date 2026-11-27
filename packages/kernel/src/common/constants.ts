@@ -15,19 +15,6 @@ export class App {
 }
 
 /**
- * HTTP methods.
- */
-export class RequestMethods extends ConstClass {
-  static readonly HEAD = 'HEAD';
-  static readonly OPTIONS = 'OPTIONS';
-  static readonly GET = 'GET';
-  static readonly POST = 'POST';
-  static readonly PUT = 'PUT';
-  static readonly PATCH = 'PATCH';
-  static readonly DELETE = 'DELETE';
-}
-
-/**
  * What a request is for, which decides how its response is read: `SEND`, and react-admin's data provider calls.
  */
 export class RequestTypes extends ConstClass {

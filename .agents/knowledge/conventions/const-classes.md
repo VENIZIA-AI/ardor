@@ -56,14 +56,14 @@ export type TRequestType = TStringConstValue<typeof RequestTypes>;
 `ConstClass` is imported from the `/common` subpath, never from the helpers root barrel: the root
 loads Node built-ins, and the browser packages import this class. ARDOR does not re-export it.
 
-All four prebuilt unions (`TRequestType`, `TRequestBodyType`, `TRequestMethod`, `TEnvironment`) are
+All three prebuilt unions (`TRequestType`, `TRequestBodyType`, `TEnvironment`) are
 `TStringConstValue` of their class and inherit the `& {}`.
 
 The value type is a closed union - no `| (string & {})` escape - because ARDOR owns this vocabulary
 (see [narrowing authority](/conventions/narrowing-authority.md)). The `Extract<..., string>` inside
 `TStringConstValue` drops the methods and `prototype` from the union by type.
 
-`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`,
+`RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`,
 `RequestChannel` and `UnresolvedPolicies` (`@venizia/ardor/vite`) extend `ConstClass`; a new class
 of only values does too. A class with more than its values keeps its own shape: `LocalStorageKeys`
 has a `SCHEME_SET` of the three session keys (the prefixes are not in it) and `scoped()`, and

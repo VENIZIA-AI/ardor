@@ -40,7 +40,7 @@ tags: [process, git, contributing]
    live when its pull request merges; no develop-to-main publish pull request is needed for it.
 8. PR title should also follow Conventional Commits format (e.g. `feat: add data provider retry
    logic`). Include what and why in the description, link related issues, and clearly call out
-   breaking changes - especially anything that touches `RequestMethods`/`RequestTypes` in
+   breaking changes - especially anything that touches `RequestTypes`/`RequestBodyTypes` in
    `packages/kernel/src/common/constants.ts`, the data provider pipeline, or public hook/service
    signatures, since those are consumed directly by app code built on ARDOR.
 

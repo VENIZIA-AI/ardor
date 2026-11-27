@@ -1,5 +1,6 @@
 import type {
   TConstValue,
+  THttpMethod,
   TNumberConstValue,
   TPrettify,
   TStringConstValue,
@@ -19,7 +20,6 @@ import type {
   Environments,
   RequestBodyTypes,
   RequestCountData,
-  RequestMethods,
   RequestTypes,
   StorageAreas,
 } from './constants';
@@ -39,8 +39,6 @@ export type {
   ValueOrPromise,
 };
 
-/** One of the `RequestMethods` values. */
-export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
 /** One of the `Environments` values. */
 export type TEnvironment = TStringConstValue<typeof Environments>;
 
@@ -54,7 +52,7 @@ export interface IRequestPayload {
 /** What `IDataProvider.send` takes. */
 export interface ISendParams {
   /** Required: `send` throws without it. */
-  method?: TRequestMethod;
+  method?: THttpMethod;
   /** How the response is read. `RequestTypes.SEND` when absent. */
   requestType?: TRequestType;
   /** The body of the request. */

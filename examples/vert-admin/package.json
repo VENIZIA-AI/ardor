@@ -16,6 +16,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "catalog:",
     "@venizia/ardor": "workspace:*",
+    "@venizia/ignis-helpers": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
     "ra-core": "catalog:",
     "react": "catalog:",

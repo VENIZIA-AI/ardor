@@ -1,10 +1,10 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 import { Container } from '@venizia/ignis-inversion';
 import {
   RequestBodyTypes,
   RequestChannel,
   RequestCountData,
-  RequestMethods,
   RequestTypes,
   type IApplicationInfo,
   type IRestDataProviderOptions,
@@ -506,7 +506,7 @@ describe('getMany behavior', () => {
 
     expect(doRequest).toHaveBeenCalledTimes(1);
     const sent = doRequest.mock.calls[0][0];
-    expect(sent.method).toBe(RequestMethods.GET);
+    expect(sent.method).toBe('GET');
     expect(sent.paths).toEqual(['posts']);
     expect(sent.body).toBeUndefined();
     expect(sent.query).toMatchObject({ filter: { where: { id: { inq: ids } } } });
@@ -742,7 +742,7 @@ describe('send behavior', () => {
     await provider.send({
       resource: 'analytics',
       params: {
-        method: RequestMethods.POST,
+        method: HTTP.Methods.POST,
         query: { timeframe: 'monthly' },
         headers: { 'x-client-platform': 'ardor-web' },
         requestCountData: RequestCountData.DATA_ONLY,
@@ -772,7 +772,7 @@ describe('send behavior', () => {
 
     await provider.send({
       resource: 'analytics',
-      params: { method: RequestMethods.GET, headers },
+      params: { method: HTTP.Methods.GET, headers },
     });
 
     expect(recordedRequests[0].headers.get('x-count')).toBe('5');
@@ -784,7 +784,7 @@ describe('send behavior', () => {
     await provider.send({
       resource: 'oauth/token',
       params: {
-        method: RequestMethods.POST,
+        method: HTTP.Methods.POST,
         payload: {
           data: { ['grant_type']: 'password', username: 'ardor-admin' },
           type: RequestBodyTypes.FORM_URL_ENCODED,
@@ -927,7 +927,7 @@ describe('react-admin provider adapter behavior', () => {
 
     const sendResult = await dataProvider.send({
       resource: 'health-check',
-      params: { method: RequestMethods.GET },
+      params: { method: HTTP.Methods.GET },
     });
 
     expect(sendResult.data).toEqual([{ id: 1 }]);
@@ -1104,7 +1104,7 @@ describe('per-call headers', () => {
     await provider.send({
       resource: 'echo',
       params: {
-        method: RequestMethods.POST,
+        method: HTTP.Methods.POST,
         payload: { data: { a: 1 } },
         headers: { 'Content-Type': 'text/plain' },
       },
@@ -1164,7 +1164,7 @@ describe('the removed body options', () => {
     'send refuses %p before anything is sent',
     async (legacy) => {
       recordedRequests.length = 0;
-      const params: ISendParams = { method: RequestMethods.POST };
+      const params: ISendParams = { method: HTTP.Methods.POST };
       Object.assign(params, legacy);
       const error = await RejectionUtility.rejectionOf({
         task: createProvider({ baseUrl }).value(new Container()).send({ resource: 'echo', params }),
@@ -1181,7 +1181,7 @@ describe('the removed body options', () => {
         const options: IRestRequestOptions = {
           resource: 'echo',
           type: RequestTypes.SEND,
-          method: RequestMethods.POST,
+          method: HTTP.Methods.POST,
         };
         Object.assign(options, { body: { a: 1 } });
 

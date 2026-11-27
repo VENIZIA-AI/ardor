@@ -1,9 +1,9 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import {
   type IApplicationInfo,
   type INetworkResponse,
   type IResponseSchema,
-  RequestMethods,
   RequestTypes,
 } from '@venizia/ardor-kernel';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
@@ -101,7 +101,7 @@ describe('request', () => {
     const result = await create().request({
       resource: 'posts',
       type: RequestTypes.CREATE,
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       payload: { data: { title: 'a' } },
       query: { locale: 'vi' },
     });
@@ -120,13 +120,13 @@ describe('request', () => {
     await provider.request({
       resource: 'posts',
       type: RequestTypes.GET_ONE,
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       paths: ['posts', '7'],
     });
     await provider.request({
       resource: 'posts',
       type: RequestTypes.GET_MANY,
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
     });
 
     expect(recorded.map((r) => r.pathname)).toEqual(['/posts/7', '/posts']);
@@ -136,7 +136,7 @@ describe('request', () => {
     await create().request({
       resource: 'posts',
       type: RequestTypes.GET_LIST,
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       extra: { facets: ['status'] } as never,
     });
 
@@ -149,7 +149,7 @@ describe('request', () => {
     await create().request({
       resource: 'posts',
       type: RequestTypes.SEND,
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       headers: { 'x-request-channel': 'custom', 'x-tenant': 't1' },
     });
 
@@ -160,7 +160,7 @@ describe('request', () => {
 
 describe('send with a schema', () => {
   const send = (schema: IResponseSchema<string>) => {
-    return create().send({ resource: 'posts', params: { method: RequestMethods.POST }, schema });
+    return create().send({ resource: 'posts', params: { method: HTTP.Methods.POST }, schema });
   };
 
   test('answers the value the schema returns', async () => {
@@ -179,7 +179,7 @@ describe('send with a schema', () => {
     const provider = create().value(new Container());
     const result = await provider.send({
       resource: 'posts',
-      params: { method: RequestMethods.POST },
+      params: { method: HTTP.Methods.POST },
       schema: { parse: () => 'checked' },
     });
 

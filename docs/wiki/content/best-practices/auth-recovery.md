@@ -172,13 +172,13 @@ The refresh is written once, as the `refreshToken` hook of a `DefaultNetworkRequ
 First, write the subclass. `refreshToken` sends the refresh request, saves the new token through the auth service (it knows the keys of this application, which an application `id` scopes), and resolves `true`. `onAuthFailure` is the place to send the user back to sign-in:
 
 ```ts
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { getError } from '@venizia/ignis-inversion';
 
 import {
   App,
   DefaultNetworkRequestService,
   type IResponseSchema,
-  RequestMethods,
   RequestTypes,
 } from '@venizia/ardor';
 
@@ -197,7 +197,7 @@ export class AppNetworkService extends DefaultNetworkRequestService {
     const { data } = await this.doRequest({
       schema: refreshAnswer,
       type: RequestTypes.SEND,
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       paths: ['/auth/token/refresh'],
       headers: this.getRequestHeader({ resource: '/auth/token/refresh' }),
     });

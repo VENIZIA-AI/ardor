@@ -1,7 +1,8 @@
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
-import { RequestMethods, SESSION_CHANGED_CODE } from '@venizia/ardor-kernel';
+import { SESSION_CHANGED_CODE } from '@venizia/ardor-kernel';
 import type { IDataProvider } from '@/common';
+import { WireMethods } from '@/utilities/wire-methods';
 
 /** What `DefaultAuthProvider` does with a session that needs none of its state. */
 export class AuthSessionUtility {
@@ -30,7 +31,7 @@ export class AuthSessionUtility {
     try {
       const response = await opts.dataProvider.send({
         resource: opts.resource,
-        params: { method: RequestMethods.GET },
+        params: { method: WireMethods.GET },
       });
 
       return { response, isStale: false };
