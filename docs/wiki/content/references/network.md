@@ -325,8 +325,8 @@ The data provider and the repositories use two HTTP clients: `doRequest` sends w
 `DefaultNetworkRequestService.prototype.getDataSourceAuth(opts)` provides an `IDataSourceAuth` configuration object. `DefaultRestDataProvider.prototype.getDataSourceAuth()` forwards this to repository data sources (`HttpDataSource` in `@venizia/ardor/repository`), ensuring repository queries share the exact authentication, headers, and refresh handling of the data provider.
 
 The hand-off implements four properties defined in `packages/kernel/src/base/services/network-request.ts`:
-- `authTokenResolver`: Resolves the authentication token via `resolveAuthToken()`, or returns `undefined` for paths matching `isNoAuthPath`.
-- `headersResolver`: Merges session headers (`timezone`, `timezone-offset`, dynamic headers) with tracing headers (`x-request-channel`, `x-request-id`).
+- `resolvers.authToken`: Resolves the authentication token via `resolveAuthToken()`, or returns `undefined` for paths matching `isNoAuthPath`.
+- `resolvers.headers`: Merges session headers (`timezone`, `timezone-offset`, dynamic headers) with tracing headers (`x-request-channel`, `x-request-id`).
 - `onUnauthorized`: Coordinates 401 recovery using the same shared `refresh()` method so data provider calls and repository requests share a single refresh attempt.
 - `errorRootKey`: Configured to `'error'` to match IGNIS server error payloads.
 
@@ -350,5 +350,7 @@ export class AppDataSource extends HttpDataSource {
   }
 }
 ```
+
+A `resolvers` of your own in the same `super({ ... })` replaces both of them, and the requests then go without the token. To add headers, spread them: `const auth = dataProvider.getDataSourceAuth();` then `resolvers: { ...auth.resolvers, headers: mine }`.
 
 For more details on repositories and data sources, see [Repositories](./repository), [Data provider](./data-provider), [Auth provider](./auth-provider), and [Auth recovery](../best-practices/auth-recovery).

@@ -195,7 +195,7 @@ describe('the re-exported HTTP repository', () => {
     try {
       await repositoryFor({
         server: echo,
-        settings: { authTokenResolver: () => ({ value: 'server-to-server' }) },
+        settings: { resolvers: { authToken: () => ({ value: 'server-to-server' }) } },
       }).find({ filter: {} });
 
       expect(received.authorization).toBe('Bearer server-to-server');
@@ -233,7 +233,9 @@ describe('the re-exported HTTP repository', () => {
     try {
       await repositoryFor({
         server: echo,
-        settings: { authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage },
+        settings: {
+          resolvers: { authToken: DefaultNetworkRequestService.readAuthTokenFromStorage },
+        },
       }).find({ filter: {} });
 
       expect(headers).toEqual({ authorization: 'Bearer stored-token', provider: 'oidc' });
