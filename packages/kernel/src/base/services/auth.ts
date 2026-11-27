@@ -22,7 +22,7 @@ export interface IAuthChange {
 
 /**
  * Keeps the signed-in session (token, identity, roles) in `localStorage`, everything under
- * `keys.authPrefix`: `LocalStorageKeys.PREFIX_AUTH`, or `@app/auth/<id>/` when the application has an `id`.
+ * `keys.prefixes.auth`: `LocalStorageKeys.PREFIX_AUTH`, or `@app/auth/<id>/` when the application has an `id`.
  */
 export class DefaultAuthService extends BaseService {
   private readonly listeners = new Set<(change: IAuthChange) => void>();
@@ -326,18 +326,18 @@ export class DefaultAuthService extends BaseService {
   private isSessionKey(opts: { key: string }): boolean {
     const { key } = opts;
 
-    if (!key.startsWith(this.keys.authPrefix)) {
+    if (!key.startsWith(this.keys.prefixes.auth)) {
       return false;
     }
 
     return (
-      this.keys.authPrefix !== LocalStorageKeys.PREFIX_AUTH ||
-      !key.slice(this.keys.authPrefix.length).includes('/')
+      this.keys.prefixes.auth !== LocalStorageKeys.PREFIX_AUTH ||
+      !key.slice(this.keys.prefixes.auth.length).includes('/')
     );
   }
 
   /**
-   * Removes the session keys under `keys.authPrefix`, then notifies the subscribers; does nothing
+   * Removes the session keys under `keys.prefixes.auth`, then notifies the subscribers; does nothing
    * outside a browser. A service without an application `id` leaves the sessions of applications with
    * an `id` alone.
    */

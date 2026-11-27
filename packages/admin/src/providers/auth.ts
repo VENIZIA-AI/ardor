@@ -339,7 +339,7 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
 
     BrowserStorage.removeWhere({
       storage: StorageAreas.SESSION,
-      prefix: this.authService.keys.storePrefix,
+      prefix: this.authService.keys.prefixes.store,
     });
   }
 
@@ -378,7 +378,7 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
    * Override it to keep preferences, or put them under another prefix.
    */
   protected clearStoredData(): void {
-    const prefix = this.authService.keys.storePrefix;
+    const prefix = this.authService.keys.prefixes.store;
 
     BrowserStorage.removeWhere({ storage: StorageAreas.LOCAL, prefix });
     BrowserStorage.removeWhere({ storage: StorageAreas.SESSION, prefix });

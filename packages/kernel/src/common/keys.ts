@@ -95,20 +95,23 @@ export class CoreBindings {
 
 /** The session keys and the store prefix of one application, from `LocalStorageKeys.scoped`. */
 export interface IScopedKeys {
-  /**
-   * The prefix of this application's session keys: `DefaultAuthService.cleanUp` removes them. Without
-   * an application `id` it is also the start of every scoped session, and `cleanUp` skips those.
-   */
-  authPrefix: string;
-  /**
-   * The data of this application's signed-in user; sign-out removes every key that starts with it.
-   * Without an application `id` it is `@app/store/`, the start of every scoped store prefix, so an
-   * application without an `id` removes the data of the applications with one: every application on
-   * an origin sets an `id`.
-   */
-  storePrefix: string;
-  /** The preferences of this application's user: they outlive a sign-out. */
-  prefsPrefix: string;
+  /** What the keys of this application start with. */
+  prefixes: {
+    /**
+     * The prefix of this application's session keys: `DefaultAuthService.cleanUp` removes them. Without
+     * an application `id` it is also the start of every scoped session, and `cleanUp` skips those.
+     */
+    auth: string;
+    /**
+     * The data of this application's signed-in user; sign-out removes every key that starts with it.
+     * Without an application `id` it is `@app/store/`, the start of every scoped store prefix, so an
+     * application without an `id` removes the data of the applications with one: every application on
+     * an origin sets an `id`.
+     */
+    store: string;
+    /** The preferences of this application's user: they outlive a sign-out. */
+    prefs: string;
+  };
   /** The stored locale of the i18n provider. */
   locale: string;
   token: string;
@@ -170,9 +173,11 @@ export class LocalStorageKeys {
     const scope = id === undefined ? '' : `${id}/`;
 
     return {
-      authPrefix: `${this.PREFIX_AUTH}${scope}`,
-      storePrefix: `${this.PREFIX_STORE}${scope}`,
-      prefsPrefix: `${this.PREFIX_PREFS}${scope}`,
+      prefixes: {
+        auth: `${this.PREFIX_AUTH}${scope}`,
+        store: `${this.PREFIX_STORE}${scope}`,
+        prefs: `${this.PREFIX_PREFS}${scope}`,
+      },
       locale: `${this.PREFIX_PREFS}${scope}locale`,
       token: `${this.PREFIX_AUTH}${scope}token`,
       identity: `${this.PREFIX_AUTH}${scope}identity`,

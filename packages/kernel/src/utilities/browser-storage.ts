@@ -1,3 +1,4 @@
+import { getError } from '@venizia/ignis-inversion';
 import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { type IStorageCodec, LocalStorageKeys, StorageAreas, type TStorageArea } from '@/common';
 
@@ -124,14 +125,21 @@ export class BrowserStorage {
     return BrowserStorage.write({ ...opts, run: (area) => area.removeItem(opts.key) });
   }
 
-  /** The keys of the area, only those that start with `prefix` when it is given. Lists the session keys too. */
+  /**
+   * The keys of the area, only those that start with `prefix` when it is given. Lists the session keys
+   * too. A `prefix` that is given and is not a non-empty string throws.
+   */
   static keys(
     opts: {
       storage?: TStorageArea;
-      /** @default '' */
+      /** Absent: every key. */
       prefix?: string;
     } = {},
   ): Array<string> {
+    if ('prefix' in opts) {
+      BrowserStorage.assertPrefix({ prefix: opts.prefix, method: 'keys' });
+    }
+
     const { prefix = '' } = opts;
 
     return BrowserStorage.safe<Array<string>>({
@@ -150,27 +158,36 @@ export class BrowserStorage {
     });
   }
 
+  /** Throws unless `prefix` is a non-empty string: `undefined` would match nothing, `''` everything. */
+  private static assertPrefix(opts: { prefix: unknown; method: string }): void {
+    if (typeof opts.prefix !== 'string' || !opts.prefix) {
+      throw getError({
+        message: `[BrowserStorage.${opts.method}] prefix must be a non-empty string`,
+      });
+    }
+  }
+
   /**
-   * Removes every key that starts with `prefix` and answers how many it removed. An empty `prefix`
-   * removes nothing, and a session key is never removed, as in `remove`. Every subscriber of a key under the
+   * Removes every key that starts with `prefix` and answers how many it removed. A `prefix` that is
+   * not a non-empty string throws, so a name read wrongly cannot pass for a sweep, and a session key
+   * is never removed, as in `remove`. Every subscriber of a key under the
    * prefix is told, whether or not the key was stored. A key another tab removed
    * after the listing still counts: `removeItem` of a missing key does not throw.
    */
   static removeWhere(opts: { storage?: TStorageArea; prefix: string }): number {
     const { storage, prefix } = opts;
-    const keys = prefix ? BrowserStorage.keys({ storage, prefix }) : [];
+    BrowserStorage.assertPrefix({ prefix, method: 'removeWhere' });
+    const keys = BrowserStorage.keys({ storage, prefix });
 
     const removed = keys.filter((key) => BrowserStorage.remove({ key, storage })).length;
 
     // A key not stored yet, with a write waiting for it, is under the prefix too: tell its subscribers.
-    if (prefix) {
-      BrowserStorage.notify({
-        key: undefined,
-        area: BrowserStorage.area({ storage }),
-        prefix,
-        isExternal: false,
-      });
-    }
+    BrowserStorage.notify({
+      key: undefined,
+      area: BrowserStorage.area({ storage }),
+      prefix,
+      isExternal: false,
+    });
 
     return removed;
   }

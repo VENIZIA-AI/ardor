@@ -284,9 +284,30 @@ describe('BrowserStorage.removeWhere', () => {
     expect(BrowserStorage.keys()).toHaveLength(3);
   });
 
-  test('an empty prefix removes nothing, so a call cannot clear an area by leaving the prefix out', () => {
-    expect(BrowserStorage.removeWhere({ prefix: '' })).toBe(0);
+  // One argument list per case: `test.each` spreads an array, so the array case is wrapped twice.
+  const NOT_PREFIXES: Array<[unknown]> = [[''], [undefined], [null], [5], [['@app/']]];
+
+  test.each(NOT_PREFIXES)('removeWhere refuses the prefix %p and removes nothing', (prefix) => {
+    const options = { prefix: '@app/' };
+    Object.assign(options, { prefix });
+
+    expect(() => BrowserStorage.removeWhere(options)).toThrow(
+      '[BrowserStorage.removeWhere] prefix must be a non-empty string',
+    );
     expect(BrowserStorage.keys()).toHaveLength(3);
+  });
+
+  test.each(NOT_PREFIXES)('keys refuses a prefix that is given as %p', (prefix) => {
+    const options = {};
+    Object.assign(options, { prefix });
+
+    expect(() => BrowserStorage.keys(options)).toThrow(
+      '[BrowserStorage.keys] prefix must be a non-empty string',
+    );
+  });
+
+  test('keys with no prefix option lists every key', () => {
+    expect(BrowserStorage.keys({ storage: StorageAreas.LOCAL })).toHaveLength(3);
   });
 
   test('never removes a key under the session prefix, even when the prefix reaches it', () => {

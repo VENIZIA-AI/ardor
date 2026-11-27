@@ -38,9 +38,11 @@ const signIn = (service: DefaultAuthService, name: string) => {
 describe('LocalStorageKeys.scoped', () => {
   test('without an id the keys are the constants, so a single application changes nothing', () => {
     expect(LocalStorageKeys.scoped()).toEqual({
-      authPrefix: LocalStorageKeys.PREFIX_AUTH,
-      storePrefix: LocalStorageKeys.PREFIX_STORE,
-      prefsPrefix: LocalStorageKeys.PREFIX_PREFS,
+      prefixes: {
+        auth: LocalStorageKeys.PREFIX_AUTH,
+        store: LocalStorageKeys.PREFIX_STORE,
+        prefs: LocalStorageKeys.PREFIX_PREFS,
+      },
       locale: '@app/prefs/locale',
       token: LocalStorageKeys.KEY_AUTH_TOKEN,
       identity: LocalStorageKeys.KEY_AUTH_IDENTITY,
@@ -52,9 +54,11 @@ describe('LocalStorageKeys.scoped', () => {
     const keys = LocalStorageKeys.scoped({ id: 'shop-1.eu' });
 
     expect(keys).toEqual({
-      authPrefix: '@app/auth/shop-1.eu/',
-      storePrefix: '@app/store/shop-1.eu/',
-      prefsPrefix: '@app/prefs/shop-1.eu/',
+      prefixes: {
+        auth: '@app/auth/shop-1.eu/',
+        store: '@app/store/shop-1.eu/',
+        prefs: '@app/prefs/shop-1.eu/',
+      },
       locale: '@app/prefs/shop-1.eu/locale',
       token: '@app/auth/shop-1.eu/token',
       identity: '@app/auth/shop-1.eu/identity',
