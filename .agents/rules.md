@@ -58,7 +58,7 @@ ARDOR is infrastructure other products stand on. A shortcut here ships to every 
 | ID | Rule |
 |---|---|
 | **S-03** | **Never persist or log a credential beyond the storage the framework owns.** Tokens live only under the `LocalStorageKeys` the framework declares (`@app/auth/*`); never in a cookie, a query string, a log line or a React state that survives logout. `cleanUp()` is the only thing that clears them. |
-| **S-04** | **Never widen a no-auth path to make a request work.** `useAuth: false`, `noAuthPaths` and `noAuthPathRegex` name the endpoints that legitimately run without a token; adding one because a request 401s is a design change agreed with the user, not a patch. Auth recovery retries once - never loop. |
+| **S-04** | **Never widen a no-auth path to make a request work.** `useAuth: false` and `noAuth` (`paths`, `regex`) name the endpoints that legitimately run without a token; adding one because a request 401s is a design change agreed with the user, not a patch. Auth recovery retries once - never loop. |
 | **S-05** | **Dependencies are a supply chain.** No new dependency, and no version bump across the shared stack, without a reason and a go-ahead. Optional peers stay optional: a driver reaches a bundle only through an explicit class reference, and `importOptionalModule` keeps a peer out of consumers that never asked for it. |
 
 ## P - Process
