@@ -8,6 +8,7 @@ import {
   RequestTypes,
   type IApplicationInfo,
   type IRestDataProviderOptions,
+  type ISendParams,
 } from '@venizia/ardor-kernel';
 import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@venizia/ardor-kernel/repository';
 import {
@@ -17,6 +18,8 @@ import {
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
+import type { IRestRequestOptions } from '@/common';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 interface IRecordedRequest {
   method: string;
@@ -743,7 +746,7 @@ describe('send behavior', () => {
         query: { timeframe: 'monthly' },
         headers: { 'x-client-platform': 'ardor-web' },
         requestCountData: RequestCountData.DATA_ONLY,
-        body: { metrics: ['views', 'clicks'] },
+        payload: { data: { metrics: ['views', 'clicks'] } },
       },
     });
 
@@ -782,8 +785,10 @@ describe('send behavior', () => {
       resource: 'oauth/token',
       params: {
         method: RequestMethods.POST,
-        bodyType: RequestBodyTypes.FORM_URL_ENCODED,
-        body: { ['grant_type']: 'password', username: 'ardor-admin' },
+        payload: {
+          data: { ['grant_type']: 'password', username: 'ardor-admin' },
+          type: RequestBodyTypes.FORM_URL_ENCODED,
+        },
       },
     });
 
@@ -1100,7 +1105,7 @@ describe('per-call headers', () => {
       resource: 'echo',
       params: {
         method: RequestMethods.POST,
-        body: { a: 1 },
+        payload: { data: { a: 1 } },
         headers: { 'Content-Type': 'text/plain' },
       },
     });
@@ -1151,5 +1156,51 @@ describe('noAuth options', () => {
     expect(new Headers(props('public-things').headers).has('authorization')).toBe(false);
     expect(new Headers(props('orders').headers).has('authorization')).toBe(true);
     localStorage.clear();
+  });
+});
+
+describe('the removed body options', () => {
+  test.each([{ body: { a: 1 } }, { bodyType: RequestBodyTypes.JSON }])(
+    'send refuses %p before anything is sent',
+    async (legacy) => {
+      recordedRequests.length = 0;
+      const params: ISendParams = { method: RequestMethods.POST };
+      Object.assign(params, legacy);
+      const error = await RejectionUtility.rejectionOf({
+        task: createProvider({ baseUrl }).value(new Container()).send({ resource: 'echo', params }),
+      });
+
+      expect(String(error)).toContain('was replaced by payload: { data, type }');
+      expect(recordedRequests).toHaveLength(0);
+    },
+  );
+
+  test('a subclass that calls request with the removed body is refused', async () => {
+    class LegacyProvider extends DefaultRestDataProvider {
+      legacy() {
+        const options: IRestRequestOptions = {
+          resource: 'echo',
+          type: RequestTypes.SEND,
+          method: RequestMethods.POST,
+        };
+        Object.assign(options, { body: { a: 1 } });
+
+        return this.request(options);
+      }
+    }
+
+    recordedRequests.length = 0;
+    const provider = new LegacyProvider(
+      { url: baseUrl, noAuth: { regex: /./ } },
+      {
+        name: 'app',
+        version: '1.0.0',
+        description: 'app',
+      },
+    );
+    const error = await RejectionUtility.rejectionOf({ task: (async () => provider.legacy())() });
+
+    expect(String(error)).toContain('[LegacyProvider] body was replaced');
+    expect(recordedRequests).toHaveLength(0);
   });
 });

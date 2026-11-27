@@ -64,7 +64,7 @@ export class IpcDataProvider extends DefaultRestDataProvider {
     schema?: IResponseSchema;
   }): Promise<INetworkResponse> {
     const { resource, params, schema } = opts;
-    const answered = invoke({ command: resource, payload: params });
+    const answered = invoke({ command: resource, params });
 
     if (!schema) {
       return answered;

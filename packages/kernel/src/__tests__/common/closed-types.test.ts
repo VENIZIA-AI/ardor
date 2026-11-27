@@ -5,7 +5,7 @@ describe('request types name every field they accept', () => {
   test('ISendParams takes its named fields, and a typo is a compile error', () => {
     const params: ISendParams = {
       method: 'POST',
-      body: 'plain text',
+      payload: { data: 'plain text' },
       query: { page: 2, tags: ['a', 'b'] },
       headers: { 'x-tenant': 't1', 'x-retries': 3 },
     };
@@ -14,6 +14,17 @@ describe('request types name every field they accept', () => {
 
     expect(params.method).toBe('POST');
     expect(typo.method).toBe('GET');
+  });
+
+  test('the removed body fields and a payload with no data are compile errors', () => {
+    // @ts-expect-error - `body` was replaced by `payload`
+    const body: ISendParams = { method: 'POST', body: { data: 1 } };
+    // @ts-expect-error - `bodyType` was replaced by `payload.type`
+    const bodyType: ISendParams = { method: 'POST', bodyType: 'json' };
+    // @ts-expect-error - an old payload object is no `payload`: it has no `data`
+    const bare: ISendParams = { method: 'POST', payload: { year: 2026 } };
+
+    expect([body.method, bodyType.method, bare.method]).toEqual(['POST', 'POST', 'POST']);
   });
 
   test('ISendParams names the list extras that send() passes on', () => {

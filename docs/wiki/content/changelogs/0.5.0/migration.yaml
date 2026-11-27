@@ -497,3 +497,24 @@ no-auth-options:
       - 'Pin the four ARDOR packages to 0.5.0-12 or earlier and write `noAuthPaths` and `noAuthPathRegex` again.'
   data: Nothing stored changes. Once every old option is moved and merged, the same requests carry a token as before.
   codemod: no-auth
+
+request-payload:
+  symbols:
+    [ISendParams, IRestRequestOptions, IGetRequestPropsParams, RequestBodyEncoder, IRequestPayload]
+  upgrade:
+    steps:
+      - 'First find your own code that reads the old names, in TypeScript and JavaScript: a data provider or transport (`params.body`, `params.bodyType`) and every override of `send`, `request` or `getRequestProps` (`opts.body`, `params.body`, and the `body` read from the result before or after `super`). ARDOR now calls them with `payload`, the sign-in request included, so these reads give `undefined`, often with no error: the request goes out without its body, or a value computed from the body is wrong.'
+      - 'There, read `payload?.data` and `payload?.type`. In a `request` override that does not call `super`, pass `payload` on to `getRequestProps`, and call `RequestBodyEncoder.assertPayload({ options: opts, owner: "MyProvider" })` first so that an old caller is refused.'
+      - 'Replace `body: x` with `payload: { data: x }`, and `body: x, bodyType: t` with `payload: { data: x, type: t }`, wherever you call `send`, `request`, `getRequestProps` or `RequestBodyEncoder.encode`. Leave out `payload` where there was no body.'
+      - 'Run `bun check`. It marks an object literal written at the call; an options object kept in a variable or spread into the call, and a type of your own with a `body` field, compile unchanged.'
+      - 'A base method given `body` or `bodyType` throws and names `payload` the first time it runs. An override of yours does not, unless it calls the base method with those options.'
+      - 'Leave the encoded side as it is: the `body` that `getRequestProps` and `encode` return and the `body` of `doRequest`. An override of `encodeBody({ bodyType, body })` keeps its signature; where it called `RequestBodyEncoder.encode(opts)`, call `super.encodeBody(opts)`.'
+      - 'There is no codemod: `body` is also the name of other things (`fetch`, `HttpRepository.execute`).'
+    before: |-
+      await dataProvider.send({ resource: 'upload', params: { method: 'POST', body: files, bodyType: RequestBodyTypes.FORM_DATA } });
+    after: |-
+      await dataProvider.send({ resource: 'upload', params: { method: 'POST', payload: { data: files, type: RequestBodyTypes.FORM_DATA } } });
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-12 or earlier and write `body` and `bodyType` again.'
+  data: Nothing stored changes. The same bytes are sent.

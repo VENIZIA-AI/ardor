@@ -102,7 +102,7 @@ describe('request', () => {
       resource: 'posts',
       type: RequestTypes.CREATE,
       method: RequestMethods.POST,
-      body: { title: 'a' },
+      payload: { data: { title: 'a' } },
       query: { locale: 'vi' },
     });
 

@@ -314,8 +314,11 @@ describe('what a request carries, through doRequest', () => {
     const service = createService();
     const props = service.getRequestProps({
       resource: 'upload',
-      bodyType: RequestBodyTypes.FORM_DATA,
-      body: { name: 'a', file: new File(['content'], 'a.txt') },
+      payload: {
+        data: { name: 'a', file: new File(['content'], 'a.txt') },
+        type: RequestBodyTypes.FORM_DATA,
+      },
+
       restDataProviderOptions: { url: baseUrl, noAuth: { regex: /./ } },
       applicationInfo: info,
     });

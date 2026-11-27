@@ -49,9 +49,9 @@ Every request is tagged with a tracing id under `x-request-id`. The id is built 
 
 The id comes from `uuidV4()` in `@venizia/ignis-helpers/uuid`, which uses `crypto.randomUUID` where that exists and `crypto.getRandomValues` where it does not. `randomUUID` is secure-context-only, so on a plain-http origin such as `http://<lan-ip>` it is `undefined` - and because EVERY request carries this header, calling it directly used to throw before anything was sent: the whole app failed, not one call. The shared helper is the reason this is not solved twice; at 398 B gzip it also measured SMALLER than the local fallback it replaced.
 
-## content-type by bodyType
+## content-type by payload type
 
-The `content-type` header is chosen from the request's declared `bodyType`, using `RequestBodyTypes`: `none`, `form-data`, `x-www-form-urlencoded`, `json`, or `binary`. `x-www-form-urlencoded` sets `application/x-www-form-urlencoded`. `form-data` sets no `content-type`, so `fetch` writes the multipart boundary itself. Every other case - `json`, `none`, `binary`, or no `bodyType` - sends `content-type: application/json`. How each body is encoded (and why a `binary` body arrives as `{}`), and how the response `content-type` decides between JSON and a `Blob`, are in [Network layer](/architecture/network-layer.md).
+The `content-type` header is chosen from the request's declared `payload.type`, using `RequestBodyTypes`: `none`, `form-data`, `x-www-form-urlencoded`, `json`, or `binary`. `x-www-form-urlencoded` sets `application/x-www-form-urlencoded`. `form-data` sets no `content-type`, so `fetch` writes the multipart boundary itself. Every other case - `json`, `none`, `binary`, or no `payload.type` - sends `content-type: application/json`. How each body is encoded (a `binary` body goes as its bytes), and how the response `content-type` decides between JSON and a `Blob`, are in [Network layer](/architecture/network-layer.md).
 
 ## x-locale
 

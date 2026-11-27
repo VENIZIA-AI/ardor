@@ -395,7 +395,10 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
   async login(params: ILoginParams): Promise<unknown> {
     const response = await this.restDataProvider.send({
       resource: this.signInPath,
-      params: { method: RequestMethods.POST, body: this.buildSignInBody({ params }) },
+      params: {
+        method: RequestMethods.POST,
+        payload: { data: this.buildSignInBody({ params }) },
+      },
     });
 
     const session = this.readSignInSession({ data: response.data });

@@ -36,6 +36,7 @@ import {
   ValueUtility,
   type ISendParams,
   type IResponseSchema,
+  RequestBodyEncoder,
   RequestCountData,
   RequestMethods,
   RequestTypes,
@@ -195,8 +196,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       type,
       method,
       paths = [resource],
-      body,
-      bodyType,
+      payload,
       query,
       extra,
       headers,
@@ -205,11 +205,12 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       schema,
     } = opts;
 
+    RequestBodyEncoder.assertPayload({ options: opts, owner: this.constructor.name });
+
     const props = this.networkService.getRequestProps({
       requestCountData,
       resource,
-      body,
-      bodyType,
+      payload,
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
       extra,
@@ -390,7 +391,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         type: RequestTypes.UPDATE,
         method: RequestMethods.PATCH,
         paths: recordPaths({ resource, id: params.id }),
-        body: params.data,
+        payload: { data: params.data },
       }),
     });
   }
@@ -424,7 +425,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.UPDATE_MANY,
       method: RequestMethods.PATCH,
-      body: { ...data, where: { id: { inq: ids } } },
+      payload: { data: { ...data, where: { id: { inq: ids } } } },
     }).then((result) => {
       return { data: this.toAffectedIds({ rows: result.data }) };
     });
@@ -442,7 +443,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         resource,
         type: RequestTypes.CREATE,
         method: RequestMethods.POST,
-        body: params.data,
+        payload: { data: params.data },
       }),
     });
   }
@@ -486,7 +487,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.DELETE_MANY,
       method: RequestMethods.DELETE,
-      body: { where: { id: { inq: ids } } },
+      payload: { data: { where: { id: { inq: ids } } } },
     }).then((result) => {
       return { data: this.toAffectedIds({ rows: result.data }) };
     });
@@ -522,7 +523,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       });
     }
 
-    const { method, query, requestCountData, requestType, headers, body, bodyType, extra, signal } =
+    // Here as well: only the names below reach `request`, so a removed one would be dropped.
+    RequestBodyEncoder.assertPayload({ options: params, owner: this.constructor.name });
+
+    const { method, query, requestCountData, requestType, headers, payload, extra, signal } =
       params;
 
     // A number is sent as its text. Anything else passes as it is, so an untyped `null` still removes the header.
@@ -540,8 +544,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: requestType ?? RequestTypes.SEND,
       method,
-      body,
-      bodyType,
+      payload,
       query,
       extra,
       headers: texts,

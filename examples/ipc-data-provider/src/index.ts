@@ -21,37 +21,37 @@ import {
 
 // --- the transport: what a desktop shell exposes instead of fetch (Tauri's `invoke`, a Worker
 // port, an Electron bridge). One in-memory implementation is enough to show the seam.
-type TCommand = (payload: ISendParams) => unknown;
+type TCommand = (params: ISendParams) => unknown;
 
-// `ISendParams.body` is `unknown`: read the one field this command needs.
-const usernameOf = (body: unknown): string =>
-  typeof body === 'object' && body !== null && 'username' in body ? String(body.username) : '';
+// `ISendParams.payload.data` is `unknown`: read the one field this command needs.
+const usernameOf = (data: unknown): string =>
+  typeof data === 'object' && data !== null && 'username' in data ? String(data.username) : '';
 
 const COMMANDS: Record<string, TCommand> = {
-  products: (payload) => {
+  products: (params) => {
     const rows = [
       { id: 1, name: 'Espresso', price: 30000 },
       { id: 2, name: 'Latte', price: 45000 },
       { id: 3, name: 'Cold brew', price: 50000 },
     ];
-    const id = payload.query?.id;
+    const id = params.query?.id;
 
     return id === undefined ? rows : rows.find((row) => row.id === Number(id));
   },
-  'auth/login': (payload) => ({
+  'auth/login': (params) => ({
     userId: 7,
-    token: { value: `ipc-${usernameOf(payload.body)}`, type: 'Bearer' },
+    token: { value: `ipc-${usernameOf(params.payload?.data)}`, type: 'Bearer' },
   }),
 };
 
-const invoke = (opts: { command: string; payload: ISendParams }): Promise<INetworkResponse> => {
+const invoke = (opts: { command: string; params: ISendParams }): Promise<INetworkResponse> => {
   const handler = COMMANDS[opts.command];
 
   if (!handler) {
     return Promise.reject({ message: `[ipc] unknown command ${opts.command}`, statusCode: 404 });
   }
 
-  return Promise.resolve({ data: handler(opts.payload) });
+  return Promise.resolve({ data: handler(opts.params) });
 };
 
 // --- the schemas: `send` types the data a schema checked, and a zod schema would do the same.
@@ -110,7 +110,7 @@ export class IpcDataProvider extends DefaultRestDataProvider {
     schema?: IResponseSchema;
   }): Promise<INetworkResponse> {
     const { resource, params, schema } = opts;
-    const answered = invoke({ command: resource, payload: params });
+    const answered = invoke({ command: resource, params });
 
     if (!schema) {
       return answered;
@@ -168,7 +168,7 @@ const one = await dataProvider.send({
 });
 const login = await dataProvider.send({
   resource: 'auth/login',
-  params: { method: RequestMethods.POST, body: { username: 'barista' } },
+  params: { method: RequestMethods.POST, payload: { data: { username: 'barista' } } },
   schema: schemaOf({ name: 'session', isValid: isSession }),
 });
 

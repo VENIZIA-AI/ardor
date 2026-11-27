@@ -122,6 +122,7 @@ import {
   type IRestDataProviderOptions,
   type IRestRequestOptions,
   NetworkResponseReader,
+  RequestBodyEncoder,
   type TRequestMethod,
   type TRequestType,
 } from '@venizia/ardor';
@@ -178,19 +179,20 @@ export class TransportDataProvider<
       method,
       paths = [resource],
       query,
-      body,
-      bodyType,
+      payload,
       extra,
       headers,
       requestCountData,
       signal,
     } = opts;
 
+    // This override replaces the base method, so it runs the base's check of the removed names.
+    RequestBodyEncoder.assertPayload({ options: opts, owner: this.constructor.name });
+
     // Still from the base: headers built from the options and application info.
     const props = this.networkService.getRequestProps({
       resource,
-      body,
-      bodyType,
+      payload,
       extra,
       requestCountData,
       restDataProviderOptions: this.restDataProviderOptions,

@@ -571,7 +571,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const props = service.getRequestProps({
         resource: 'items',
-        body: testBody,
+        payload: { data: testBody },
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -590,13 +590,16 @@ describe('DefaultNetworkRequestService', () => {
 
       const props = service.getRequestProps({
         resource: 'upload',
-        bodyType: RequestBodyTypes.FORM_DATA,
-        body: {
-          single: singleFile,
-          multiple: fileList,
-          emptyVal: null,
-          undefVal: undefined,
+        payload: {
+          data: {
+            single: singleFile,
+            multiple: fileList,
+            emptyVal: null,
+            undefVal: undefined,
+          },
+          type: RequestBodyTypes.FORM_DATA,
         },
+
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -619,8 +622,11 @@ describe('DefaultNetworkRequestService', () => {
       expect(() =>
         service.getRequestProps({
           resource: 'upload',
-          bodyType: RequestBodyTypes.FORM_URL_ENCODED,
-          body: { attachment: new File(['x'], 'note.txt', { type: 'text/plain' }) },
+          payload: {
+            data: { attachment: new File(['x'], 'note.txt', { type: 'text/plain' }) },
+            type: RequestBodyTypes.FORM_URL_ENCODED,
+          },
+
           applicationInfo: createApplicationInfo(),
           restDataProviderOptions: createRestDataProviderOptions(),
         }),
@@ -632,15 +638,18 @@ describe('DefaultNetworkRequestService', () => {
 
       const props = service.getRequestProps({
         resource: 'oauth',
-        bodyType: RequestBodyTypes.FORM_URL_ENCODED,
-        body: {
-          scope: 'read',
-          remember: false,
-          page: 0,
-          note: '',
-          nullVal: null,
-          undefVal: undefined,
+        payload: {
+          data: {
+            scope: 'read',
+            remember: false,
+            page: 0,
+            note: '',
+            nullVal: null,
+            undefVal: undefined,
+          },
+          type: RequestBodyTypes.FORM_URL_ENCODED,
         },
+
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -662,15 +671,18 @@ describe('DefaultNetworkRequestService', () => {
 
       const props = service.getRequestProps({
         resource: 'upload',
-        bodyType: RequestBodyTypes.FORM_DATA,
-        body: {
-          name: 'alpha',
-          count: 0,
-          flag: false,
-          empty: '',
-          nullVal: null,
-          undefVal: undefined,
+        payload: {
+          data: {
+            name: 'alpha',
+            count: 0,
+            flag: false,
+            empty: '',
+            nullVal: null,
+            undefVal: undefined,
+          },
+          type: RequestBodyTypes.FORM_DATA,
         },
+
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -696,11 +708,14 @@ describe('DefaultNetworkRequestService', () => {
 
       const props = service.getRequestProps({
         resource: 'upload',
-        bodyType: RequestBodyTypes.FORM_DATA,
-        body: {
-          meta: { locale: 'vi', tags: ['a', 'b'] },
-          when: new Date('2026-09-16T07:30:00.000Z'),
+        payload: {
+          data: {
+            meta: { locale: 'vi', tags: ['a', 'b'] },
+            when: new Date('2026-09-16T07:30:00.000Z'),
+          },
+          type: RequestBodyTypes.FORM_DATA,
         },
+
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -723,8 +738,8 @@ describe('DefaultNetworkRequestService', () => {
 
       const props = service.getRequestProps({
         resource: 'upload',
-        bodyType: RequestBodyTypes.FORM_DATA,
-        body: { items: [file, 'plain', 0] },
+        payload: { data: { items: [file, 'plain', 0] }, type: RequestBodyTypes.FORM_DATA },
+
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -749,13 +764,16 @@ describe('DefaultNetworkRequestService', () => {
 
       const props = service.getRequestProps({
         resource: 'oauth',
-        bodyType: RequestBodyTypes.FORM_URL_ENCODED,
-        body: {
-          ['client_id']: 'client-123',
-          ['grant_type']: 'authorization_code',
-          emptyField: '',
-          omittedField: undefined,
+        payload: {
+          data: {
+            ['client_id']: 'client-123',
+            ['grant_type']: 'authorization_code',
+            emptyField: '',
+            omittedField: undefined,
+          },
+          type: RequestBodyTypes.FORM_URL_ENCODED,
         },
+
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
       });
@@ -2029,5 +2047,48 @@ describe('noAuth options', () => {
     const options = { name: 'legacy', noAuthPaths: undefined };
 
     expect(() => new DefaultNetworkRequestService(options)).toThrow('noAuthPaths');
+  });
+});
+
+describe('getRequestProps and the removed body options', () => {
+  test.each([{ body: { a: 1 } }, { bodyType: RequestBodyTypes.JSON }])(
+    'refuses %p, naming the class that was built',
+    (legacy) => {
+      const params = {
+        resource: 'orders',
+        applicationInfo: createApplicationInfo(),
+        restDataProviderOptions: createRestDataProviderOptions(),
+        ...legacy,
+      };
+
+      expect(() => createService({ isOpen: true }).getRequestProps(params)).toThrow(
+        /^\[TestNetworkService\] body(Type)? was replaced by payload: \{ data, type \}$/,
+      );
+    },
+  );
+
+  test('an override of encodeBody still receives body and bodyType', () => {
+    const received: object[] = [];
+
+    class RecordingService extends DefaultNetworkRequestService {
+      protected override encodeBody(opts: { bodyType?: string; body: unknown }) {
+        received.push(opts);
+
+        return { body: 'encoded' };
+      }
+    }
+
+    const props = new RecordingService({
+      name: 'recording',
+      noAuth: { regex: /./ },
+    }).getRequestProps({
+      resource: 'orders',
+      payload: { data: { a: 1 }, type: RequestBodyTypes.FORM_DATA },
+      applicationInfo: createApplicationInfo(),
+      restDataProviderOptions: createRestDataProviderOptions(),
+    });
+
+    expect(received).toEqual([{ body: { a: 1 }, bodyType: RequestBodyTypes.FORM_DATA }]);
+    expect(props.body).toBe('encoded');
   });
 });
