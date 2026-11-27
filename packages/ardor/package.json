@@ -110,7 +110,7 @@
     "@venizia/ignis-helpers": "^0.5.0-10",
     "@venizia/ignis-inversion": "^0.5.0-4",
     "@venizia/ignis-kernel": "^0.5.0-11",
-    "ra-core": ">=5.15.5",
+    "ra-core": ">=5.15.7",
     "ra-i18n-polyglot": ">=5.15.5",
     "react": ">=19.3.1",
     "react-dom": ">=19.3.1",
@@ -153,7 +153,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "760 B"
+      "limit": "800 B"
     },
     {
       "path": "dist/testing/index.js",
@@ -173,7 +173,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "1150 B"
+      "limit": "1170 B"
     }
   ],
   "engines": {

@@ -132,7 +132,7 @@ Grep for `DIContainer` before you start - it was dropped, and every use becomes 
 `Container` the application already is.
 
 Then install and type-check per application. The type checker is what catches what a manual pass
-misses. If the consumer ships its own Vietnamese message bundle, note that `ra-core` 5.15.5 or newer
+misses. If the consumer ships its own Vietnamese message bundle, note that `ra-core` 5.15.7 or newer
 (the peer range) requires `ra.validation.unique`; ARDOR's bundled `vietnameseMessages` now provides it.
 
 ## Retiring the old package
