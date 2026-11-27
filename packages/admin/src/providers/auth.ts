@@ -275,7 +275,7 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
 
     // Another user over the one announced, with no sign-out between: that session ends first, with what it stored.
     if (this.announcedUserId !== undefined && this.announcedUserId !== userId) {
-      this.clearStoredDataOfLeavingUser({ isExternal: opts.isExternal === true });
+      this.runClearStoredData({ isSessionOnly: opts.isExternal === true });
       this.endSession({ reason: SessionClearReasons.EXTERNAL }).catch((error: unknown) => {
         this.logger.error('[endSession] failed | error: %o', error);
       });
@@ -316,31 +316,28 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
     return this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
   }
 
-  /** An override that throws must not stop the session from ending. */
-  private runClearStoredData(): void {
+  /**
+   * Removes what the user who leaves took into the page. A switch made in this tab clears the stored
+   * data as a sign-out does. A switch another tab made was cleared there before the new user wrote
+   * anything, so this tab clears only its own `sessionStorage` (`isSessionOnly`): the `localStorage`
+   * now holds the new user's data. A sweep that throws, such as an override of `clearStoredData`, is
+   * logged and must not stop the session from ending.
+   */
+  private runClearStoredData(opts: { isSessionOnly?: boolean } = {}): void {
     try {
-      this.clearStoredData();
+      if (!opts.isSessionOnly) {
+        this.clearStoredData();
+
+        return;
+      }
+
+      BrowserStorage.removeWhere({
+        storage: StorageAreas.SESSION,
+        prefix: this.authService.keys.prefixes.store,
+      });
     } catch (error) {
       this.logger.error('[clearStoredData] failed, the session ends anyway | error: %o', error);
     }
-  }
-
-  /**
-   * What the user who leaves took into the page. A switch made in this tab clears the stored data as a
-   * sign-out does. A switch another tab made was cleared there before the new user wrote anything, so
-   * this tab clears only its own `sessionStorage`: the `localStorage` now holds the new user's data.
-   */
-  private clearStoredDataOfLeavingUser(opts: { isExternal: boolean }): void {
-    if (!opts.isExternal) {
-      this.runClearStoredData();
-
-      return;
-    }
-
-    BrowserStorage.removeWhere({
-      storage: StorageAreas.SESSION,
-      prefix: this.authService.keys.prefixes.store,
-    });
   }
 
   private async clearSession(opts: { reason: TSessionClearReason }): Promise<void> {

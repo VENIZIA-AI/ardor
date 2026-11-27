@@ -15,9 +15,10 @@ interface ISubscription {
 }
 
 /**
- * `localStorage` and `sessionStorage` that never throw: a missing area, a blocked accessor, a quota
- * error or text the codec cannot read gives the fallback or `false`. Nothing touches `window` at
- * import. A key under `LocalStorageKeys.PREFIX_AUTH` is the session and is never written here.
+ * `localStorage` and `sessionStorage` that never throw for what the storage does: a missing area, a
+ * blocked accessor, a quota error or text the codec cannot read gives the fallback or `false`. A
+ * prefix that is not a non-empty string throws, in `removeWhere` and in `keys`. Nothing touches
+ * `window` at import. A key under `LocalStorageKeys.PREFIX_AUTH` is the session and is never written here.
  */
 export class BrowserStorage {
   private static readonly subs = new Set<ISubscription>();

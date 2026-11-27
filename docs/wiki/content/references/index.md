@@ -96,7 +96,7 @@ export const isDebug: boolean = RuntimeConfig.get({
 
 ## Browser storage
 
-`BrowserStorage` reads and writes `localStorage` and `sessionStorage` outside React, and it never throws. A missing area (a server), a blocked accessor (private mode), a quota error or text the codec cannot read gives the fallback or `false`. Nothing touches `window` at import.
+`BrowserStorage` reads and writes `localStorage` and `sessionStorage` outside React, and what the storage does never makes it throw: a missing area (a server), a blocked accessor (private mode), a quota error or text the codec cannot read gives the fallback or `false`. Only a prefix that is not a non-empty string throws, in `removeWhere` and in `keys`. Nothing touches `window` at import.
 
 ```typescript
 import { BrowserStorage, StorageAreas } from '@venizia/ardor';
