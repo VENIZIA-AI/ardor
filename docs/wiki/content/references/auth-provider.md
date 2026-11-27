@@ -130,7 +130,7 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 
 ### `logout(params)`
 
-- Calls: `authService.cleanUp()`, clearing the `localStorage` session keys under `keys.authPrefix` (`@app/auth/`, or `@app/auth/<id>/` when the application info has an `id`; without an `id` the keys of applications that have one are kept), and `clearStoredData()`, which sweeps `keys.storePrefix` (`@app/store/`) in `localStorage` and `sessionStorage`.
+- Calls: `authService.cleanUp()`, clearing the `localStorage` session keys under `keys.prefixes.auth` (`@app/auth/`, or `@app/auth/<id>/` when the application info has an `id`; without an `id` the keys of applications that have one are kept), and `clearStoredData()`, which sweeps `keys.prefixes.store` (`@app/store/`) in `localStorage` and `sessionStorage`.
 - Returns: `Promise<void>`
 
 ### `checkAuth(params)`
@@ -306,7 +306,7 @@ Each hook fires once per change of the session. A re-check of the same session s
 - **A hook that never settles.** After `sessionHookTimeout` (10 seconds; override the getter) the provider logs it and carries on. The hook itself keeps running, and the next hook may start while it does. Put a timeout on your own `connect` too.
 - **Do not call the provider from a hook.** `this.logout()` or `this.refreshToken()` inside a hook queues behind that hook, so it waits until `sessionHookTimeout` ends the hook. Return from the hook and call it afterwards.
 - **What the provider sees.** The provider subscribes to `DefaultAuthService` (`subscribe({ listener })` runs after every `saveAuth` and `cleanUp`), so a refresh your network service makes on a 401 and a `cleanUp` from its `onAuthFailure` reach the hooks as well. It also hears the other tabs: a sign-in, sign-out or user switch in another tab of the same application runs the hooks here (a sign-out with the reason `external`). A token written straight to `localStorage` by code that is not `saveAuth` or `cleanUp` in this tab is not heard: save it with `saveAuth`.
-- **Other tabs.** When the session ends in another tab, this tab runs `clearStoredData` too, so the keys under `keys.storePrefix` in this tab's `localStorage` and `sessionStorage` are removed along with the session. The tab that did not sign out does not keep the data of the user who left.
+- **Other tabs.** When the session ends in another tab, this tab runs `clearStoredData` too, so the keys under `keys.prefixes.store` in this tab's `localStorage` and `sessionStorage` are removed along with the session. The tab that did not sign out does not keep the data of the user who left.
 - **One provider per auth service.** Each provider listens to the service in its constructor, so a second provider on the same `DefaultAuthService` calls every hook again. A provider you build and discard yourself (a test, a hot reload) stops listening with `dispose()`.
 - **A refresh is a start.** A new token for the same user calls `onSessionStarted` again with the new `token`; there is no separate hook. A token saved again with the same value stays silent.
 

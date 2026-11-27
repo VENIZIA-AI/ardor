@@ -1,13 +1,15 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 
 import { DefaultAuthProvider, type TSessionClearReason } from '@/providers/auth';
 import {
+  BrowserStorage,
   CoreBindings,
   DefaultAuthService,
   type IAuthTokenRecord,
   type IStoredAuthUser,
 } from '@venizia/ardor-kernel';
 import { FakeStorage } from '@venizia/ardor-kernel/testing';
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
 class RecordingAuthProvider extends DefaultAuthProvider {
@@ -110,6 +112,33 @@ describe('DefaultAuthProvider and the session of another tab', () => {
     expect(provider.started.at(-1)?.token.value).toBe('jwt-8');
     expect(sessionStorage.getItem('@app/store/tab')).toBeNull();
     expect(localStorage.getItem('@app/store/bob')).toBe('bob data');
+  });
+
+  test('a sweep of this tab that throws is logged, and the switch still ends the session and starts the next', async () => {
+    otherTabSignsIn({ userId: 7, token: 'jwt-7' });
+    await settle();
+    const logged = spyOn(
+      LoggerFactory.getLogger(['DefaultAuthProvider']),
+      'error',
+    ).mockImplementation(() => undefined);
+    const swept = spyOn(BrowserStorage, 'removeWhere').mockImplementation(() => {
+      throw new Error('boom');
+    });
+
+    try {
+      otherTabSignsIn({ userId: 8, token: 'jwt-8' });
+      await settle();
+
+      expect(provider.cleared).toEqual(['external']);
+      expect(provider.started.at(-1)?.token.value).toBe('jwt-8');
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining('[clearStoredData] failed, the session ends anyway'),
+        expect.objectContaining({ message: 'boom' }),
+      );
+    } finally {
+      swept.mockRestore();
+      logged.mockRestore();
+    }
   });
 
   test('a user switch written key by key starts the session once, as the new user with the new token', async () => {

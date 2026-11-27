@@ -518,3 +518,34 @@ request-payload:
     steps:
       - 'Pin the four ARDOR packages to 0.5.0-12 or earlier and write `body` and `bodyType` again.'
   data: Nothing stored changes. The same bytes are sent.
+
+scoped-key-prefixes:
+  symbols: [IScopedKeys, LocalStorageKeys, DefaultAuthService.keys]
+  upgrade:
+    steps:
+      - 'Run `bun check`: it marks each typed read of `authPrefix`, `storePrefix` or `prefsPrefix`.'
+      - 'Replace `keys.authPrefix` with `keys.prefixes.auth`, `keys.storePrefix` with `keys.prefixes.store` and `keys.prefsPrefix` with `keys.prefixes.prefs`, overrides of `clearStoredData` and `isSessionKey` included.'
+      - 'Search JavaScript, and TypeScript that casts, for the three old names: they read as `undefined`. `BrowserStorage` throws for that prefix, which the auth provider logs as `[clearStoredData] failed` while the session still ends and the data stays. A comparison of your own such as `key.startsWith(keys.authPrefix)` just matches nothing.'
+    before: |-
+      BrowserStorage.removeWhere({ storage: StorageAreas.LOCAL, prefix: authService.keys.storePrefix });
+    after: |-
+      BrowserStorage.removeWhere({ storage: StorageAreas.LOCAL, prefix: authService.keys.prefixes.store });
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-12 or earlier and read `authPrefix`, `storePrefix` and `prefsPrefix` again.'
+  data: Nothing stored changes. The key strings are the same, so sessions and stored data are found as before.
+
+storage-prefix-checked:
+  symbols: [BrowserStorage.removeWhere, BrowserStorage.keys]
+  upgrade:
+    steps:
+      - 'Where you call `BrowserStorage.keys` with a prefix that may be empty or `undefined`, leave the option out to list every key: `prefix ? { storage, prefix } : { storage }`.'
+      - 'Where you call `BrowserStorage.removeWhere` with a prefix that may be empty, call it only when there is one.'
+    before: |-
+      const keys = BrowserStorage.keys({ prefix: maybePrefix });
+    after: |-
+      const keys = BrowserStorage.keys(maybePrefix ? { prefix: maybePrefix } : {});
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-12 or earlier.'
+  data: Nothing stored changes.
