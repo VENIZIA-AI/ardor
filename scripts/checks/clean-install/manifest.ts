@@ -244,9 +244,7 @@ export const peerIdentityHolders = (opts: { name: string }): string[] => {
   const holders = new Set<string>();
   const queue = [opts.name];
 
-  while (queue.length > 0) {
-    const name = queue.shift() as string;
-
+  for (let name = queue.shift(); name !== undefined; name = queue.shift()) {
     if (holders.has(name)) {
       continue;
     }

@@ -79,7 +79,7 @@ fmt-files:
 fmt-scripts:
 	@cd scripts && bun fmt --no-script $(FMT_GLOB)
 
-# ESLint here runs the five async-style rules only: the scripts run on Bun and throw plain errors.
+# ESLint here runs the async-style, sleep and cast rules only: the scripts run on Bun and throw plain errors.
 lint-scripts:
 	@echo "🔍 Linting scripts/..."
 	@node_modules/.bin/eslint -c scripts/.configs/lints/eslint.config.mjs scripts

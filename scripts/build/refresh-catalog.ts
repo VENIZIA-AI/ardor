@@ -21,6 +21,7 @@ if (!['highest', 'next', 'latest'].includes(TAG)) {
 
 type TManifest = { workspaces: { catalog: Record<string, string> } };
 
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the root package.json of this repository, which always declares workspaces.catalog; this runs before any install.
 const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8')) as TManifest;
 const catalog = manifest.workspaces.catalog;
 const changes: string[] = [];
@@ -31,11 +32,14 @@ for (const name of Object.keys(catalog).filter((key) => key.startsWith('@venizia
     stderr: 'pipe',
   });
   const version = new TextDecoder().decode(proc.stdout).trim();
+
   if (proc.exitCode !== 0 || version.length === 0) {
     console.error(`[${name}] no "${TAG}" dist-tag on the registry - left at ${catalog[name]}`);
     continue;
   }
+
   const range = `^${version}`;
+
   if (catalog[name] !== range) {
     changes.push(`${name}: ${catalog[name]} -> ${range}`);
     catalog[name] = range;

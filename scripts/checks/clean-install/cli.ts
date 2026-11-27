@@ -202,6 +202,7 @@ const findSplitPeers = async (opts: { name: string; sandbox: string }): Promise<
 
   const printed = result.output.trim().split('\n').pop() ?? '[]';
 
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the line peer-identity.ts of this folder prints: a JSON array of strings.
   return JSON.parse(printed) as string[];
 };
 

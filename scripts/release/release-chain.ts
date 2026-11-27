@@ -304,7 +304,7 @@ export class ReleaseChain {
               label: `${pkg.name}: stable-deps`,
               command: ReleaseChain.gate({ args: ['stable-deps', packed] }),
               fatal: true,
-            } as TStep,
+            } satisfies TStep,
           ]
         : []),
       {
@@ -351,7 +351,7 @@ export class ReleaseChain {
               label: 'make the tarball folder',
               command: ['mkdir', '-p', tarballs],
               fatal: true,
-            } as TStep,
+            } satisfies TStep,
           ]
         : []),
       bump,
@@ -362,7 +362,7 @@ export class ReleaseChain {
               label: 'ardor: write the VULCAN preset',
               command: ['bun', 'scripts/preset/vulcan-preset.ts'],
               fatal: true,
-            } as TStep,
+            } satisfies TStep,
             ...(isStable
               ? [
                   {
@@ -372,7 +372,7 @@ export class ReleaseChain {
                       args: ['stable-deps', 'packages/ardor/dist/presets'],
                     }),
                     fatal: true,
-                  } as TStep,
+                  } satisfies TStep,
                 ]
               : []),
           ]
@@ -524,7 +524,7 @@ export class ReleaseChain {
               label: 'switch to the release branch',
               command: ['git', 'switch', '-c', options.branch],
               fatal: true,
-            } as TStep,
+            } satisfies TStep,
           ]
         : []),
       {
@@ -747,7 +747,7 @@ export class ReleaseChain {
       return stopped
         ? ReleaseChain.report({
             states,
-            failed: states[0] as IPackageState,
+            failed: states[0],
             label: stopped.label,
             version,
             detail: stopped.detail,
@@ -867,8 +867,16 @@ export const runChain = async (opts: {
     mode: 'full',
     warnings: [],
   }));
-  const stateOf = (name: string): IPackageState =>
-    states.find((state) => state.name === name) as IPackageState;
+
+  const stateOf = (name: string): IPackageState => {
+    const found = states.find((state) => state.name === name);
+
+    if (found === undefined) {
+      throw new Error(`[runChain] no state for the package ${name}`);
+    }
+
+    return found;
+  };
 
   const isStable = ReleaseChain.kindOf({ options }) === 'stable';
   const targetBranch = ReleaseChain.targetBranchOf({ options });
@@ -926,7 +934,7 @@ export const runChain = async (opts: {
   const unbound = ReleaseChain.checkBinding({ options });
 
   if (unbound.length > 0) {
-    return stop({ failed: states[0] as IPackageState, label: 'plan', detail: unbound.join('; ') });
+    return stop({ failed: states[0], label: 'plan', detail: unbound.join('; ') });
   }
 
   // What each package already is, read fresh before anything changes (D5).
@@ -1039,6 +1047,7 @@ export const runChain = async (opts: {
           return { ok: false, detail: 'an unresolved protocol survives in the packed manifest' };
         }
 
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the package.json npm accepted into the tarball; the fields read are optional.
         const packed = JSON.parse(extracted.stdout) as {
           version?: string;
           dependencies?: Record<string, string>;
@@ -1485,6 +1494,7 @@ const realPorts = (): IChainPorts => ({
     return { exitCode, stdout };
   },
   readManifest: ({ path }) =>
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- a package.json of this repository, whose name and version every release reads.
     JSON.parse(readFileSync(path, 'utf8')) as { name: string; version: string },
   hasVersion: async ({ packageName, version }) => {
     const proc = Bun.spawnSync(
@@ -1514,6 +1524,7 @@ const realPorts = (): IChainPorts => ({
   sleep: (ms) => Bun.sleep(ms),
   log: (line) => console.log(line),
   readBuiltOn: () => {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the root package.json of this repository; the catalog read is optional.
     const root = JSON.parse(readFileSync('package.json', 'utf8')) as {
       workspaces?: { catalog?: Record<string, string> };
     };
@@ -1539,6 +1550,7 @@ const reportMain = async (opts: { argv: string[] }): Promise<void> => {
     return;
   }
 
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the state file this script wrote with JSON.stringify.
   const state = JSON.parse(readFileSync(statePath, 'utf8')) as IChainState;
   const text = ReleaseChain.reportFromState({ state });
   console.log(text);
