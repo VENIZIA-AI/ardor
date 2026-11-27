@@ -5,7 +5,7 @@ description: When to declare an endpoint as no-auth, how the one-refresh-one-ret
 
 # No-auth paths and token recovery
 
-`noAuthPaths` and `noAuthPathRegex` describe which endpoints legitimately run without a token. They are a design decision, made once, at the request service. They are not a patch for a `401`. A `401` on an authenticated path is handled by the recovery contract: one refresh per burst, one retry, then `onAuthFailure`.
+`noAuth.paths` and `noAuth.regex` describe which endpoints legitimately run without a token. They are a design decision, made once, at the request service. They are not a patch for a `401`. A `401` on an authenticated path is handled by the recovery contract: one refresh per burst, one retry, then `onAuthFailure`.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ You have a `DefaultNetworkRequestService` (usually reached through `getNetworkSe
 | --- | --- | --- |
 | `DefaultNetworkRequestService` | class | Decides whether a request carries a token, and runs recovery on `401` |
 | `DefaultRestDataProvider` | class | `createNetworkService()` returns the service; override it to return your subclass |
-| `INoAuthOptions` | interface | `noAuthPaths`, `noAuthPathRegex` |
+| `INoAuthOptions` | interface | The `noAuth` options: `paths`, `regex` |
 | `TNoAuthPathRegex` | type | A string, a `RegExp`, or an array of either |
 | `IAuthRecoveryOptions` | interface | `refreshTokenPath` - data only |
 | `DefaultAuthProvider` | class | Owns `login`, `logout`, `checkError`, `refreshToken` |
@@ -63,10 +63,10 @@ declare class DefaultNetworkRequestService {
 
 How `isNoAuthPath` decides, in order:
 
-1. `noAuthPaths` - an exact string match against `resource`.
-2. `noAuthPathRegex` - each pattern is tested against `resource` and against `paths.join('/')`. String patterns are compiled with `new RegExp`; an invalid pattern is logged and skipped. `lastIndex` is reset before each test, so global patterns are safe.
+1. `noAuth.paths` - an exact string match against `resource`.
+2. `noAuth.regex` - each pattern is tested against `resource` and against `paths.join('/')`. String patterns are compiled with `new RegExp`; an invalid pattern is logged and skipped. `lastIndex` is reset before each test, so global patterns are safe.
 
-To send no token at all - a service that talks to an API with no sign-in - set `noAuthPathRegex: /./`. Every path then matches, the service never attaches a token, and recovery is off with it (`AuthRecoveryHelper.canRecover` checks `isNoAuthPath`).
+To send no token at all - a service that talks to an API with no sign-in - set `noAuth: { regex: /./ }`. Every path then matches, the service never attaches a token, and recovery is off with it (`AuthRecoveryHelper.canRecover` checks `isNoAuthPath`).
 
 Keep the list small and explicit. The sign-in path and the refresh path belong there. Public, unauthenticated reads belong there. Nothing else does.
 
@@ -76,8 +76,7 @@ import { DefaultNetworkRequestService } from '@venizia/ardor';
 const requests = new DefaultNetworkRequestService({
   name: 'api',
   baseUrl: 'https://api.example.com',
-  noAuthPaths: ['/auth/sign-in', '/auth/refresh'],
-  noAuthPathRegex: [/^\/public\//],
+  noAuth: { paths: ['/auth/sign-in', '/auth/refresh'], regex: [/^\/public\//] },
 });
 ```
 
@@ -151,11 +150,11 @@ class AuthRecoveryHelper {
 }
 ```
 
-`refreshTokenPath` and `noAuthPaths` are two separate guards. Setting `refreshTokenPath` stops a `401` from the refresh request from starting another refresh; set it in every case. Putting the refresh path in `noAuthPaths` stops the expired token from being attached to the refresh request; do it only when the endpoint identifies the session by other means, such as a cookie. The default `refreshToken` posts no body, so an endpoint that reads the session from the expired token needs the path left out of `noAuthPaths`.
+`refreshTokenPath` and `noAuth.paths` are two separate guards. Setting `refreshTokenPath` stops a `401` from the refresh request from starting another refresh; set it in every case. Putting the refresh path in `noAuth.paths` stops the expired token from being attached to the refresh request; do it only when the endpoint identifies the session by other means, such as a cookie. The default `refreshToken` posts no body, so an endpoint that reads the session from the expired token needs the path left out of `noAuth.paths`.
 
 ## The default refresh
 
-When `authRecovery.refreshTokenPath` is set and the data provider found the auth service in the container (`CoreBindings.DEFAULT_AUTH_SERVICE`), the default `refreshToken` needs no subclass. It POSTs to that path with no body, reads the new token from the answer, and saves it through the auth service. The request carries the expired token only when the path is not in `noAuthPaths`; with the path in `noAuthPaths` the server must identify the session by other means, such as a cookie.
+When `authRecovery.refreshTokenPath` is set and the data provider found the auth service in the container (`CoreBindings.DEFAULT_AUTH_SERVICE`), the default `refreshToken` needs no subclass. It POSTs to that path with no body, reads the new token from the answer, and saves it through the auth service. The request carries the expired token only when the path is not in `noAuth.paths`; with the path in `noAuth.paths` the server must identify the session by other means, such as a cookie.
 
 - **The answer.** `{ token: { value, type } }` or `{ token: '<jwt>' }`; nothing else is read, because a refresh keeps the same user. An answer without a token is a failed refresh: `onAuthFailure` runs once and the `401` stands. Override `readRefreshedToken({ data })` for another shape.
 - **The session changed meanwhile.** The refresh is for the session that asked. If the user signed out or another user signed in while the request was in flight, nothing is saved and the `401` stands; a refresh that fails after such a change does not run `onAuthFailure`, since the session it was for is gone. If the same user now holds another token (another tab refreshed, or a new sign-in), that token is kept and the request is retried with it. A `401` that arrives after the user who sent the request has gone starts no refresh and replays nothing: `doRequest` rejects it with a `401` whose `normalized.code` is `SESSION_CHANGED_CODE`, a request of a repository (`getDataSourceAuth`) rejects the same way and is not sent again, and `DefaultAuthProvider.checkError` resolves for that code and leaves the signed-in session alone. An override of `checkError` must do the same for that code. The check is made again after the refresh and after the retry, so a user switch while the refresh is in flight, or inside a `refreshToken` override that answers `true`, ends the same way. The shared refresh is one per session: a `401` of the next user never waits for the first user's refresh.
@@ -226,7 +225,7 @@ export class AppNetworkService extends DefaultNetworkRequestService {
 }
 ```
 
-Second, return it from `DefaultRestDataProvider.createNetworkService()`, which is called once, on first use. The options keep only data, so the subclass takes them straight from `restDataProviderOptions`. The refresh path is in `noAuthPaths`; `refreshTokenPath` adds the second guard:
+Second, return it from `DefaultRestDataProvider.createNetworkService()`, which is called once, on first use. The options keep only data, so the subclass takes them straight from `restDataProviderOptions`. The refresh path is in `noAuth.paths`; `refreshTokenPath` adds the second guard:
 
 ```ts
 import { DefaultNetworkRequestService, DefaultRestDataProvider } from '@venizia/ardor';
@@ -239,8 +238,7 @@ export class AppRestDataProvider extends DefaultRestDataProvider {
     return new AppNetworkService({
       name: 'app-network-service',
       baseUrl: this.restDataProviderOptions.url,
-      noAuthPaths: this.restDataProviderOptions.noAuthPaths,
-      noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
+      noAuth: this.restDataProviderOptions.noAuth,
       headers: this.restDataProviderOptions.headers,
       authRecovery: this.restDataProviderOptions.authRecovery, // { refreshTokenPath: '/auth/token/refresh' }
       authService: this.authService, // the session of this application, with its keys
@@ -329,14 +327,14 @@ The data provider must be a singleton. Declare it with `@provide` in a `@configu
 
 ## Common pitfalls
 
-- **Adding a path to `noAuthPaths` because it returned `401`.** That hides an expired token instead of refreshing it. If the endpoint needs a user, leave it authenticated and let recovery run.
-- **Forgetting the sign-in path.** `getRequestAuthorizationHeader` throws before the request is sent, so `login` rejects with `Invalid auth token to fetch!` and never reaches the server. `paths.signIn` defaults to `/auth/sign-in`; whatever you configure must also be in `noAuthPaths`.
+- **Adding a path to `noAuth.paths` because it returned `401`.** That hides an expired token instead of refreshing it. If the endpoint needs a user, leave it authenticated and let recovery run.
+- **Forgetting the sign-in path.** `getRequestAuthorizationHeader` throws before the request is sent, so `login` rejects with `Invalid auth token to fetch!` and never reaches the server. `paths.signIn` defaults to `/auth/sign-in`; whatever you configure must also be in `noAuth.paths`.
 - **Forgetting the refresh path.** Without it the service attaches the expired token to the refresh request. Without `refreshTokenPath` a `401` from the refresh request starts another refresh. Declare both.
 - **Expecting recovery with no `refreshTokenPath`.** Without the path the default hook resolves `false`: nothing is refreshed, nothing is retried, and the `401` stands. Set `authRecovery.refreshTokenPath`, or write the subclass, return it from `createNetworkService()`, and bind that provider.
 - **Returning `true` without refreshing.** `true` means "the token is new, retry now". The retry then fails with the same `401`. Resolve `false` when there is nothing to refresh, and throw when the refresh failed - a thrown `refreshToken` is what runs `onAuthFailure`.
 - **Overriding `refreshToken` on the auth provider.** `DefaultAuthProvider.refreshToken()` only calls the service's `refresh()`. The refresh itself belongs to the service's hook, so a `401` and `useRefreshToken` make it in one place.
-- **Using `noAuthPathRegex: /./` to "fix" a `401`.** It turns off the token for every request and turns off recovery with it (`AuthRecoveryHelper.canRecover` checks `isNoAuthPath`, which is always `true` then). It is only for a service that talks to an unauthenticated API.
-- **Using an invalid string in `noAuthPathRegex`.** The service logs it and drops it. The path stays authenticated and you find out from the `401`, not from a build error. Prefer a `RegExp` literal.
+- **Using `noAuth: { regex: /./ }` to "fix" a `401`.** It turns off the token for every request and turns off recovery with it (`AuthRecoveryHelper.canRecover` checks `isNoAuthPath`, which is always `true` then). It is only for a service that talks to an unauthenticated API.
+- **Using an invalid string in `noAuth.regex`.** The service logs it and drops it. The path stays authenticated and you find out from the `401`, not from a build error. Prefer a `RegExp` literal.
 - **Storing the token under your own key.** The default `resolveAuthToken()` reads the token through the auth service the request service was built with (`authService.keys.token`: `LocalStorageKeys.KEY_AUTH_TOKEN`, or the key scoped by the application `id`), or `LocalStorageKeys.KEY_AUTH_TOKEN` with no auth service. A token elsewhere is invisible to it unless you override the hook.
 - **Binding the plain `DefaultRestDataProvider`.** Overriding `createNetworkService()` on a subclass changes nothing until that subclass is what sits under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`.
 

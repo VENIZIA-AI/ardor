@@ -154,7 +154,7 @@ An application with no sign-in binds `{ use: false }` for `AUTH_PROVIDER_OPTIONS
 1. **Bind `{ use: false }`**: a `@provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })` method returns `{ use: false }`, typed `TAuthProviderOptions`. The base application still binds `DefaultAuthProvider`; it is never resolved.
 2. **`ArdorApplication` handles omission**: With `use: false` or no options, `authProvider` is omitted from the props passed to `CoreAdmin`.
 3. **React-admin runs without auth**: No sign-in screen is rendered, and all resource routes and custom routes are immediately accessible.
-4. **Configure network options**: In `REST_DATA_PROVIDER_OPTIONS`, set `noAuthPathRegex: /./` so that `DefaultNetworkRequestService` sends every HTTP request without attempting to attach an `Authorization` header.
+4. **Configure network options**: In `REST_DATA_PROVIDER_OPTIONS`, set `noAuth: { regex: /./ }` so that `DefaultNetworkRequestService` sends every HTTP request without attempting to attach an `Authorization` header.
 
 Two mistakes stop the application instead of leaving it open. An application that binds its own provider under `CoreBindings.DEFAULT_AUTH_PROVIDER` but binds no `AUTH_PROVIDER_OPTIONS` fails at start, because sign-in would be off and the provider ignored: bind `{ use: true, ...paths }` to use it, or `{ use: false }`. A route with `access` while sign-in is off fails at mount and names the route.
 

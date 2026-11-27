@@ -32,9 +32,9 @@ import { BaseService } from './base';
  * flight.
  */
 export abstract class AbstractNetworkRequestService extends BaseService {
-  /** Resources sent without a token, matched exactly. */
+  /** Resources sent without a token, matched exactly: `noAuth.paths`. */
   protected noAuthPaths?: string[];
-  /** `noAuthPathRegex` compiled; a resource matching any is sent without a token. */
+  /** `noAuth.regex` compiled; a resource matching any is sent without a token. */
   protected noAuthPathRegexes: RegExp[];
   /** Headers added to every request. */
   protected headers: Headers;
@@ -63,6 +63,83 @@ export abstract class AbstractNetworkRequestService extends BaseService {
     const { token: key } = LocalStorageKeys.scoped({ id: opts.id });
 
     return () => AuthTokenStore.read({ key });
+  }
+
+  /**
+   * Throws for options that carry `noAuthPaths` or `noAuthPathRegex`, which `noAuth` replaced, and for
+   * a `noAuth` that is not `{ paths, regex }`: an ignored one would send the token to a path that is
+   * meant to go without it.
+   */
+  static assertNoAuthOptions(opts: {
+    options: object;
+    /** The class that was given the options, named in the message. */
+    owner: string;
+  }): void {
+    const removed = ['noAuthPaths', 'noAuthPathRegex'].filter((key) => key in opts.options);
+
+    if (removed.length) {
+      const verb = removed.length > 1 ? 'were' : 'was';
+
+      throw getError({
+        message: `[${opts.owner}] ${removed.join(' and ')} ${verb} replaced by noAuth: { paths, regex }; run "bun run ardor codemod no-auth"`,
+      });
+    }
+
+    const noAuth = 'noAuth' in opts.options ? opts.options.noAuth : undefined;
+
+    const invalid = AbstractNetworkRequestService.findInvalidNoAuth({ noAuth });
+
+    if (invalid) {
+      throw getError({
+        message: `[${opts.owner}] noAuth takes { paths, regex }: invalid ${invalid}`,
+      });
+    }
+  }
+
+  /** What is wrong with a `noAuth` value: its shape, `paths` or `regex`; `undefined` when nothing is. */
+  private static findInvalidNoAuth(opts: { noAuth: unknown }): string | undefined {
+    const { noAuth } = opts;
+
+    if (noAuth === undefined) {
+      return undefined;
+    }
+
+    if (Array.isArray(noAuth)) {
+      return 'shape (got an array)';
+    }
+
+    if (noAuth instanceof RegExp) {
+      return 'shape (got a RegExp)';
+    }
+
+    if (noAuth === null) {
+      return 'shape (got null)';
+    }
+
+    if (typeof noAuth !== 'object') {
+      return `shape (got a ${typeof noAuth})`;
+    }
+
+    const { paths, regex, ...rest }: { paths?: unknown; regex?: unknown } = noAuth;
+    const unknownKeys = Object.keys(rest);
+
+    if (unknownKeys.length) {
+      return `shape (unknown key ${unknownKeys.join(', ')})`;
+    }
+
+    const isPattern = (value: unknown) => typeof value === 'string' || value instanceof RegExp;
+
+    // A text in place of the list would match by substring, and leave more requests without a token.
+    if (
+      paths !== undefined &&
+      !(Array.isArray(paths) && paths.every((p) => typeof p === 'string'))
+    ) {
+      return 'paths';
+    }
+
+    const isRegex = Array.isArray(regex) ? regex.every(isPattern) : isPattern(regex);
+
+    return regex === undefined || isRegex ? undefined : 'regex';
   }
 
   /** Throws unless a timeout that is on has a positive integer `milliseconds`. */
@@ -94,9 +171,9 @@ export abstract class AbstractNetworkRequestService extends BaseService {
   }
 
   /**
-   * Whether a request goes without a token: its `resource` is in `noAuthPaths`, or the resource, or
-   * the joined `paths`, matches `noAuthPathRegex`. To send no token at all (an API with no sign-in),
-   * set `noAuthPathRegex: /./`.
+   * Whether a request goes without a token: its `resource` is in `noAuth.paths`, or the resource, or
+   * the joined `paths`, matches `noAuth.regex`. To send no token at all (an API with no sign-in),
+   * set `noAuth: { regex: /./ }`.
    */
   protected isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
     const { resource, paths } = opts;
@@ -161,7 +238,7 @@ export abstract class AbstractNetworkRequestService extends BaseService {
     return `${opts.applicationInfo.name}_${UuidV4Generator.generate()}`;
   }
 
-  /** `noAuthPathRegex` as `RegExp`s; a string is compiled, and an invalid one is logged and dropped. */
+  /** `noAuth.regex` as `RegExp`s; a string is compiled, and an invalid one is logged and dropped. */
   protected compileNoAuthPathRegex(opts: { input?: TNoAuthPathRegex }): RegExp[] {
     const { input } = opts;
 
@@ -186,7 +263,7 @@ export abstract class AbstractNetworkRequestService extends BaseService {
         compiled.push(new RegExp(pattern));
       } catch (error) {
         this.logger.error(
-          '[compileNoAuthPathRegex] Invalid noAuthPathRegex pattern: %s | error: %o',
+          '[compileNoAuthPathRegex] Invalid noAuth.regex pattern: %s | error: %o',
           pattern,
           error,
         );

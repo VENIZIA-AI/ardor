@@ -21,7 +21,7 @@ export class RestDataConfiguration {
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: 'https://api.example.com',
-      noAuthPaths: ['/auth/sign-in'],
+      noAuth: { paths: ['/auth/sign-in'] },
       requestTracingChannel: 'admin',
     };
   }
@@ -52,20 +52,20 @@ To replace the provider with a subclass, bind the subclass class under the key i
 
 ## Options
 
-`IRestDataProviderOptions` extends `INoAuthOptions` to configure network connectivity, authentication exclusions, default headers, and token recovery. For custom token refresh workflows, see [Auth recovery](../best-practices/auth-recovery).
+`IRestDataProviderOptions` configures network connectivity, authentication exclusions (`noAuth`, an `INoAuthOptions`), default headers, and token recovery. Options that carry the removed `noAuthPaths` or `noAuthPathRegex`, or a `noAuth` that is not `{ paths, regex }`, make the provider throw when it is built. For custom token refresh workflows, see [Auth recovery](../best-practices/auth-recovery).
 
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `url` | `string` | (Required) | Base URL prepended to all resource request paths. |
-| `noAuthPaths` | `Array<string>` | `undefined` | Exact resource paths requested without an `Authorization` header and excluded from 401 refresh |
-| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Patterns matching resource paths that must omit `Authorization` headers |
+| `noAuth.paths` | `Array<string>` | `undefined` | Exact resource paths requested without an `Authorization` header and excluded from 401 refresh |
+| `noAuth.regex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Patterns matching resource paths that must omit `Authorization` headers |
 | `headers` | `HeadersInit` | `undefined` | Default HTTP headers included on every network request. |
 | `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header |
 | `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options for the token refresh |
 | `timeout` | `TRequestTimeoutOptions` | `{ use: false }` | Aborts a request that has not answered within `milliseconds` |
 
-- `noAuthPaths`: entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match.
-- `noAuthPathRegex`: set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path.
+- `noAuth.paths`: entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match.
+- `noAuth.regex`: set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path.
 - `requestTracingChannel`: defaults to `RequestChannel.WEB` (`'100_WEB'`).
 - `authRecovery`: `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint. A request to it never starts a refresh, and the default `refreshToken` posts to it.
 - `timeout`: `{ use: true, milliseconds: 15000 }` rejects a request still waiting after 15 seconds with a 504 coded `NETWORK_TIMEOUT_CODE`. `milliseconds` must be a positive integer, or building the provider throws. See [Abort and timeout](./network#abort-and-timeout).

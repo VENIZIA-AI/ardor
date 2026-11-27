@@ -94,7 +94,7 @@ afterEach(() => {
   recorded.length = 0;
 });
 
-const create = () => new ExposedProvider({ url: baseUrl, noAuthPathRegex: /./ }, info);
+const create = () => new ExposedProvider({ url: baseUrl, noAuth: { regex: /./ } }, info);
 
 describe('request', () => {
   test('sends the method, the path, the query and the JSON body, and answers the data', async () => {
@@ -235,7 +235,7 @@ describe('requestList', () => {
 
 describe('CountRestDataProvider.requestList', () => {
   test('reads the total from /count, which gets no list extras and its own tracing id', async () => {
-    const provider = new CountRestDataProvider({ url: baseUrl, noAuthPathRegex: /./ }, info);
+    const provider = new CountRestDataProvider({ url: baseUrl, noAuth: { regex: /./ } }, info);
 
     const result = await provider.getList({
       resource: 'posts',

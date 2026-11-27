@@ -3,6 +3,7 @@ import { AuthOptionsTransform } from './auth-options';
 import { BaseApplicationTransform } from './base-application';
 import { DefaultProvidersTransform } from './default-providers';
 import { Migration } from './migrate';
+import { NoAuthTransform } from './no-auth';
 
 export { CodemodFlags, USAGE_ERROR_CODE };
 
@@ -118,6 +119,36 @@ Delete the method for a default provider: 0.4.8 binds it. Replace it by a bindCo
   --check    exits 1 when it finds a place (for CI); without it the exit code is 0
   --help     print this text and exit`;
 
+const NO_AUTH_USAGE = `Usage: ardor codemod no-auth [paths...] [--write [--allow-dirty] | --check]
+
+Moves the options noAuthPaths and noAuthPathRegex into noAuth: { paths, regex }. In a file that
+imports from ARDOR it rewrites an object literal that holds them as plain values:
+
+  { url, noAuthPaths: ['/auth/sign-in'] }  ->  { url, noAuth: { paths: ['/auth/sign-in'] } }
+
+Listed with their line and left for you: a literal that has a spread or noAuth, that is spread or
+Object.assigned into another object, that is typed INoAuthOptions, or that has a comment, a getter,
+a method or a computed name in what would move; every literal when the file makes a noAuth elsewhere
+(a literal, an assignment, a class field or a constructor parameter property); a literal with one
+option when another literal of the file holds the other one; reads (options.noAuthPaths),
+destructurings, type and class members; and a file that imports nothing from ARDOR.
+
+A rewritten literal is printed as a note unless it goes straight to its consumer. Check every place
+that merges two options objects, in any file: a spread keeps only the last noAuth, the request then
+carries the token and nothing throws. The protected members of a DefaultNetworkRequestService
+subclass (this.noAuthPaths) keep their names. A provider or network service given a removed option
+throws.
+
+  --write    write the changed files (without it, nothing is written)
+  --allow-dirty  with --write, also write a file that has local changes, such as one another codemod
+             just changed
+  --check    dry run that exits 1 when anything would change or is left (for CI)
+  --help     print this text and exit
+
+Like every codemod it reads the files git knows (tracked, or untracked and not ignored) and --write
+refuses a file with local changes, so git can undo it. --write is all or nothing. Run your formatter
+afterwards.`;
+
 /** `ardor codemod namespace`: the removed bare names move to the class members that replace them. */
 export class NamespaceCommand {
   static readonly NAME = 'namespace';
@@ -170,6 +201,24 @@ export class BaseApplicationImportCommand {
 
   static run(opts: { root: string; args: string[] }): Promise<number> {
     return CodemodCommand.run({ ...opts, spec: BaseApplicationImportCommand.SPEC });
+  }
+}
+
+/** `ardor codemod no-auth`: the two no-auth options move into `noAuth`. */
+export class NoAuthCommand {
+  static readonly NAME = 'no-auth';
+  static readonly USAGE = NO_AUTH_USAGE;
+  static readonly SPEC: ICodemodSpec = {
+    name: NoAuthCommand.NAME,
+    usage: NO_AUTH_USAGE,
+    unit: 'literal',
+    extraFlags: [],
+    isDetectOnly: false,
+    transform: (opts) => NoAuthTransform.run(opts),
+  };
+
+  static run(opts: { root: string; args: string[] }): Promise<number> {
+    return CodemodCommand.run({ ...opts, spec: NoAuthCommand.SPEC });
   }
 }
 

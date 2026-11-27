@@ -50,6 +50,7 @@ describe('ardor', () => {
         'auth-options',
         'base-application-import',
         'default-providers',
+        'no-auth',
       ]);
       expect(errors).toEqual([]);
     });

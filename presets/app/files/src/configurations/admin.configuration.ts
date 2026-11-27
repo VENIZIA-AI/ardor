@@ -21,7 +21,7 @@ export class AdminConfiguration {
       defaultValue: '/api',
     });
 
-    return { url, noAuthPathRegex: /./ };
+    return { url, noAuth: { regex: /./ } };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })

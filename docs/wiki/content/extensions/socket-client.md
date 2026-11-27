@@ -130,7 +130,7 @@ export class SocketAuthProvider extends DefaultAuthProvider {
 export class ShopConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
-    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
+    return { url: '/api', noAuth: { paths: ['/auth/sign-in'] } };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })

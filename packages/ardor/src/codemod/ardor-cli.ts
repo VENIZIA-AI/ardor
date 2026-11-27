@@ -4,6 +4,7 @@ import {
   CodemodFlags,
   DefaultProvidersCommand,
   NamespaceCommand,
+  NoAuthCommand,
   USAGE_ERROR_CODE,
 } from './cli';
 
@@ -14,6 +15,7 @@ Commands:
   codemod auth-options             add use: true to the auth provider options of an app with sign-in
   codemod base-application-import  import BaseArdorApplication from @venizia/ardor-admin
   codemod default-providers        list the default providers an app wires by hand (detect only)
+  codemod no-auth                  move noAuthPaths and noAuthPathRegex into noAuth: { paths, regex }
   codemod --list                   print the name of each codemod, one per line
 
 Run "ardor codemod <name> --help" for the options.
@@ -39,6 +41,7 @@ export class ArdorCli {
     [AuthOptionsCommand.NAME, (opts) => AuthOptionsCommand.run(opts)],
     [BaseApplicationImportCommand.NAME, (opts) => BaseApplicationImportCommand.run(opts)],
     [DefaultProvidersCommand.NAME, (opts) => DefaultProvidersCommand.run(opts)],
+    [NoAuthCommand.NAME, (opts) => NoAuthCommand.run(opts)],
   ]);
 
   /** Runs the command and returns the exit code; prints to the console. */

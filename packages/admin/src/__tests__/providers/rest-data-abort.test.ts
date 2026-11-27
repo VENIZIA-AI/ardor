@@ -64,7 +64,7 @@ afterEach(() => {
 
 const createDataProvider = (opts: { timeout?: IRestDataProviderOptions['timeout'] } = {}) => {
   const provider = new DefaultRestDataProvider(
-    { url: baseUrl, noAuthPathRegex: /./, timeout: opts.timeout },
+    { url: baseUrl, noAuth: { regex: /./ }, timeout: opts.timeout },
     applicationInfo,
   );
 
@@ -159,7 +159,7 @@ describe('DefaultRestDataProvider, abort', () => {
 
   test('CountRestDataProvider aborts the count request with the list request', async () => {
     const provider = new CountRestDataProvider(
-      { url: baseUrl, noAuthPathRegex: /./ },
+      { url: baseUrl, noAuth: { regex: /./ } },
       applicationInfo,
     );
     const dataProvider = provider.value(new Container());

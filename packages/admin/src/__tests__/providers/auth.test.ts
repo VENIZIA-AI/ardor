@@ -71,7 +71,7 @@ const createTestApplication = async (options: ITestAppContextOptions): Promise<I
         key: BindingKeys.build<unknown>({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }),
       }).toValue({
         url: this.baseUrl,
-        noAuthPaths: ['/auth/sign-in'],
+        noAuth: { paths: ['/auth/sign-in'] },
       });
 
       this.bind({

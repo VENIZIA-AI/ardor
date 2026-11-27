@@ -8,22 +8,26 @@ tags: [architecture, auth, network-request, no-auth-paths]
 
 # No-auth paths
 
-`DefaultNetworkRequestService` attaches an authorization header to every outgoing request unless the request's path is declared no-auth. This decision is made per-request by the protected hook `isNoAuthPath`, and it is configured once at construction time through `INoAuthOptions` (data only), not tuned reactively when something fails.
+`DefaultNetworkRequestService` attaches an authorization header to every outgoing request unless the request's path is declared no-auth. This decision is made per-request by the protected hook `isNoAuthPath`, and it is configured once at construction time through the `noAuth` option, an `INoAuthOptions` (data only), not tuned reactively when something fails.
 
 ## The data
 
-Two options passed into the constructor (`packages/kernel/src/base/services/network-request.ts`) control this; `isNoAuthPath`, `compileNoAuthPathRegex` and the header members are in its base class (`packages/kernel/src/base/services/network-request-base.ts`):
+Two fields of the constructor's `noAuth` option (`packages/kernel/src/base/services/network-request.ts`) control this; `isNoAuthPath`, `compileNoAuthPathRegex` and the header members are in its base class (`packages/kernel/src/base/services/network-request-base.ts`):
 
-- `noAuthPaths` - an array of exact resource strings. If the request's `resource` matches one of these strings exactly, no auth header is added.
-- `noAuthPathRegex` - a `TNoAuthPathRegex`: a string, a `RegExp`, or an array of either. Each string entry is compiled with `new RegExp(...)`; invalid patterns are logged via `console.error` and dropped rather than throwing. The normalized list (`compileNoAuthPathRegex`) is kept as `noAuthPathRegexes: RegExp[]`. To send no token at all - an API with no sign-in - set `noAuthPathRegex: /./`; there is no `useAuth` switch.
+- `noAuth.paths` - an array of exact resource strings. If the request's `resource` matches one of these strings exactly, no auth header is added.
+- `noAuth.regex` - a `TNoAuthPathRegex`: a string, a `RegExp`, or an array of either. Each string entry is compiled with `new RegExp(...)`; invalid patterns are logged via `console.error` and dropped rather than throwing. The normalized list (`compileNoAuthPathRegex`) is kept as `noAuthPathRegexes: RegExp[]`. To send no token at all - an API with no sign-in - set `noAuth: { regex: /./ }`; there is no `useAuth` switch.
 
 Regex patterns are tested against two candidates: `resource` and `paths.join('/')` when a `paths` array is supplied. `lastIndex` is reset before each `test` call so global regexes do not silently skip matches on repeated use.
 
+## The removed option names
+
+`noAuthPaths` and `noAuthPathRegex` were the options before `noAuth`. `DefaultNetworkRequestService.assertNoAuthOptions` throws for options that still carry either key, or a `noAuth` that holds anything but `paths` (a list of strings) and `regex` (a string, a `RegExp` or a list of them), from the constructor of the service and of `DefaultRestDataProvider` (which would otherwise not forward them): an ignored key would send the token to a public path. `ardor codemod no-auth` rewrites object literals. The protected members of the service keep their names (`noAuthPaths`, `noAuthPathRegexes`, `compileNoAuthPathRegex`), so a subclass is unaffected.
+
 ## What the header decision actually matches
 
-When building headers, `getRequestHeader` calls `isNoAuthPath({ resource })` only - no `paths`. So `noAuthPaths` and `noAuthPathRegex` are matched against `resource` alone: the react-admin resource name, or the exact string passed to `send()`, never an id-suffixed path. The `paths` candidate is used only by the recovery check (`canRecover`), which passes the joined request paths.
+When building headers, `getRequestHeader` calls `isNoAuthPath({ resource })` only - no `paths`. So `noAuth.paths` and `noAuth.regex` are matched against `resource` alone: the react-admin resource name, or the exact string passed to `send()`, never an id-suffixed path. The `paths` candidate is used only by the recovery check (`canRecover`), which passes the joined request paths.
 
-A request that is not no-auth and has no token throws a `401` from `getRequestAuthorizationHeader` before it is ever sent. Any endpoint called before a token exists must therefore be declared no-auth - above all the sign-in path, which `DefaultAuthProvider` sends as the resource `paths.signIn ?? '/auth/sign-in'`. An entry in `noAuthPaths` must match that string exactly, leading slash included; the other way is an entry in `noAuthPathRegex` that matches it.
+A request that is not no-auth and has no token throws a `401` from `getRequestAuthorizationHeader` before it is ever sent. Any endpoint called before a token exists must therefore be declared no-auth - above all the sign-in path, which `DefaultAuthProvider` sends as the resource `paths.signIn ?? '/auth/sign-in'`. An entry in `noAuth.paths` must match that string exactly, leading slash included; the other way is an entry in `noAuth.regex` that matches it.
 
 ## isNoAuthPath
 
@@ -43,7 +47,7 @@ The lists are fixed when the service is built: there is no `setUseAuth`, `setNoA
 
 ## Why this is not the fix for a 401
 
-A `401` response means the server rejected the credentials that were sent, or found none where it expected them. Widening `noAuthPaths` or `noAuthPathRegex` to make that request "pass" does not fix the underlying problem - it just stops the client from sending a token at all, which either produces a different error server-side or silently succeeds against an endpoint that was never meant to be public. Declaring a path no-auth is a statement about the resource's actual authentication requirements, decided once when the service is configured, not a runtime patch applied because a request happened to fail.
+A `401` response means the server rejected the credentials that were sent, or found none where it expected them. Widening `noAuth.paths` or `noAuth.regex` to make that request "pass" does not fix the underlying problem - it just stops the client from sending a token at all, which either produces a different error server-side or silently succeeds against an endpoint that was never meant to be public. Declaring a path no-auth is a statement about the resource's actual authentication requirements, decided once when the service is configured, not a runtime patch applied because a request happened to fail.
 
 The correct response to a 401 belongs to the recovery contract described in [Auth recovery](/architecture/auth-recovery.md): a single refresh attempt, a single retry, and a defined failure path if the refresh itself does not succeed. `isNoAuthPath` is consulted internally by that recovery logic too - a path that is already no-auth is never considered eligible for a token refresh retry, since there was no token to have gone stale.
 

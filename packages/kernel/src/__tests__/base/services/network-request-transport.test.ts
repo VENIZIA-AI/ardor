@@ -58,7 +58,7 @@ class TransportService extends DefaultNetworkRequestService {
 }
 
 const createService = () =>
-  new TransportService({ name: 'transport-test', baseUrl, noAuthPathRegex: /./ });
+  new TransportService({ name: 'transport-test', baseUrl, noAuth: { regex: /./ } });
 
 const createFetcher = (_opts: { name: string }) => createService().transport();
 
@@ -316,7 +316,7 @@ describe('what a request carries, through doRequest', () => {
       resource: 'upload',
       bodyType: RequestBodyTypes.FORM_DATA,
       body: { name: 'a', file: new File(['content'], 'a.txt') },
-      restDataProviderOptions: { url: baseUrl, noAuthPathRegex: /./ },
+      restDataProviderOptions: { url: baseUrl, noAuth: { regex: /./ } },
       applicationInfo: info,
     });
 

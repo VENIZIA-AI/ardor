@@ -9,7 +9,7 @@
 import pkg from '../../../../../packages/ardor/package.json';
 import type { THomeContent, TSiteInfo } from './shared/home-types';
 
-export const COUNTS = { packages: 4, examples: 4, testFiles: 104, nodeBuiltins: 0 };
+export const COUNTS = { packages: 4, examples: 4, testFiles: 105, nodeBuiltins: 0 };
 
 export const VERSION: string = pkg.version;
 
@@ -71,7 +71,7 @@ export class AdminConfiguration {
       defaultValue: '/api',
     });
 
-    return { url, noAuthPathRegex: /./ };
+    return { url, noAuth: { regex: /./ } };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })

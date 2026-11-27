@@ -58,7 +58,7 @@ import {
 export class AdminConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
-    return { url: '/api', noAuthPathRegex: /./ };
+    return { url: '/api', noAuth: { regex: /./ } };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
@@ -68,7 +68,7 @@ export class AdminConfiguration {
 }
 ```
 
-`@configuration()` registers the class, and the build finds it. `noAuthPathRegex: /./` sends requests without `Authorization`, and `{ use: false }` keeps all routes public. The i18n provider needs no options for English; [Add a language](./add-a-language) binds more. See [Configuration](../core-concepts/configuration).
+`@configuration()` registers the class, and the build finds it. `noAuth: { regex: /./ }` sends requests without `Authorization`, and `{ use: false }` keeps all routes public. The i18n provider needs no options for English; [Add a language](./add-a-language) binds more. See [Configuration](../core-concepts/configuration).
 
 ## Step 2: Build the List View
 

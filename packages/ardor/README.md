@@ -64,7 +64,7 @@ export class SellerConfiguration {
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: import.meta.env.VITE_API_URL,
-      noAuthPaths: ['/auth/sign-in'],
+      noAuth: { paths: ['/auth/sign-in'] },
     };
   }
 

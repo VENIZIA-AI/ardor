@@ -60,7 +60,7 @@ hooks fall back to its container when none is passed. See
 [Hooks and context](/architecture/hooks-and-context.md).
 
 **Data provider** - the react-admin data provider produced by `DefaultRestDataProvider`. It speaks
-REST to the backend, understands `noAuthPaths` and `authRecovery`, and is the seam react-admin uses
+REST to the backend, understands `noAuth.paths` and `authRecovery`, and is the seam react-admin uses
 for all list/get/create/update/delete calls. See
 [Data provider pipeline](/architecture/data-provider-pipeline.md).
 
@@ -68,7 +68,7 @@ for all list/get/create/update/delete calls. See
 that tells the data provider how to obtain a new token when a request fails on an expired one,
 instead of failing outright. See [Auth recovery](/architecture/auth-recovery.md).
 
-**No-auth path** - an endpoint listed in `noAuthPaths` (or matched by `noAuthPathRegex`) that is
+**No-auth path** - an endpoint listed in `noAuth.paths` (or matched by `noAuth.regex`) that is
 called before a token exists, such as `/auth/sign-in`. Anything not matched is sent with an
 Authorization header and fails without a token. See [No-auth paths](/architecture/no-auth-paths.md).
 

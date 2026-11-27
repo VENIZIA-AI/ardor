@@ -224,12 +224,12 @@ export class TransportDataProvider<
 
 `@inject` comes from `@venizia/ardor`. A key made by `BindingKeys.build` is right for `TransportBindings.TRANSPORT`: the value is a function with no class, and the key carries its type. Keep the key in a `static readonly` constants class.
 
-`getRequestProps` throws a 401 error, "Invalid auth token to fetch!", when no token is stored and the resource is not a no-auth path. The error reaches `checkError` like any request error. An application with no sign-in sets `noAuthPathRegex: /./` in its options so that no request needs a token.
+`getRequestProps` throws a 401 error, "Invalid auth token to fetch!", when no token is stored and the resource is not a no-auth path. The error reaches `checkError` like any request error. An application with no sign-in sets `noAuth: { regex: /./ }` in its options so that no request needs a token.
 
 What still comes from the base:
 
 - The `BaseProvider<IDataProvider<TResource>>` contract. The container resolves your subclass exactly as it resolves `DefaultRestDataProvider`; you override nothing on the provider side.
-- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuthPaths`, `noAuthPathRegex`, `headers`, and `authRecovery` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
+- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuth.paths`, `noAuth.regex`, `headers`, and `authRecovery` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
 - `getRequestProps`, reached through `this.networkService`, which produces the `headers` and `body` for a request.
 - Not the abort and the timeout: the `signal` of a call reaches your transport in `ITransportRequest.signal`, and the `timeout` option applies to `doRequest`, which a transport replaces. Pass the signal on to what sends the request, and put your own time limit in the transport.
 - The filter mapping: the protected `buildListFilter({ params })` (a delegate of `ListFilterBuilder.build`) is shared by `getList` and `getManyReference`, and `getMany` builds its own with `ListFilterBuilder.extractQueryParams`. Keep it when you override a method, or re-use the same mapping.
@@ -278,7 +278,7 @@ export class TransportConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     // The url is required but never used by this transport; no sign-in, so no request needs a token.
-    return { url: '/api', noAuthPathRegex: /./ };
+    return { url: '/api', noAuth: { regex: /./ } };
   }
 }
 

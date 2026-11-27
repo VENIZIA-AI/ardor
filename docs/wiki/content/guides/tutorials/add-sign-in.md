@@ -5,7 +5,7 @@ description: Add authentication to an ARDOR admin against an IGNIS API with Defa
 
 # Add Sign-In
 
-Turn sign-in on by binding the auth options `{ use: true, paths }` in an application configuration class, declare the sign-in endpoint in `noAuthPaths`, and supply a login page. `BaseArdorApplication` binds `DefaultAuthProvider` and `DefaultAuthService` itself, so you bind options only:
+Turn sign-in on by binding the auth options `{ use: true, paths }` in an application configuration class, declare the sign-in endpoint in `noAuth.paths`, and supply a login page. `BaseArdorApplication` binds `DefaultAuthProvider` and `DefaultAuthService` itself, so you bind options only:
 
 ```ts
 import {
@@ -20,7 +20,7 @@ import {
 export class AuthConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
-    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
+    return { url: '/api', noAuth: { paths: ['/auth/sign-in'] } };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
@@ -69,7 +69,7 @@ Response payload read by `readSignInSession`:
 
 `AuthConfiguration` binds the options of the authentication pipeline; the base application binds what reads them:
 
-- `CoreBindings.REST_DATA_PROVIDER_OPTIONS`: provides `IRestDataProviderOptions` (`packages/kernel/src/common/types.ts`). List `/auth/sign-in` in `noAuthPaths`; omitting it causes `DefaultNetworkRequestService` to throw 401 before sending because no token exists in storage.
+- `CoreBindings.REST_DATA_PROVIDER_OPTIONS`: provides `IRestDataProviderOptions` (`packages/kernel/src/common/types.ts`). List `/auth/sign-in` in `noAuth.paths`; omitting it causes `DefaultNetworkRequestService` to throw 401 before sending because no token exists in storage.
 - `CoreBindings.AUTH_PROVIDER_OPTIONS`: provides `TAuthProviderOptions`. `{ use: true }` turns sign-in on, and `paths.afterLogin` sets the post-login redirect (default `/`).
 - `CoreBindings.DEFAULT_AUTH_SERVICE`: bound by the base application, `DefaultAuthService` manages tokens and identity in `localStorage`.
 - `CoreBindings.DEFAULT_AUTH_PROVIDER`: bound by the base application, `DefaultAuthProvider` for react-admin. `ArdorApplication` resolves it only when `use` is `true`.
@@ -179,7 +179,7 @@ When a request returns HTTP 401, `DefaultNetworkRequestService` asks `AuthRecove
 
 If both pass, `refresh()` batches concurrent 401 failures into a single in-flight promise and calls `refreshToken()`. Retried once if `refreshToken()` resolves `true`. If `refreshToken()` throws, `onAuthFailure()` runs once, the refresh resolves `false`, and the 401 error is raised.
 
-Set `authRecovery: { refreshTokenPath: '/auth/token/refresh' }` in `REST_DATA_PROVIDER_OPTIONS`. The default `refreshToken()` POSTs to that path with no body, reads the new token from the answer and saves it through the auth service, so the session hooks run and the kept identity and roles stay. It needs no subclass. The expired token is attached to the refresh request, which is what an endpoint that reads the session from the token needs. Add the path to `noAuthPaths` only when the server identifies the session by other means, such as a cookie: that keeps the token off the request.
+Set `authRecovery: { refreshTokenPath: '/auth/token/refresh' }` in `REST_DATA_PROVIDER_OPTIONS`. The default `refreshToken()` POSTs to that path with no body, reads the new token from the answer and saves it through the auth service, so the session hooks run and the kept identity and roles stay. It needs no subclass. The expired token is attached to the refresh request, which is what an endpoint that reads the session from the token needs. Add the path to `noAuth.paths` only when the server identifies the session by other means, such as a cookie: that keeps the token off the request.
 
 Write a `DefaultNetworkRequestService` subclass only for a refresh the default does not cover: a request body, another answer shape, or a token store that is not the auth service. See [The default refresh](../../best-practices/auth-recovery#the-default-refresh).
 
@@ -196,7 +196,7 @@ To log out, call `useLogout` from `ra-core`. `DefaultAuthProvider.logout()` invo
 
 ## 7. Custom sign-in route and body
 
-Set `paths.signIn` in the auth options (`{ use: true, paths: { signIn } }`) and add the matching path to `noAuthPaths` in `IRestDataProviderOptions`. To modify the request body format, subclass `DefaultAuthProvider` and override `buildSignInBody`, then bind the subclass in place of the default in `bindContext()`:
+Set `paths.signIn` in the auth options (`{ use: true, paths: { signIn } }`) and add the matching path to `noAuth.paths` in `IRestDataProviderOptions`. To modify the request body format, subclass `DefaultAuthProvider` and override `buildSignInBody`, then bind the subclass in place of the default in `bindContext()`:
 
 ```ts
 import {
@@ -235,7 +235,7 @@ The subclass keeps the constructor of `DefaultAuthProvider`, so the container su
 To send the login form directly without schema wrapping, return `opts.params`.
 
 > [!NOTE]
-> If an application requires no authentication at all, bind `{ use: false }` for `CoreBindings.AUTH_PROVIDER_OPTIONS` (or bind nothing: unbound means the same), omit `loginPage` on `ArdorApplication`, and configure `noAuthPathRegex: /./` on `REST_DATA_PROVIDER_OPTIONS`.
+> If an application requires no authentication at all, bind `{ use: false }` for `CoreBindings.AUTH_PROVIDER_OPTIONS` (or bind nothing: unbound means the same), omit `loginPage` on `ArdorApplication`, and configure `noAuth: { regex: /./ }` on `REST_DATA_PROVIDER_OPTIONS`.
 
 ## Related
 

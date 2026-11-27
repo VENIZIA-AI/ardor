@@ -10,6 +10,7 @@ import {
   type IApplicationInfo,
   type IAuthRecoveryOptions,
   type IAuthTokenRecord,
+  type INoAuthOptions,
   type IRestDataProviderOptions,
   type IResponseSchema,
   LocalStorageKeys,
@@ -18,7 +19,6 @@ import {
   RequestCountData,
   RequestMethods,
   RequestTypes,
-  type TNoAuthPathRegex,
   type TRequestMethod,
 } from '@/common';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
@@ -43,10 +43,9 @@ type TServerHandler = (opts: IServerHandlerOptions) => Promise<Response> | Respo
 interface ICreateServiceOptions {
   name?: string;
   baseUrl?: string;
-  /** Every path goes without a token: `noAuthPathRegex: /./`. */
+  /** Every path goes without a token: `noAuth: { regex: /./ }`. */
   isOpen?: boolean;
-  noAuthPaths?: string[];
-  noAuthPathRegex?: TNoAuthPathRegex;
+  noAuth?: INoAuthOptions;
   headers?: HeadersInit;
   authRecovery?: IAuthRecoveryOptions;
 }
@@ -112,8 +111,7 @@ const createService = (opts: ICreateServiceOptions = {}): TestNetworkService => 
     name = 'test-network-service',
     baseUrl = '',
     isOpen = false,
-    noAuthPaths,
-    noAuthPathRegex,
+    noAuth = {},
     headers,
     authRecovery,
   } = opts;
@@ -121,8 +119,7 @@ const createService = (opts: ICreateServiceOptions = {}): TestNetworkService => 
   return new TestNetworkService({
     name,
     baseUrl,
-    noAuthPaths,
-    noAuthPathRegex: isOpen ? /./ : noAuthPathRegex,
+    noAuth: isOpen ? { ...noAuth, regex: /./ } : noAuth,
     headers,
     authRecovery,
   });
@@ -225,7 +222,7 @@ describe('DefaultNetworkRequestService', () => {
     test('returns Timezone and Timezone-Offset headers for a no-auth resource', () => {
       const service = createService({
         headers: { 'x-custom-app': 'ignis' },
-        noAuthPaths: ['public-health'],
+        noAuth: { paths: ['public-health'] },
       });
 
       const headers = service.getRequestHeader({ resource: 'public-health' });
@@ -330,7 +327,7 @@ describe('DefaultNetworkRequestService', () => {
   });
 
   describe('isNoAuthPath', () => {
-    test('makes every path no-auth for noAuthPathRegex /./', () => {
+    test('makes every path no-auth for noAuth.regex /./', () => {
       const service = createService({ isOpen: true });
 
       expect(service.isNoAuthPath({ resource: 'users' })).toBe(true);
@@ -339,9 +336,9 @@ describe('DefaultNetworkRequestService', () => {
       );
     });
 
-    test('matches the resource exactly against noAuthPaths', () => {
+    test('matches the resource exactly against noAuth.paths', () => {
       const service = createService({
-        noAuthPaths: ['public', 'health'],
+        noAuth: { paths: ['public', 'health'] },
       });
 
       expect(service.isNoAuthPath({ resource: 'public' })).toBe(true);
@@ -350,23 +347,23 @@ describe('DefaultNetworkRequestService', () => {
       expect(service.isNoAuthPath({ resource: 'public/nested' })).toBe(false);
     });
 
-    test('accepts string, RegExp, and array patterns matching resource or joined paths in noAuthPathRegex', () => {
+    test('accepts string, RegExp, and array patterns matching resource or joined paths in noAuth.regex', () => {
       const stringService = createService({
-        noAuthPathRegex: '^auth/.*',
+        noAuth: { regex: '^auth/.*' },
       });
       expect(stringService.isNoAuthPath({ resource: 'auth/login' })).toBe(true);
       expect(stringService.isNoAuthPath({ paths: ['auth', 'register'] })).toBe(true);
       expect(stringService.isNoAuthPath({ resource: 'users' })).toBe(false);
 
       const regexService = createService({
-        noAuthPathRegex: /^guest\/[0-9]+/,
+        noAuth: { regex: /^guest\/[0-9]+/ },
       });
       expect(regexService.isNoAuthPath({ resource: 'guest/42' })).toBe(true);
       expect(regexService.isNoAuthPath({ paths: ['guest', '42'] })).toBe(true);
       expect(regexService.isNoAuthPath({ resource: 'guest/abc' })).toBe(false);
 
       const arrayService = createService({
-        noAuthPathRegex: ['^open/.*', /^public-api\/.*/],
+        noAuth: { regex: ['^open/.*', /^public-api\/.*/] },
       });
       expect(arrayService.isNoAuthPath({ resource: 'open/catalog' })).toBe(true);
       expect(arrayService.isNoAuthPath({ paths: ['public-api', 'status'] })).toBe(true);
@@ -374,7 +371,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('keeps no-auth configuration fixed once constructed: data in, no setters', () => {
-      const service = createService({ noAuthPaths: ['open'], noAuthPathRegex: '^v1/open/.*' });
+      const service = createService({ noAuth: { paths: ['open'], regex: '^v1/open/.*' } });
 
       expect(service.isNoAuthPath({ resource: 'open' })).toBe(true);
       expect(service.isNoAuthPath({ resource: 'v1/open/data' })).toBe(true);
@@ -1337,7 +1334,7 @@ describe('DefaultNetworkRequestService', () => {
       let refreshCalled = false;
       const service = createService({
         baseUrl: serverBaseUrl,
-        noAuthPaths: ['public-data'],
+        noAuth: { paths: ['public-data'] },
       });
 
       const refreshToken = mock(async () => {
@@ -1603,7 +1600,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('sends no token to a no-auth route, and the token elsewhere', async () => {
-      const service = createService({ baseUrl: serverBaseUrl, noAuthPaths: ['sign-in'] });
+      const service = createService({ baseUrl: serverBaseUrl, noAuth: { paths: ['sign-in'] } });
       service.setToken({ value: 'session-token' });
       serverHandler = () => Response.json([]);
 
@@ -1626,7 +1623,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('does not refresh on a 401 from a no-auth route', async () => {
-      const service = createService({ baseUrl: serverBaseUrl, noAuthPaths: ['sign-in'] });
+      const service = createService({ baseUrl: serverBaseUrl, noAuth: { paths: ['sign-in'] } });
       service.setToken({ value: 'session-token' });
       const refreshToken = mock(async () => {});
       service.setAuthRecovery({ refreshToken });
@@ -1935,5 +1932,102 @@ describe('doRequest with a schema', () => {
 
     expect(FetchSchemaError.is(error)).toBe(true);
     expect(error).toMatchObject({ statusCode: 502, status: 200 });
+  });
+});
+
+describe('noAuth options', () => {
+  const OLD_KEYS = [{ noAuthPaths: ['/auth/sign-in'] }, { noAuthPathRegex: /./ }];
+
+  test.each(OLD_KEYS)('the constructor refuses the removed key of %p', (legacy) => {
+    const options = { name: 'legacy', baseUrl: 'http://localhost', ...legacy };
+
+    expect(() => new DefaultNetworkRequestService(options)).toThrow(
+      'replaced by noAuth: { paths, regex }',
+    );
+  });
+
+  test.each([{ noAuthPaths: ['auth'] }, { path: ['auth'] }, ['auth'], '/auth'])(
+    'refuses a noAuth of the wrong shape: %p',
+    (noAuth) => {
+      const options: object = { noAuth };
+
+      expect(() =>
+        DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+      ).toThrow('noAuth takes { paths, regex }');
+    },
+  );
+
+  test.each([
+    [{ paths: '/auth' }, 'paths'],
+    [{ paths: [1] }, 'paths'],
+    [{ paths: null }, 'paths'],
+    [{ regex: 1 }, 'regex'],
+    [{ regex: [/a/, 2] }, 'regex'],
+    [{ regex: null }, 'regex'],
+  ])('refuses a noAuth value of the wrong type: %p', (noAuth, field) => {
+    const options: object = { noAuth };
+
+    expect(() =>
+      DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+    ).toThrow(`[Owner] noAuth takes { paths, regex }: invalid ${field}`);
+  });
+
+  test.each([{ regex: 'a' }, { regex: ['a', /b/] }, { paths: ['a'], regex: undefined }])(
+    'accepts the values %p',
+    (noAuth) => {
+      const options: object = { noAuth };
+
+      expect(() =>
+        DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+      ).not.toThrow();
+    },
+  );
+
+  test.each([
+    [{ path: [], regexp: 1 }, 'unknown key path, regexp'],
+    [['/auth'], 'got an array'],
+    ['/auth', 'got a string'],
+    [null, 'got null'],
+    [/auth/, 'got a RegExp'],
+  ])('says what is wrong with the shape of %p', (noAuth, problem) => {
+    const options: object = { noAuth };
+
+    expect(() =>
+      DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+    ).toThrow(`[Owner] noAuth takes { paths, regex }: invalid shape (${problem})`);
+  });
+
+  test('the message names the class that was built', () => {
+    class ShopNetworkService extends DefaultNetworkRequestService {}
+
+    expect(() => new ShopNetworkService({ name: 'n', ...{ noAuthPaths: [] } })).toThrow(
+      '[ShopNetworkService] noAuthPaths was replaced',
+    );
+  });
+
+  test('the message names both keys in the plural, and one in the singular', () => {
+    const both: object = { noAuthPaths: [], noAuthPathRegex: /./ };
+
+    expect(() =>
+      DefaultNetworkRequestService.assertNoAuthOptions({ options: both, owner: 'Owner' }),
+    ).toThrow('[Owner] noAuthPaths and noAuthPathRegex were replaced');
+    expect(() => new DefaultNetworkRequestService({ name: 'n', ...{ noAuthPaths: [] } })).toThrow(
+      '[DefaultNetworkRequestService] noAuthPaths was replaced',
+    );
+  });
+
+  test.each([{}, { noAuth: undefined }, { noAuth: {} }, { noAuth: { paths: [], regex: /./ } }])(
+    'accepts %p',
+    (options) => {
+      expect(() =>
+        DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+      ).not.toThrow();
+    },
+  );
+
+  test('a removed key is refused even when its value is undefined', () => {
+    const options = { name: 'legacy', noAuthPaths: undefined };
+
+    expect(() => new DefaultNetworkRequestService(options)).toThrow('noAuthPaths');
   });
 });
