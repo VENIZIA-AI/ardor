@@ -39,7 +39,8 @@ On the React side, `useApplicationLogger` (see [Hooks and context](/architecture
 Don't run the whole suite while iterating on a fix. Use Bun's test filter:
 
 ```
-bun test -t "name of the test or describe block"
+# in the package directory
+make test BUN_TEST_FLAGS='-t "name of the test or describe block"'
 ```
 
 This matches against test/describe names, so scope your `-t` string to the specific case you're chasing. See [Testing](/process/testing.md) and [Testing conventions](/conventions/testing-conventions.md) for how tests are organized, and [Build, run, test](/overview/build-run-test.md) for the full command set.

@@ -18,7 +18,7 @@ same thing in a backend, in the generated admin and in an example. The standard 
 | `compile` | `vite build --config .configs/builders/vite.config.mts` | a frontend builds into `dist/`; the ipc example bundles with `bun build` |
 | `typecheck` | `bun check --no-pretty -p tsconfig.json` | `tsconfig.json` is the only tsconfig at a project root; a project with more than one program (`5-mins-qs`: the app and its stub API) keeps a solution `tsconfig.json` (`"files": []` and `references`) and the programs in `.configs/builders/`, and `bun check` follows the references |
 | `lint`, `lint:fix` | `devz lint`, `devz lint --fix` | the `devz` bin of `@venizia/dev-configs` (0.3.4 and later): oxlint, eslint with a cache, then `bun fmt` (its style is the root `bunfig.toml`), from `.configs/lints/` and `.configs/formatters/.ignore`; `devz lint [--fix] <files>` handles only those files |
-| `test` | `bun test` | every example and the preset ship at least one test |
+| `test` | `bun test` | every example and the preset ship at least one test; the examples add `--max-concurrency=10` |
 | `clean` | `devz clean` | the `devz` bin of `@venizia/dev-configs`: removes `dist` and the tool caches |
 
 No app has `dev`, `start`, `build`, `rebuild`, `preview`, `api` or `server:prod`. The presets keep nothing at the

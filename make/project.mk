@@ -60,14 +60,16 @@ lint-fix:
 
 # The test-only settings (B-08) are set here, in the test command, and the preload installs the package's DOM or
 # storage stub: a bare `bun test` inside a package skips both and may fail.
-# BUN_TEST_FLAGS is an optional pass-through (`--isolate`, `--parallel`). Needs a build first (B-05).
+# At most 10 tests run at once (the bun default is 20). BUN_TEST_FLAGS is an optional pass-through (`--isolate`,
+# `--parallel=<5..10>`; without a number --parallel starts one worker per CPU core); a later --max-concurrency wins,
+# so pass only 5 to 10. Needs a build first (B-05).
 BUN_TEST_FLAGS ?=
 # Where bun looks for tests, default the whole package. `ardor` limits it to src: its dist holds the
 # preset's own test files, which only run inside a generated app.
 TEST_PATHS ?=
 
 test:
-	@NODE_ENV=test bun test --preload ./src/__tests__/setup $(BUN_TEST_FLAGS) $(TEST_PATHS)
+	@NODE_ENV=test bun test --preload ./src/__tests__/setup --max-concurrency=10 $(BUN_TEST_FLAGS) $(TEST_PATHS)
 
 # Bundle budget from the package.json "size-limit" block, brotlied, every third-party peer external.
 size:
