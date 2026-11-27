@@ -1,5 +1,6 @@
 import type * as TS from 'typescript';
 
+import { HttpMethodReceivers, SenderCalls } from './http-methods-receivers';
 import { NamespaceModules } from './renames';
 import type { IFinding, TTypeScript } from './transform';
 import type { ICodemodInput, ICodemodResult } from './command';
@@ -177,6 +178,7 @@ export class HttpMethodsTransform {
       return bound.has(name) ? undefined : name;
     };
 
+    const receivers = new HttpMethodReceivers({ ts, sourceFile });
     const needed = new Map<string, string>();
 
     const rewrite = (node: TS.Identifier, entry: IOldImport): void => {
@@ -193,7 +195,7 @@ export class HttpMethodsTransform {
       } else if (!HttpMethodNames.MEMBERS.has(access.name.text)) {
         reason = HttpMethodReasons.MEMBER;
       } else {
-        reason = HttpMethodsTransform.reasonOfValue({ ts, access });
+        reason = HttpMethodsTransform.reasonOfValue({ ts, access, receivers });
       }
 
       if (reason === undefined && local === undefined) {
@@ -275,8 +277,9 @@ export class HttpMethodsTransform {
   private static reasonOfValue(opts: {
     ts: TTypeScript;
     access: TS.PropertyAccessExpression;
+    receivers: HttpMethodReceivers;
   }): string | undefined {
-    const { ts, access } = opts;
+    const { ts, access, receivers } = opts;
     const property = access.parent;
 
     if (
@@ -287,32 +290,32 @@ export class HttpMethodsTransform {
       return HttpMethodReasons.USE;
     }
 
-    return HttpMethodsTransform.isSentByArdor({ ts, literal: property.parent })
+    return HttpMethodsTransform.isSentByArdor({ ts, literal: property.parent, receivers })
       ? undefined
       : HttpMethodReasons.ELSEWHERE;
   }
 
   /**
-   * Whether ARDOR sends what the literal holds: the argument of `doRequest`, the `params` of a
-   * `send` argument, or a literal declared as `ISendParams`.
+   * Whether ARDOR sends what the literal holds: the argument of a network service's `doRequest`,
+   * the `params` of a data provider's `send`, or a literal declared as `ISendParams`.
    */
-  private static isSentByArdor(opts: { ts: TTypeScript; literal: TS.Node }): boolean {
-    const { ts, literal } = opts;
+  private static isSentByArdor(opts: {
+    ts: TTypeScript;
+    literal: TS.Node;
+    receivers: HttpMethodReceivers;
+  }): boolean {
+    const { ts, literal, receivers } = opts;
     const holder = literal.parent;
-    const isCallOf = (call: TS.Node, name: string): boolean =>
-      ts.isCallExpression(call) &&
-      ts.isPropertyAccessExpression(call.expression) &&
-      call.expression.name.text === name;
 
     if (ts.isVariableDeclaration(holder) || ts.isSatisfiesExpression(holder)) {
       return holder.type?.getText() === 'ISendParams';
     }
 
     if (ts.isPropertyAssignment(holder) && holder.name.getText() === 'params') {
-      return isCallOf(holder.parent.parent, 'send');
+      return receivers.isSend({ call: holder.parent.parent, name: SenderCalls.SEND });
     }
 
-    return isCallOf(holder, 'doRequest');
+    return receivers.isSend({ call: holder, name: SenderCalls.DO_REQUEST });
   }
 
   /** Drops the old specifiers nothing uses any more and imports the new names. */

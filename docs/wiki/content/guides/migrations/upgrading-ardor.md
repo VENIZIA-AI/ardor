@@ -143,8 +143,8 @@ bun run ardor codemod http-methods src
 bun run ardor codemod http-methods src --write
 ```
 
-- It rewrites the type `TRequestMethod`, and a value only where ARDOR itself sends it: the `method` of a `doRequest({ ... })` argument, of the `params` of a `send` argument, and of a literal declared as `ISendParams`.
-- `HTTP.Methods` is lowercase, so it lists every other use and leaves the old import: a comparison, a `case`, a list, a computed key, any other literal, a `fetch` or `this.request` call, `isValid` and `values`, a re-export, and a file that already uses the name `HTTP` or `THttpMethod`.
+- It rewrites the type `TRequestMethod`, and a value only where ARDOR itself sends it: the `method` of the `params` of a data provider's `send`, of a network service's `doRequest` argument, and of a literal declared as `ISendParams`. It reads syntax, so it takes a receiver for ARDOR's only when its declared type is `IDataProvider`, `DefaultRestDataProvider`, `CountRestDataProvider` or `DefaultNetworkRequestService` from ARDOR, when it is `this` in a class that extends one, or `provider.getNetworkService()`. In a file that declares its own `doRequest` it rewrites no `doRequest` call.
+- `HTTP.Methods` is lowercase, so it lists every other use and leaves the old import: a comparison, a `case`, a list, a computed key, any other literal, a `fetch` or `this.request` call, a call on a receiver it cannot tell is ARDOR's, `isValid` and `values`, a re-export, and a file that already uses the name `HTTP` or `THttpMethod`.
 - Where ARDOR makes the call, an override of `request` or `doRequest` gets the uppercase method: compare `method.toLowerCase() === HTTP.Methods.PATCH`. A call your own code makes reaches your override as you wrote it.
 
 ### namespace

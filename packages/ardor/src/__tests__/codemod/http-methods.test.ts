@@ -17,12 +17,12 @@ const COMMON = "'@venizia/ignis-helpers/common';";
 
 describe('HttpMethodsTransform: what it rewrites', () => {
   test('rewrites a method property and moves the import', () => {
-    const result = run([IMPORT, 'api.send({ params: { method: RequestMethods.PATCH } });']);
+    const result = run([IMPORT, 'export const a: ISendParams = { method: RequestMethods.PATCH };']);
 
     expect(result.text).toBe(
       text([
         `import { HTTP } from ${COMMON}`,
-        'api.send({ params: { method: HTTP.Methods.PATCH } });',
+        'export const a: ISendParams = { method: HTTP.Methods.PATCH };',
       ]),
     );
     expect(result.renamed).toBe(1);
@@ -50,13 +50,23 @@ describe('HttpMethodsTransform: what it rewrites', () => {
     expect(result.findings).toEqual([]);
   });
 
+  const SENDERS = [
+    "import { DefaultNetworkRequestService, DefaultRestDataProvider, type IDataProvider } from '@venizia/ardor';",
+    'declare const provider: IDataProvider;',
+    'declare const service: DefaultNetworkRequestService;',
+  ];
+
   test.each([
     'provider.send({ resource, params: { method: RequestMethods.PATCH } });',
+    'provider.getNetworkService().doRequest({ method: RequestMethods.PATCH });',
     'service.doRequest({ method: RequestMethods.PATCH });',
+    'class A { constructor(private readonly data: IDataProvider) {} go() { this.data.send({ params: { method: RequestMethods.GET } }); } }',
+    'class A extends DefaultRestDataProvider { go() { this.send({ params: { method: RequestMethods.GET } }); } }',
+    'class A extends DefaultNetworkRequestService { go() { this.doRequest({ method: RequestMethods.GET }); } }',
     'export const a: ISendParams = { method: RequestMethods.PATCH };',
     'export const a = { method: RequestMethods.PATCH } satisfies ISendParams;',
   ])('rewrites %p', (line) => {
-    const result = run([IMPORT, line]);
+    const result = run([IMPORT, ...SENDERS, line]);
 
     expect(result.renamed).toBe(1);
     expect(result.findings).toEqual([]);
@@ -65,14 +75,14 @@ describe('HttpMethodsTransform: what it rewrites', () => {
   test('follows an aliased import', () => {
     const result = run([
       "import { RequestMethods as Methods } from '@venizia/ardor';",
-      'api.send({ params: { method: Methods.POST } });',
+      'export const s: ISendParams = { method: Methods.POST };',
     ]);
 
-    expect(result.text).toContain('api.send({ params: { method: HTTP.Methods.POST } });');
+    expect(result.text).toContain('export const s: ISendParams = { method: HTTP.Methods.POST };');
   });
 
   test('is done after one run', () => {
-    const once = run([IMPORT, 'api.send({ params: { method: RequestMethods.GET } });']);
+    const once = run([IMPORT, 'export const a: ISendParams = { method: RequestMethods.GET };']);
 
     expect(
       HttpMethodsTransform.run({ ts, fileName: 'sample.ts', text: once.text, hooks: false }),
@@ -93,6 +103,12 @@ describe('HttpMethodsTransform: what it lists and leaves', () => {
     ['a patch held for later', 'const init = { method: RequestMethods.PATCH };'],
     ['a patch to another call', 'client.go({ method: RequestMethods.PATCH });'],
     ['a socket send', 'socket.send(JSON.stringify({ method: RequestMethods.PATCH }));'],
+    ['a socket send of params', 'ws.send({ params: { method: RequestMethods.POST } });'],
+    ['a doRequest of an unknown receiver', 'client.doRequest({ method: RequestMethods.POST });'],
+    [
+      'a this.send of another class',
+      'class A { go() { this.send({ params: { method: RequestMethods.POST } }); } }',
+    ],
     ['a request of another client', 'http.request({ method: RequestMethods.GET });'],
     ['a request a subclass hands on', 'this.request({ resource, method: RequestMethods.PATCH });'],
     ['a fetch inside a send', 'a.send(() => fetch(url, { method: RequestMethods.PATCH }));'],
@@ -109,7 +125,7 @@ describe('HttpMethodsTransform: what it lists and leaves', () => {
   test('rewrites what it can and keeps the import for the rest', () => {
     const result = run([
       IMPORT,
-      'api.send({ params: { method: RequestMethods.GET } });',
+      'export const a: ISendParams = { method: RequestMethods.GET };',
       'export const a = RequestMethods.values();',
     ]);
 
@@ -117,7 +133,7 @@ describe('HttpMethodsTransform: what it lists and leaves', () => {
       text([
         `import { HTTP } from ${COMMON}`,
         IMPORT,
-        'api.send({ params: { method: HTTP.Methods.GET } });',
+        'export const a: ISendParams = { method: HTTP.Methods.GET };',
         'export const a = RequestMethods.values();',
       ]),
     );
@@ -129,7 +145,7 @@ describe('HttpMethodsTransform: what it lists and leaves', () => {
     ['const HTTP = 1;', 'HTTP'],
     ['const call = (RequestMethods: string) => RequestMethods;', 'RequestMethods'],
   ])('leaves a file where %p takes the name', (line) => {
-    const lines = [IMPORT, line, 'api.send({ params: { method: RequestMethods.GET } });'];
+    const lines = [IMPORT, line, 'export const a: ISendParams = { method: RequestMethods.GET };'];
     const result = run(lines);
 
     expect(result.text).toBe(text(lines));
@@ -144,7 +160,7 @@ describe('HttpMethodsTransform: what it lists and leaves', () => {
     const lines = [
       "import { RequestMethods } from 'other';",
       "import { App } from '@venizia/ardor';",
-      'api.send({ params: { method: RequestMethods.GET } });',
+      'export const a: ISendParams = { method: RequestMethods.GET };',
     ];
 
     expect(run(lines)).toEqual({ text: text(lines), renamed: 0, findings: [] });
@@ -152,7 +168,7 @@ describe('HttpMethodsTransform: what it lists and leaves', () => {
 });
 
 describe('HttpMethodsTransform: bindings and other spellings', () => {
-  const SEND = 'api.doRequest({ method: RequestMethods.GET });';
+  const SEND = 'export const s: ISendParams = { method: RequestMethods.GET };';
 
   test('keeps a default import', () => {
     const result = run(["import X, { RequestMethods } from '@venizia/ardor';", SEND, 'X;']);
@@ -185,7 +201,7 @@ describe('HttpMethodsTransform: bindings and other spellings', () => {
       text([
         `import { sleep } from ${COMMON}`,
         `import { HTTP } from ${COMMON}`,
-        'api.doRequest({ method: HTTP.Methods.GET });',
+        'export const s: ISendParams = { method: HTTP.Methods.GET };',
       ]),
     );
   });
@@ -218,5 +234,45 @@ describe('HttpMethodsTransform: bindings and other spellings', () => {
     ["import '@venizia/ardor';", "const { RequestMethods } = await import('@venizia/ardor');"],
   ])('lists %p %p', (first, second) => {
     expect(found([first, second])).toContain(2);
+  });
+});
+
+describe('HttpMethodsTransform: what makes a receiver unsure', () => {
+  const HEAD = [
+    IMPORT,
+    "import { DefaultNetworkRequestService, type IDataProvider } from '@venizia/ardor';",
+  ];
+
+  test('lists every doRequest of a file that overrides doRequest', () => {
+    const lines = [
+      ...HEAD,
+      'class A extends DefaultNetworkRequestService {',
+      '  override doRequest(o) { return super.doRequest(o); }',
+      '  go() { return this.doRequest({ method: RequestMethods.GET }); }',
+      '}',
+    ];
+
+    expect(run(lines).text).toBe(text(lines));
+    expect(found(lines)).toEqual([5]);
+  });
+
+  test('lists a name that two declarations type differently', () => {
+    const lines = [
+      ...HEAD,
+      'const a = (api: IDataProvider) => api;',
+      'const b = (api: WebSocket) => api.send({ params: { method: RequestMethods.POST } });',
+    ];
+
+    expect(found(lines)).toEqual([4]);
+  });
+
+  test('lists a type of the same name from another package', () => {
+    const lines = [
+      IMPORT,
+      "import type { IDataProvider } from 'ra-core';",
+      'const a = (api: IDataProvider) => api.send({ params: { method: RequestMethods.POST } });',
+    ];
+
+    expect(found(lines)).toEqual([3]);
   });
 });

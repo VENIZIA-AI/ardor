@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { HTTP } from '@venizia/ignis-helpers/common';
 
 import { RequestTypes } from '@/common';
@@ -28,34 +29,46 @@ describe('the method of a request', () => {
 
     await createService().doRequest({ ...opts, type: RequestTypes.SEND, paths: ['products'] });
 
-    const [input, init] = spy.mock.calls[0];
-
-    return input instanceof Request ? input : new Request(input, init);
+    return spy.mock.calls[0][1];
   };
 
-  test.each([HTTP.Methods.PATCH, 'patch', 'PATCH'] as const)(
+  test.each([HTTP.Methods.PATCH, 'PATCH'] as const)(
     'doRequest hands %s to fetch in uppercase',
     async (method) => {
-      const spy = spyOn(globalThis, 'fetch').mockImplementation(
-        Object.assign(async () => Response.json({ ok: true }), { preconnect: () => {} }),
-      );
-      restore = () => spy.mockRestore();
+      const handed = await send({ method });
 
-      await createService().doRequest({ method, type: RequestTypes.SEND, paths: ['products'] });
-
-      expect(spy.mock.calls[0][1]?.method).toBe('PATCH');
+      expect(handed?.method).toBe('PATCH');
     },
   );
 
   test('a lowercase get sends no body', async () => {
-    const request = await send({ method: HTTP.Methods.GET, body: '{}' });
+    const handed = await send({ method: HTTP.Methods.GET, body: '{}' });
 
-    expect(request.method).toBe('GET');
-    expect(request.body).toBeNull();
+    expect(handed?.method).toBe('GET');
+    expect(handed?.body ?? undefined).toBeUndefined();
   });
 
   test('toWireMethod answers the uppercase method', () => {
     expect(DefaultNetworkRequestService.toWireMethod({ method: HTTP.Methods.PATCH })).toBe('PATCH');
     expect(DefaultNetworkRequestService.toWireMethod({ method: 'DELETE' })).toBe('DELETE');
+  });
+
+  test.each(['foo', '', undefined])('toWireMethod refuses %p by name', (method) => {
+    expect(() =>
+      // @ts-expect-error what an untyped caller can pass
+      DefaultNetworkRequestService.toWireMethod({ method }),
+    ).toThrow('[toWireMethod] Not an HTTP method');
+  });
+
+  test('doRequest without a method is refused by name, and nothing is sent', async () => {
+    const spy = spyOn(globalThis, 'fetch');
+    restore = () => spy.mockRestore();
+    // @ts-expect-error an untyped caller leaves the method out
+    const task = createService().doRequest({ type: RequestTypes.SEND, paths: ['products'] });
+
+    const refusal = await RejectionUtility.rejectionOf({ task });
+
+    expect(String(refusal)).toContain('[toWireMethod] Not an HTTP method');
+    expect(spy).not.toHaveBeenCalled();
   });
 });
