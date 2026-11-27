@@ -21,7 +21,7 @@ Regex patterns are tested against two candidates: `resource` and `paths.join('/'
 
 ## The removed option names
 
-`noAuthPaths` and `noAuthPathRegex` were the options before `noAuth`. `DefaultNetworkRequestService.assertNoAuthOptions` throws for options that still carry either key, or a `noAuth` that holds anything but `paths` and `regex`, from the constructor of the service and of `DefaultRestDataProvider` (which would otherwise not forward them): an ignored key would send the token to a public path. `ardor codemod no-auth` rewrites object literals. The protected members of the service keep their names (`noAuth.paths`, `noAuthPathRegexes`, `compileNoAuthPathRegex`), so a subclass is unaffected.
+`noAuthPaths` and `noAuthPathRegex` were the options before `noAuth`. `DefaultNetworkRequestService.assertNoAuthOptions` throws for options that still carry either key, or a `noAuth` that holds anything but `paths` (a list of strings) and `regex` (a string, a `RegExp` or a list of them), from the constructor of the service and of `DefaultRestDataProvider` (which would otherwise not forward them): an ignored key would send the token to a public path. `ardor codemod no-auth` rewrites object literals. The protected members of the service keep their names (`noAuthPaths`, `noAuthPathRegexes`, `compileNoAuthPathRegex`), so a subclass is unaffected.
 
 ## What the header decision actually matches
 

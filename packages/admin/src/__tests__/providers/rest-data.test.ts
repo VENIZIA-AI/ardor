@@ -1118,7 +1118,7 @@ describe('noAuth options', () => {
       const options = { url: 'http://localhost', ...legacy };
 
       expect(() => new DefaultRestDataProvider(options, applicationInfo)).toThrow(
-        'replaced by noAuth: { paths, regex }',
+        /\[DefaultRestDataProvider\] noAuthPath\w* was replaced by noAuth: \{ paths, regex \}/,
       );
     },
   );

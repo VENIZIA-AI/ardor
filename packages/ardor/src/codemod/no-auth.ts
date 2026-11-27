@@ -18,7 +18,7 @@ const SPREAD =
 const MERGED =
   'the literal is spread or assigned into another object, where one noAuth replaces another: merge noAuth by hand';
 const SPLIT =
-  'another object of this file holds the other half, and a merge would keep one noAuth: write one noAuth: { paths, regex } by hand';
+  'another object of this file holds the other half or a noAuth, and a merge would keep one noAuth: write one noAuth: { paths, regex } by hand';
 const HAS_GROUP = 'the literal already has noAuth: move it inside by hand';
 const NOT_VALUE = 'not a plain value: move it into noAuth by hand';
 const COMMENT = 'a comment sits inside what would move: move it into noAuth by hand';
@@ -31,6 +31,15 @@ const MERGE_NOTE =
 
 /** Calls whose object argument is the options themselves, never merged afterwards. */
 const DIRECT_CALLEES = new Set(['DefaultNetworkRequestService', 'DefaultRestDataProvider']);
+
+/** A literal that holds something a merge could replace. */
+interface IHolder {
+  literal: TS.ObjectLiteralExpression;
+  /** The removed options it holds. */
+  names: Set<string>;
+  /** Whether it has `noAuth` already. */
+  hasGroup: boolean;
+}
 
 /** A removed option as one property of a literal. */
 interface IMember {
@@ -49,7 +58,7 @@ export class NoAuthTransform {
 
     const sourceFile = CodemodSource.parse({ ts, fileName, text });
     const isArdorFile = NoAuthTransform.importsArdor({ ts, sourceFile });
-    const halves = NoAuthTransform.halvesOf({ ts, sourceFile });
+    const objects = NoAuthTransform.objectsOf({ ts, sourceFile });
     const edits: ISourceEdit[] = [];
     const findings: IFinding[] = [];
     let renamed = 0;
@@ -80,7 +89,7 @@ export class NoAuthTransform {
         literal,
         members,
         isArdorFile,
-        halves,
+        objects,
       });
 
       if (reason !== undefined) {
@@ -162,21 +171,20 @@ export class NoAuthTransform {
     });
   }
 
-  /** The removed options that some literal of the file holds without the other one. */
-  private static halvesOf(opts: { ts: TTypeScript; sourceFile: TS.SourceFile }): Set<string> {
+  /** Every literal of the file that holds a removed option or `noAuth`. */
+  private static objectsOf(opts: { ts: TTypeScript; sourceFile: TS.SourceFile }): IHolder[] {
     const { ts, sourceFile } = opts;
-    const halves = new Set<string>();
+    const holders: IHolder[] = [];
 
     const visit = (node: TS.Node): void => {
       if (ts.isObjectLiteralExpression(node)) {
         const names = new Set(
           NoAuthTransform.membersOf({ ts, literal: node }).map(({ name }) => name),
         );
+        const hasGroup = NoAuthTransform.hasGroup({ ts, literal: node });
 
-        if (names.size === 1) {
-          for (const name of names) {
-            halves.add(name);
-          }
+        if (names.size > 0 || hasGroup) {
+          holders.push({ literal: node, names, hasGroup });
         }
       }
 
@@ -185,7 +193,15 @@ export class NoAuthTransform {
 
     visit(sourceFile);
 
-    return halves;
+    return holders;
+  }
+
+  private static hasGroup(opts: { ts: TTypeScript; literal: TS.ObjectLiteralExpression }): boolean {
+    const { ts, literal } = opts;
+
+    return literal.properties.some(
+      (property) => NoAuthTransform.keyOf({ ts, name: property.name }) === GROUP,
+    );
   }
 
   /** Why a literal holding a removed option cannot be rewritten; `undefined` when it can. */
@@ -195,9 +211,9 @@ export class NoAuthTransform {
     literal: TS.ObjectLiteralExpression;
     members: IMember[];
     isArdorFile: boolean;
-    halves: Set<string>;
+    objects: IHolder[];
   }): string | undefined {
-    const { ts, sourceFile, literal, members, isArdorFile, halves } = opts;
+    const { ts, sourceFile, literal, members, isArdorFile, objects } = opts;
     const hasDefault = members.some(
       ({ property }) =>
         ts.isShorthandPropertyAssignment(property) &&
@@ -224,18 +240,22 @@ export class NoAuthTransform {
       return MERGED;
     }
 
-    if (
-      literal.properties.some(
-        (property) => NoAuthTransform.keyOf({ ts, name: property.name }) === GROUP,
-      )
-    ) {
+    if (NoAuthTransform.hasGroup({ ts, literal })) {
       return HAS_GROUP;
     }
 
     const names = new Set(members.map(({ name }) => name));
 
-    // One half here and the other half alone elsewhere: nothing shows whether they are merged.
-    if (names.size === 1 && halves.size > 1) {
+    // One half here, and elsewhere the other one or a `noAuth`: nothing shows whether they are merged.
+    const isHalf =
+      names.size === 1 &&
+      objects.some(
+        (other) =>
+          other.literal !== literal &&
+          (other.hasGroup || [...other.names].some((name) => !names.has(name))),
+      );
+
+    if (isHalf) {
       return SPLIT;
     }
 
@@ -252,8 +272,8 @@ export class NoAuthTransform {
       return NOT_VALUE;
     }
 
-    return members.some(({ property }) =>
-      NoAuthTransform.hasComment({ ts, sourceFile, node: property }),
+    return members.some(({ property }, index) =>
+      NoAuthTransform.hasComment({ ts, sourceFile, node: property, isRemoved: index > 0 }),
     )
       ? COMMENT
       : undefined;
@@ -374,20 +394,30 @@ export class NoAuthTransform {
     );
   }
 
-  /** A comment inside the property or between it and its comma: an edit would drop or strand it. */
+  /**
+   * A comment inside the property or between it and its comma, and for a property that goes away one
+   * above it or after its comma: an edit would drop it or leave it on another property.
+   */
   private static hasComment(opts: {
     ts: TTypeScript;
     sourceFile: TS.SourceFile;
     node: TS.Node;
+    /** The edit deletes this property. */
+    isRemoved: boolean;
   }): boolean {
-    const { ts, sourceFile, node } = opts;
+    const { ts, sourceFile, node, isRemoved } = opts;
     const { text } = sourceFile;
     const inside = (child: TS.Node): boolean =>
       (child.pos !== node.pos && ts.getLeadingCommentRanges(text, child.pos) !== undefined) ||
       ts.getTrailingCommentRanges(text, child.end) !== undefined ||
       child.getChildren(sourceFile).some(inside);
 
-    return inside(node);
+    const isAround =
+      isRemoved &&
+      (ts.getLeadingCommentRanges(text, node.pos) !== undefined ||
+        /^[ \t]*,?[ \t]*\/[/*]/.test(text.slice(node.end)));
+
+    return isAround || inside(node);
   }
 
   /** The first removed option becomes the group, and the second one goes with its comma. */

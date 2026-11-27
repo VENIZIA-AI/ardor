@@ -70,19 +70,38 @@ export abstract class AbstractNetworkRequestService extends BaseService {
    * a `noAuth` that is not `{ paths, regex }`: an ignored one would send the token to a path that is
    * meant to go without it.
    */
-  static assertNoAuthOptions(opts: { options: object }): void {
+  static assertNoAuthOptions(opts: {
+    options: object;
+    /** The class that was given the options, named in the message. */
+    owner: string;
+  }): void {
     const removed = ['noAuthPaths', 'noAuthPathRegex'].filter((key) => key in opts.options);
 
     if (removed.length) {
+      const verb = removed.length > 1 ? 'were' : 'was';
+
       throw getError({
-        message: `[DefaultNetworkRequestService] ${removed.join(' and ')} was replaced by noAuth: { paths, regex }; run "bun run ardor codemod no-auth"`,
+        message: `[${opts.owner}] ${removed.join(' and ')} ${verb} replaced by noAuth: { paths, regex }; run "bun run ardor codemod no-auth"`,
       });
     }
 
     const noAuth = 'noAuth' in opts.options ? opts.options.noAuth : undefined;
 
+    const invalid = AbstractNetworkRequestService.findInvalidNoAuth({ noAuth });
+
+    if (invalid) {
+      throw getError({
+        message: `[${opts.owner}] noAuth takes { paths, regex }: invalid ${invalid}`,
+      });
+    }
+  }
+
+  /** What is wrong with a `noAuth` value: its `shape`, `paths` or `regex`; `undefined` when nothing is. */
+  private static findInvalidNoAuth(opts: { noAuth: unknown }): string | undefined {
+    const { noAuth } = opts;
+
     if (noAuth === undefined) {
-      return;
+      return undefined;
     }
 
     const isGroup =
@@ -93,10 +112,24 @@ export abstract class AbstractNetworkRequestService extends BaseService {
       Object.keys(noAuth).every((key) => key === 'paths' || key === 'regex');
 
     if (!isGroup) {
-      throw getError({
-        message: `[DefaultNetworkRequestService] noAuth takes { paths, regex } and nothing else, got ${JSON.stringify(noAuth)}`,
-      });
+      return 'shape';
     }
+
+    const paths = 'paths' in noAuth ? noAuth.paths : undefined;
+    const regex = 'regex' in noAuth ? noAuth.regex : undefined;
+    const isPattern = (value: unknown) => typeof value === 'string' || value instanceof RegExp;
+
+    // A text in place of the list would match by substring, and leave more requests without a token.
+    if (
+      paths !== undefined &&
+      !(Array.isArray(paths) && paths.every((p) => typeof p === 'string'))
+    ) {
+      return 'paths';
+    }
+
+    const isRegex = Array.isArray(regex) ? regex.every(isPattern) : isPattern(regex);
+
+    return regex === undefined || isRegex ? undefined : 'regex';
   }
 
   /** Throws unless a timeout that is on has a positive integer `milliseconds`. */

@@ -109,7 +109,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     protected applicationInfo: IApplicationInfo,
   ) {
     super({ scope: DefaultRestDataProvider.name });
-    DefaultNetworkRequestService.assertNoAuthOptions({ options: restDataProviderOptions });
+    DefaultNetworkRequestService.assertNoAuthOptions({
+      options: restDataProviderOptions,
+      owner: DefaultRestDataProvider.name,
+    });
     DefaultNetworkRequestService.assertTimeout({ timeout: restDataProviderOptions.timeout });
   }
 

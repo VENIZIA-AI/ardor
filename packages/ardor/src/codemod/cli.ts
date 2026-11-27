@@ -128,7 +128,7 @@ imports from ARDOR it rewrites an object literal that holds them as plain values
 
 Listed with their line and left for you: a literal that has a spread or noAuth, that is spread or
 Object.assigned into another object, that holds one option while another literal of the file holds
-only the other, that is typed INoAuthOptions, or that has a comment, a getter, a method or a computed
+the other one or noAuth, that is typed INoAuthOptions, or that has a comment, a getter, a method or a computed
 name in what would move; reads (options.noAuthPaths), destructurings, type and class members; and a
 file that imports nothing from ARDOR.
 

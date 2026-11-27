@@ -1951,16 +1951,55 @@ describe('noAuth options', () => {
     (noAuth) => {
       const options: object = { noAuth };
 
-      expect(() => DefaultNetworkRequestService.assertNoAuthOptions({ options })).toThrow(
-        'noAuth takes { paths, regex }',
-      );
+      expect(() =>
+        DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+      ).toThrow('noAuth takes { paths, regex }');
     },
   );
+
+  test.each([
+    [{ paths: '/auth' }, 'paths'],
+    [{ paths: [1] }, 'paths'],
+    [{ paths: null }, 'paths'],
+    [{ regex: 1 }, 'regex'],
+    [{ regex: [/a/, 2] }, 'regex'],
+    [{ regex: null }, 'regex'],
+  ])('refuses a noAuth value of the wrong type: %p', (noAuth, field) => {
+    const options: object = { noAuth };
+
+    expect(() =>
+      DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+    ).toThrow(`[Owner] noAuth takes { paths, regex }: invalid ${field}`);
+  });
+
+  test.each([{ regex: 'a' }, { regex: ['a', /b/] }, { paths: ['a'], regex: undefined }])(
+    'accepts the values %p',
+    (noAuth) => {
+      const options: object = { noAuth };
+
+      expect(() =>
+        DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+      ).not.toThrow();
+    },
+  );
+
+  test('the message names both keys in the plural, and one in the singular', () => {
+    const both: object = { noAuthPaths: [], noAuthPathRegex: /./ };
+
+    expect(() =>
+      DefaultNetworkRequestService.assertNoAuthOptions({ options: both, owner: 'Owner' }),
+    ).toThrow('[Owner] noAuthPaths and noAuthPathRegex were replaced');
+    expect(() => new DefaultNetworkRequestService({ name: 'n', ...{ noAuthPaths: [] } })).toThrow(
+      '[DefaultNetworkRequestService] noAuthPaths was replaced',
+    );
+  });
 
   test.each([{}, { noAuth: undefined }, { noAuth: {} }, { noAuth: { paths: [], regex: /./ } }])(
     'accepts %p',
     (options) => {
-      expect(() => DefaultNetworkRequestService.assertNoAuthOptions({ options })).not.toThrow();
+      expect(() =>
+        DefaultNetworkRequestService.assertNoAuthOptions({ options, owner: 'Owner' }),
+      ).not.toThrow();
     },
   );
 

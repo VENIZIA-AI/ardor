@@ -48,6 +48,58 @@ describe('NoAuthTransform: what it rewrites', () => {
   });
 });
 
+describe('NoAuthTransform: one half beside the other anywhere in the file', () => {
+  const both = 'const base = { noAuthPaths: p, noAuthPathRegex: r };';
+
+  test.each([
+    [
+      'a literal with both keys',
+      `${both}\nconst extra = { noAuthPaths: q };\nconst o = { ...base, ...extra };`,
+    ],
+    [
+      'methods that return each',
+      'class A {\n  base() { return { noAuthPaths: p, noAuthPathRegex: r }; }\n  extra() { return { noAuthPaths: q }; }\n  options() { return { ...this.base(), ...this.extra() }; }\n}',
+    ],
+    [
+      'a literal already migrated',
+      'const base = { noAuth: { regex: r } };\nconst extra = { noAuthPaths: q };',
+    ],
+  ])('lists the half beside %s', (_name, code) => {
+    const result = run(`${IMPORT}${code}\n`);
+
+    expect(result.text).toMatch(/\{ noAuthPaths: q \}/);
+    expect(reasons(`${IMPORT}${code}\n`).join('\n')).toContain('another object of this file');
+  });
+
+  test('two literals with the same single option are both rewritten', () => {
+    const result = run(`${IMPORT}f({ noAuthPaths: a });\nf({ noAuthPaths: b });\n`);
+
+    expect(result.renamed).toBe(2);
+  });
+
+  test.each([
+    [
+      'above the second option',
+      '{\n  noAuthPaths: p,\n  // about the regex\n  noAuthPathRegex: r,\n  url,\n}',
+    ],
+    [
+      'after its comma',
+      '{\n  noAuthPaths: p,\n  noAuthPathRegex: r, // about the regex\n  url,\n}',
+    ],
+  ])('lists a literal with a comment %s', (_name, literal) => {
+    const text = `${IMPORT}f(${literal});\n`;
+
+    expect(run(text).text).toBe(text);
+    expect(reasons(text).join('\n')).toContain('comment');
+  });
+
+  test('a comment above the first option stays above noAuth', () => {
+    const text = `${IMPORT}f({\n  // public\n  noAuthPaths: p,\n});\n`;
+
+    expect(run(text).text).toContain('// public\n  noAuth: { paths: p },');
+  });
+});
+
 describe('NoAuthTransform: what it leaves and lists', () => {
   test.each([
     ['a spread beside the key', 'f({ ...base, noAuthPaths: p });', 'spread'],
@@ -117,12 +169,11 @@ describe('NoAuthTransform: a rewrite never drops half or breaks the code', () =>
       'f({ noAuthPaths: p } satisfies INoAuthOptions);',
       'INoAuthOptions',
     ],
-  ])('lists %s and leaves the outer text', (_name, code, reason) => {
+  ])('lists %s and leaves the text', (_name, code, reason) => {
     const text = `${IMPORT}${code}\n`;
     const result = run(text);
-    const outer = code.includes('g({') ? result.text.includes('g({ noAuth:') : result.text === text;
 
-    expect(outer).toBe(true);
+    expect(result.text).toBe(text);
     expect(reasons(text).join('\n')).toContain(reason);
   });
 

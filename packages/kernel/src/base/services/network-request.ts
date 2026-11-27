@@ -117,7 +117,10 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
       timeout = { use: false },
     } = opts;
 
-    DefaultNetworkRequestService.assertNoAuthOptions({ options: opts });
+    DefaultNetworkRequestService.assertNoAuthOptions({
+      options: opts,
+      owner: DefaultNetworkRequestService.name,
+    });
     DefaultNetworkRequestService.assertTimeout({ timeout });
     this.timeout = timeout;
     this.headers = HttpHeaders.merge({ layers: [headers] });
