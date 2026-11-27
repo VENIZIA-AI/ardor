@@ -20,7 +20,7 @@ LINT_PKG_TARGETS := $(addprefix lint-,$(PACKAGES))
 FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
 
 # changelog-check is not in lint-packages: it reads the changelog folder, not a package.
-.PHONY: lint lint-all lint-packages lint-wiki lint-examples lint-scripts lint-files changelog-check lint-fix lint-fix-packages lint-fix-wiki \
+.PHONY: layout-check lint lint-all lint-packages lint-wiki lint-examples lint-scripts lint-files changelog-check lint-fix lint-fix-packages lint-fix-wiki \
         fmt-files fmt-scripts \
         $(LINT_PKG_TARGETS) $(FIX_PKG_TARGETS)
 
@@ -31,6 +31,10 @@ lint-all: lint-packages lint-wiki lint-examples lint-scripts lint-files changelo
 	@echo "✅ All linting completed."
 
 lint-packages: $(LINT_PKG_TARGETS)
+
+# Fails when a source folder mixes files and folders; a file over the line limit is a warning.
+layout-check:
+	@$(VULCAN) check layout
 
 # VULCAN asks `ardor codemod --list` for the codemod names, and `ardor` is a built file of this repository.
 changelog-check: codemod-bin

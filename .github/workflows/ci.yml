@@ -74,6 +74,10 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make runners-check
 
+      - name: Source layout
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make layout-check
+
       - name: Browser purity probe
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make purity-test
