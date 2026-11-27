@@ -340,11 +340,12 @@ const-classes-extend-const-class:
       - 'Run `bun node_modules/.bin/devz codemod const-classes .` (needs `@venizia/dev-configs` 0.5.0-6) to list each place, then `bun node_modules/.bin/devz codemod const-classes . --write` to rewrite each `X.SCHEME_SET.has(value)` of these classes to `X.isValid(value)` and each spread of the set to `X.values()`. It also converts your exported string-literal unions into `ConstClass` classes (`export type TMode = "a" | "b"` becomes `class Modes extends ConstClass`), so review that part of the diff; `--map <file>` with `{ "skip": true }` for an entry leaves a union as it is.'
       - 'Replace by hand what it lists as manual: a `new Set(X.SCHEME_SET)` is `new Set(X.values())`, and `X.SCHEME_SET.size` is `X.values().length`.'
       - 'In a browser app, import `ConstClass` from `@venizia/ignis-helpers/common`, never from the helpers root: the root loads Node built-ins.'
+      - 'From 0.5.0-14 `RequestMethods` is removed: follow the entry `request-methods-removed` for it.'
     before: |-
-      if (RequestMethods.SCHEME_SET.has(method)) send(method);
+      if (RequestBodyTypes.SCHEME_SET.has(bodyType)) send(bodyType);
       const known = [...RequestTypes.SCHEME_SET];
     after: |-
-      if (RequestMethods.isValid(method)) send(method);
+      if (RequestBodyTypes.isValid(bodyType)) send(bodyType);
       const known = RequestTypes.values();
   downgrade:
     steps:
@@ -549,6 +550,29 @@ storage-prefix-checked:
     steps:
       - 'Pin the four ARDOR packages to 0.5.0-12 or earlier.'
   data: Nothing stored changes.
+
+request-methods-removed:
+  symbols: [RequestMethods, TRequestMethod, DefaultNetworkRequestService]
+  upgrade:
+    steps:
+      - 'Add `@venizia/ignis-helpers` to the dependencies of each package that does not list it.'
+      - "Run `bun run ardor codemod http-methods src` to preview, then add `--write`. It rewrites the type `TRequestMethod` and a value where ARDOR itself sends it (the `params` of a data provider `send`, a network service `doRequest`, an `ISendParams`; the receiver must be typed as ARDOR's), and lists with file and line what it left."
+      - 'Fix what it listed. Where ARDOR hands you a method (an override of `request` or `doRequest`, a transport), it is uppercase: compare `method.toLowerCase() === HTTP.Methods.X`. In your own `fetch` call write `HTTP.Methods.X.toUpperCase()`. Replace `isValid` and `values()` with `Object.values(HTTP.Methods)`.'
+      - 'Search for comparisons with an uppercase text or `HTTP.Methods` in an override of `send`: it receives what the caller wrote, which is lowercase when the caller writes `HTTP.Methods.X`.'
+    before: |-
+      import { RequestMethods, type ISendParams } from '@venizia/ardor';
+      export const params: ISendParams = { method: RequestMethods.PATCH };
+      export const isPatch = (method: string) => method === RequestMethods.PATCH;
+    after: |-
+      import type { ISendParams } from '@venizia/ardor';
+      import { HTTP } from '@venizia/ignis-helpers/common';
+      export const params: ISendParams = { method: HTTP.Methods.PATCH };
+      export const isPatch = (method: string) => method.toLowerCase() === HTTP.Methods.PATCH;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-13 and import RequestMethods and TRequestMethod from ARDOR again.
+  data: Nothing stored changes. The same methods are sent.
+  codemod: http-methods
 
 react-admin-provider-types-rename:
   symbols: [IReactAdminDataProvider, IReactAdminAuthProvider]

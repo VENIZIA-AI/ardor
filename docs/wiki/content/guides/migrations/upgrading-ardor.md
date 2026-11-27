@@ -129,6 +129,24 @@ bun run ardor codemod no-auth src --write
 - A rewritten literal prints a `note` unless a method returns it or it goes straight to `toValue`, `super` or a constructor. **Check each place that merges two options objects**, in any file: a spread keeps only the last `noAuth`, and the codemod cannot see a merge of objects from two files. Merge them yourself: `noAuth: { ...base.noAuth, ...extra.noAuth }`. Nothing throws for a half lost this way, and the request carries the token.
 - The protected members of a `DefaultNetworkRequestService` subclass (`this.noAuthPaths`) keep their names.
 
+### http-methods
+
+0.5.0 removes `RequestMethods` and `TRequestMethod`. Use `HTTP.Methods` and `THttpMethod` from `@venizia/ignis-helpers/common`, and add that package to your dependencies if yours does not list it.
+
+```diff
+-    dataProvider.send({ resource, params: { method: RequestMethods.PATCH } });
++    dataProvider.send({ resource, params: { method: HTTP.Methods.PATCH } });
+```
+
+```bash
+bun run ardor codemod http-methods src
+bun run ardor codemod http-methods src --write
+```
+
+- It rewrites the type `TRequestMethod`, and a value only where ARDOR itself sends it: the `method` of the `params` of a data provider's `send`, of a network service's `doRequest` argument, and of a literal declared as `ISendParams`. It reads syntax, so it takes a receiver for ARDOR's only when its declared type is `IDataProvider`, `DefaultRestDataProvider`, `CountRestDataProvider` or `DefaultNetworkRequestService` from ARDOR, when it is `this` in a class that extends one, or `provider.getNetworkService()`. In a file that declares its own `doRequest` it rewrites no `doRequest` call.
+- `HTTP.Methods` is lowercase, so it lists every other use and leaves the old import: a comparison, a `case`, a list, a computed key, any other literal, a `fetch` or `this.request` call, a call on a receiver it cannot tell is ARDOR's, `isValid` and `values`, a re-export, and a file that already uses the name `HTTP` or `THttpMethod`.
+- Where ARDOR makes the call, an override of `request` or `doRequest` gets the uppercase method: compare `method.toLowerCase() === HTTP.Methods.PATCH`. A call your own code makes reaches your override as you wrote it.
+
 ### namespace
 
 `ardor codemod namespace` moves the names that 0.4.7 removed from `@venizia/ardor` to the class members that replace them, in your source files. It also rewrites `NullableType`, `NumberIdType` and `StringIdType` to the plain types, `ISendResponse` to `INetworkResponse`, `IAuthUser` to `IStoredAuthUser`, `IArtifactIndex` to `IArdorArtifactIndex`, `IApplication` to `IArdorApplicationProps`, `IReactAdminDataProvider` to `TReactAdminDataProvider` and `IReactAdminAuthProvider` to `TReactAdminAuthProvider`, moves the kernel `Logger` stack to `@venizia/ignis-helpers/core`, and lists, without changing them, the removed names that have no replacement (`isEditableTarget`, `TDataCount`, `ISyncFC`, `.offset` of a list filter, `App.DEFAULT_LOCALE`, `HeaderConstants` (use `HTTP.Headers`), the `enableDebug` prop, and the hooks `useSizer` and `useInjectableContainer`). It reads imports from the four ARDOR packages; with no path it reads the current directory, and a path may be one file. The list of old and new names is in [how to update your project](../../changelogs/2026-11-01-class-namespaces#how-to-upgrade). It reads syntax only, so a name that the file also declares itself, a re-export by name and a class name already taken are listed with their line and left for you.

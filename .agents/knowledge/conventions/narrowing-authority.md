@@ -19,10 +19,9 @@ Before narrowing any type that reaches an application:
 A yes to the first and a no to the second means the answer is an **extensible seam**, not a closed
 union: a default that is today's closed set, plus a way for an application to declare its own.
 
-In `packages/kernel/src/common/constants.ts`, `RequestMethods`, `RequestTypes`, `RequestBodyTypes`
+In `packages/kernel/src/common/constants.ts`, `RequestTypes`, `RequestBodyTypes`
 and `Environments` each hold a fixed set of values, read by `values()` and checked by `isValid` (from `ConstClass`), and
-their value types are closed unions. ARDOR owns these vocabularies outright: an HTTP method is
-closed by the protocol, and the request types, body encodings and environment names are the ones
+their value types are closed unions. ARDOR owns these vocabularies outright: the request types, body encodings and environment names are the ones
 ARDOR itself defines and handles. That is what makes narrowing them legitimate. Header names are
 plain strings that no type narrows: they come from IGNIS's `HTTP.Headers` - see
 [const classes](/conventions/const-classes.md).

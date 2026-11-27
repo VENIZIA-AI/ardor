@@ -33,8 +33,8 @@ A function name opens with the verb that says what it does: `generate` `build` `
 and leaves the branch to the caller; `assert*` throws and returns `void`, so the code after it needs
 no branch. Reach for `assert*` when every caller would throw on `false` anyway - otherwise one
 condition ends up with a different error message at each call site. The const classes in
-`packages/kernel/src/common/constants.ts` (`RequestMethods`, `RequestTypes`, `RequestBodyTypes`) expose
-`isValid` for exactly this reason: a caller can check `RequestMethods.isValid(method)` and decide what
+`packages/kernel/src/common/constants.ts` (`RequestTypes`, `RequestBodyTypes`) expose
+`isValid` for exactly this reason: a caller can check `RequestTypes.isValid(type)` and decide what
 to do with `false`, rather than the const class deciding for it.
 
 `has*` is the ownership question: `hasSession`, never `isHaveSession` - the second is not English.
@@ -86,10 +86,10 @@ Dispatch on a const class value with a `switch`, whose `default` throws via
 [`getError`](/conventions/error-handling.md) rather than falling through silently:
 
 ```typescript
-switch (method) {
-  case RequestMethods.GET: { return this.handleGet(); }
-  case RequestMethods.POST: { return this.handlePost(); }
-  default: { throw getError({ message: '[dispatch] Invalid RequestMethod!' }); }
+switch (type) {
+  case RequestTypes.GET_LIST: { return this.handleList(); }
+  case RequestTypes.GET_ONE: { return this.handleOne(); }
+  default: { throw getError({ message: '[dispatch] Invalid RequestType!' }); }
 }
 ```
 

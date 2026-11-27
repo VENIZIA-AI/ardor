@@ -38,7 +38,6 @@ import {
   type IResponseSchema,
   RequestBodyEncoder,
   RequestCountData,
-  RequestMethods,
   RequestTypes,
   type TRequestType,
 } from '@venizia/ardor-kernel';
@@ -46,6 +45,7 @@ import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
+import { WireMethods } from '@/utilities/wire-methods';
 
 const recordLogger = LoggerFactory.getLogger(['DefaultRestDataProvider']);
 
@@ -220,7 +220,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       schema,
       requestCountData,
       type,
-      method,
+      method: DefaultNetworkRequestService.toWireMethod({ method }),
       paths,
       query,
       signal,
@@ -263,7 +263,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     const response = this.request({
       resource,
       type,
-      method: RequestMethods.GET,
+      method: WireMethods.GET,
       query: { ...queryKey, filter },
       extra,
       signal,
@@ -314,7 +314,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       response: this.request({
         resource,
         type: RequestTypes.GET_ONE,
-        method: RequestMethods.GET,
+        method: WireMethods.GET,
         paths: recordPaths({ resource, id: params.id }),
         query: { ...queryKey, filter },
         signal: params.signal,
@@ -341,7 +341,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       response: this.request({
         resource,
         type: RequestTypes.GET_MANY,
-        method: RequestMethods.GET,
+        method: WireMethods.GET,
         query: {
           ...queryKey,
           filter: {
@@ -389,7 +389,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       response: this.request({
         resource,
         type: RequestTypes.UPDATE,
-        method: RequestMethods.PATCH,
+        method: WireMethods.PATCH,
         paths: recordPaths({ resource, id: params.id }),
         payload: { data: params.data },
       }),
@@ -424,7 +424,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return this.request({
       resource,
       type: RequestTypes.UPDATE_MANY,
-      method: RequestMethods.PATCH,
+      method: WireMethods.PATCH,
       payload: { data: { ...data, where: { id: { inq: ids } } } },
     }).then((result) => {
       return { data: this.toAffectedIds({ rows: result.data }) };
@@ -442,7 +442,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       response: this.request({
         resource,
         type: RequestTypes.CREATE,
-        method: RequestMethods.POST,
+        method: WireMethods.POST,
         payload: { data: params.data },
       }),
     });
@@ -459,7 +459,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       response: this.request({
         resource,
         type: RequestTypes.DELETE,
-        method: RequestMethods.DELETE,
+        method: WireMethods.DELETE,
         paths: recordPaths({ resource, id: params.id }),
       }),
     });
@@ -486,7 +486,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return this.request({
       resource,
       type: RequestTypes.DELETE_MANY,
-      method: RequestMethods.DELETE,
+      method: WireMethods.DELETE,
       payload: { data: { where: { id: { inq: ids } } } },
     }).then((result) => {
       return { data: this.toAffectedIds({ rows: result.data }) };
@@ -543,7 +543,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       schema,
       resource,
       type: requestType ?? RequestTypes.SEND,
-      method,
+      method: DefaultNetworkRequestService.toWireMethod({ method }),
       payload,
       query,
       extra,

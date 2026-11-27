@@ -175,6 +175,7 @@ export class PricingService extends BaseService {
 When a method goes through the kernel transport, unwrap the response before returning. The caller wants the payload, not the envelope. Keep the envelope handling inside the service. `IDataProvider.send` is the transport call: it takes the resource and an `ISendParams` and answers an `INetworkResponse`.
 
 ```ts
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { getError } from '@venizia/ignis-inversion';
 
 import {
@@ -184,7 +185,6 @@ import {
   type IDataProvider,
   inject,
   type IResponseSchema,
-  RequestMethods,
   service,
 } from '@venizia/ardor';
 
@@ -227,7 +227,7 @@ export class QuoteService extends BaseService {
       // Checks the answer and types `data`; a zod schema fits.
       schema: quoteListSchema,
       resource: 'quotes',
-      params: { method: RequestMethods.GET },
+      params: { method: HTTP.Methods.GET },
     });
 
     return response.data;

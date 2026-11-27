@@ -3,6 +3,7 @@ import {
   BaseApplicationImportCommand,
   CodemodFlags,
   DefaultProvidersCommand,
+  HttpMethodsCommand,
   NamespaceCommand,
   NoAuthCommand,
   USAGE_ERROR_CODE,
@@ -16,6 +17,7 @@ Commands:
   codemod base-application-import  import BaseArdorApplication from @venizia/ardor-admin
   codemod default-providers        list the default providers an app wires by hand (detect only)
   codemod no-auth                  move noAuthPaths and noAuthPathRegex into noAuth: { paths, regex }
+  codemod http-methods             move RequestMethods to HTTP.Methods of @venizia/ignis-helpers
   codemod --list                   print the name of each codemod, one per line
 
 Run "ardor codemod <name> --help" for the options.
@@ -42,6 +44,7 @@ export class ArdorCli {
     [BaseApplicationImportCommand.NAME, (opts) => BaseApplicationImportCommand.run(opts)],
     [DefaultProvidersCommand.NAME, (opts) => DefaultProvidersCommand.run(opts)],
     [NoAuthCommand.NAME, (opts) => NoAuthCommand.run(opts)],
+    [HttpMethodsCommand.NAME, (opts) => HttpMethodsCommand.run(opts)],
   ]);
 
   /** Runs the command and returns the exit code; prints to the console. */

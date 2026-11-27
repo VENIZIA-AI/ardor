@@ -1,3 +1,4 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { Container, isApplicationError } from '@venizia/ignis-inversion';
@@ -5,7 +6,6 @@ import {
   type IApplicationInfo,
   type IRestDataProviderOptions,
   NETWORK_TIMEOUT_CODE,
-  RequestMethods,
 } from '@venizia/ardor-kernel';
 import type { GetListParams } from 'ra-core';
 
@@ -126,7 +126,7 @@ describe('DefaultRestDataProvider, abort', () => {
       run: (signal: AbortSignal) =>
         createDataProvider().send({
           resource: 'slow',
-          params: { method: RequestMethods.GET, signal },
+          params: { method: HTTP.Methods.GET, signal },
         }),
     },
   ])('$name rejects with the abort too', async ({ run }) => {

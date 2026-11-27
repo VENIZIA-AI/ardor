@@ -1,5 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
-import { HTTP } from '@venizia/ignis-helpers/common';
+import { HTTP, type THttpMethod } from '@venizia/ignis-helpers/common';
 import { HttpHeaders } from '@venizia/ignis-helpers/core';
 import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
@@ -26,6 +26,9 @@ import {
 import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
 
+const isWireMethod = (value: string): value is Uppercase<THttpMethod> =>
+  Object.values(HTTP.Methods).some((method) => method.toUpperCase() === value);
+
 /**
  * What `DefaultNetworkRequestService` is built on: which requests go without a token, the token, the
  * headers and body of a request, and the hooks that read data. It holds nothing about a request in
@@ -39,6 +42,20 @@ export abstract class AbstractNetworkRequestService extends BaseService {
   /** Headers added to every request. */
   protected headers: Headers;
   protected authService?: DefaultAuthService;
+
+  /**
+   * The method in uppercase, as ARDOR hands it to an override and to the transport. A browser's
+   * `fetch` uppercases most methods, but not `patch`. Throws for what `HTTP.Methods` does not hold.
+   */
+  static toWireMethod(opts: { method: THttpMethod }): Uppercase<THttpMethod> {
+    const method = String(opts.method).toUpperCase();
+
+    if (!isWireMethod(method)) {
+      throw getError({ message: `[toWireMethod] Not an HTTP method: ${String(opts.method)}` });
+    }
+
+    return method;
+  }
 
   /**
    * The token under the unscoped session key (`AuthTokenStore.read`), `undefined` outside a browser, for an

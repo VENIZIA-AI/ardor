@@ -1,3 +1,4 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 
 import { RejectionUtility } from '@venizia/dev-configs/testing';
@@ -9,7 +10,7 @@ import {
   DefaultNetworkRequestService,
   SESSION_CHANGED_CODE,
 } from '@/base/services/network-request';
-import { type IDataSourceRequestContext, RequestMethods, RequestTypes } from '@/common';
+import { type IDataSourceRequestContext, RequestTypes } from '@/common';
 import { FakeStorage } from '@/testing';
 import { LogWatch } from '@/__tests__/support/log-watch';
 
@@ -96,7 +97,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
   const getItems = (service: DefaultNetworkRequestService) => {
     return service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       headers: service.getRequestHeader({ resource: 'items' }),
     });

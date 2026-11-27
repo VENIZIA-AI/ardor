@@ -1,17 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  Environments,
-  RequestBodyTypes,
-  RequestCountData,
-  RequestMethods,
-  RequestTypes,
-} from '@/common/constants';
+import { Environments, RequestBodyTypes, RequestCountData, RequestTypes } from '@/common/constants';
 import type {
   TConstValue,
   TEnvironment,
   TNumberConstValue,
   TRequestBodyType,
-  TRequestMethod,
   TRequestType,
   TStringConstValue,
   TPaths,
@@ -67,23 +60,12 @@ describe('const-value types keep their literal union through inference', () => {
     expect(typedCounts[0].value).toBe('1');
   });
 
-  test('TRequestMethod and TEnvironment aliases keep their literal union', () => {
-    const methods: TRequestMethod[] = [RequestMethods.GET, RequestMethods.POST];
-    const methodOptions = methods.map((value) => ({ value, label: String(value) }));
-    const typedMethods: {
-      value: 'HEAD' | 'OPTIONS' | 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-    }[] = methodOptions;
-
+  test('the TEnvironment alias keeps its literal union', () => {
     const environments: TEnvironment[] = [Environments.PRODUCTION];
     const environmentOptions = environments.map((value) => ({ value, label: String(value) }));
     const typedEnvironments: { value: 'development' | 'production' }[] = environmentOptions;
 
-    // @ts-expect-error 'TRACE' is not a RequestMethods value
-    const foreign: TRequestMethod = 'TRACE';
-
-    expect(typedMethods.map((option) => option.value)).toEqual(['GET', 'POST']);
     expect(typedEnvironments[0].value).toBe('production');
-    expect<string>(foreign).toBe('TRACE');
   });
 
   test('TRequestType and TRequestBodyType keep their literal union', () => {

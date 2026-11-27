@@ -61,7 +61,7 @@ shapes are positional on purpose:
 ## In source
 
 Constants used across the [data provider pipeline](/architecture/data-provider-pipeline.md), such
-as `RequestMethods`, `RequestTypes`, `RequestBodyTypes` and `RequestCountData` in
+as `RequestTypes`, `RequestBodyTypes` and `RequestCountData` in
 `packages/kernel/src/common/constants.ts`, are consumed by functions that take a single options
 object describing the request - method, type, body shape - rather than a run of positional flags.
 This keeps call sites readable as the number of request-shaping concerns grows.

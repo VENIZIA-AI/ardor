@@ -115,12 +115,12 @@ is a consumed key, so the failure would vanish - the compiler now rejects it. Wr
 
 ## Requests carry their own vocabulary, not their own error codes
 
-`RequestMethods`, `RequestTypes` and `RequestBodyTypes` in
+`RequestTypes` and `RequestBodyTypes` in
 `packages/kernel/src/common/constants.ts` describe the shape of a data provider request - the
-verb, the record type, the body encoding. They are const classes that extend `ConstClass`, with `values()` and
+record type and the body encoding (the verb is IGNIS's `HTTP.Methods`). They are const classes that extend `ConstClass`, with `values()` and
 `isValid` (see [const classes](/conventions/const-classes.md)), not error catalogs. Only the tests
 call `isValid` today and no request error catalog exists: the closed value types
-(`TRequestMethod`, `TRequestType`, `TRequestBodyType`) are the only guard. A runtime check added
+(`THttpMethod` of IGNIS, `TRequestType`, `TRequestBodyType`) are the only guard. A runtime check added
 at a boundary raises through `getError`, keeping the vocabulary and the failure separate - the
 constant classes stay data, and a status and a code are paired in the error, never on the
 vocabulary.

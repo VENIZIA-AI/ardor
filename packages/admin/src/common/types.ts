@@ -1,3 +1,4 @@
+import type { THttpMethod } from '@venizia/ignis-helpers/common';
 import type { Store } from '@reduxjs/toolkit';
 import type { ILogger } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
@@ -20,7 +21,6 @@ import type {
   IResponseSchema,
   RequestCountData,
   TConstValue,
-  TRequestMethod,
   TRequestType,
 } from '@venizia/ardor-kernel';
 import type { TArdorRoute, TFeature } from '@/features/feature';
@@ -32,7 +32,7 @@ export interface IRestRequestOptions<TResource extends string = string> {
   /** What the response is read as, and what the request is logged as. */
   type: TRequestType;
   /** The HTTP method. */
-  method: TRequestMethod;
+  method: THttpMethod;
   /**
    * The path segments of the request.
    * @default [resource]

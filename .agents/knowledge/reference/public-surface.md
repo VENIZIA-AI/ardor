@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (104)
+### `@venizia/ardor-kernel` (102)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -84,7 +84,6 @@ generated:
 - `RequestBodyTypes` class
 - `RequestChannel` class
 - `RequestCountData` class
-- `RequestMethods` class
 - `RequestTypes` class
 - `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
@@ -108,7 +107,6 @@ generated:
 - `TPrettify` type
 - `TRepositoryType` type
 - `TRequestBodyType` type
-- `TRequestMethod` type
 - `TRequestTimeoutOptions` type
 - `TRequestType` type
 - `TStorageArea` type
@@ -261,7 +259,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (206)
+### `@venizia/ardor` (204)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -384,7 +382,6 @@ generated:
 - `RequestBodyTypes` class
 - `RequestChannel` class
 - `RequestCountData` class
-- `RequestMethods` class
 - `RequestTypes` class
 - `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
@@ -418,7 +415,6 @@ generated:
 - `TReactAdminDataProvider` type
 - `TRepositoryType` type
 - `TRequestBodyType` type
-- `TRequestMethod` type
 - `TRequestTimeoutOptions` type
 - `TRequestType` type
 - `TSessionClearReason` type

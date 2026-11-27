@@ -1,5 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
-import { HTTP } from '@venizia/ignis-helpers/common';
+import { HTTP, type THttpMethod } from '@venizia/ignis-helpers/common';
 import {
   HttpHeaders,
   HttpResponseReader,
@@ -16,10 +16,8 @@ import {
   type IResponseSchema,
   type INoAuthOptions,
   type RequestCountData,
-  RequestMethods,
   RequestTypes,
   type TConstValue,
-  type TRequestMethod,
   type TRequestTimeoutOptions,
   type TRequestType,
 } from '@/common';
@@ -51,7 +49,7 @@ type TDoRequestOptions = IGetRequestPropsResult & {
   baseUrl?: string;
   query?: Record<string, unknown>;
   type: TRequestType;
-  method: TRequestMethod;
+  method: THttpMethod;
   paths: string[];
   requestCountData?: TConstValue<typeof RequestCountData>;
   /** Aborts this request only: a refresh its 401 started runs on for the other requests. */
@@ -216,7 +214,7 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
     try {
       const result = await this.doRequest({
         paths: [path],
-        method: RequestMethods.POST,
+        method: DefaultNetworkRequestService.toWireMethod({ method: HTTP.Methods.POST }),
         type: RequestTypes.SEND,
         headers: this.getRequestHeader({ resource: path }),
       });
@@ -470,7 +468,8 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
         : (timeoutSignal ?? signal);
 
     try {
-      const response = await this.sendAndRead({ ...opts, url, signal: sendSignal });
+      const method = DefaultNetworkRequestService.toWireMethod(opts);
+      const response = await this.sendAndRead({ ...opts, method, url, signal: sendSignal });
 
       return response;
     } catch (error) {
@@ -498,18 +497,16 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
     const { url, type, method, paths, body, headers, query, requestCountData, signal, schema } =
       opts;
 
+    const sentBody = method.toLowerCase() === HTTP.Methods.GET ? undefined : body;
+
     const sendOnce = (retryHeaders?: Record<string, string | null>) => {
       return this.networkRequest.getNetworkService().send(
         {
           url,
           method,
           params: query,
-          body: method === RequestMethods.GET ? undefined : body,
-          headers: this.toSendHeaders({
-            headers,
-            extra: retryHeaders,
-            body: method === RequestMethods.GET ? undefined : body,
-          }),
+          body: sentBody,
+          headers: this.toSendHeaders({ headers, extra: retryHeaders, body: sentBody }),
           signal,
           acceptStatus: () => true,
         },
@@ -549,7 +546,7 @@ export class DefaultNetworkRequestService extends AbstractNetworkRequestService 
       signal?.throwIfAborted();
 
       if (isRefreshed) {
-        if (method !== RequestMethods.GET && body instanceof ReadableStream) {
+        if (sentBody instanceof ReadableStream) {
           throw getError({
             message:
               '[doRequest] The session was refreshed, but a ReadableStream body cannot be sent a second time | Send the request again from your code, or send a body that can be read again (FormData, Blob, a string)',

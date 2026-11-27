@@ -1,3 +1,4 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 
 import { RejectionUtility } from '@venizia/dev-configs/testing';
@@ -8,7 +9,7 @@ import {
   DefaultNetworkRequestService,
   NETWORK_TIMEOUT_CODE,
 } from '@/base/services/network-request';
-import { RequestMethods, RequestTypes, type TRequestTimeoutOptions } from '@/common';
+import { RequestTypes, type TRequestTimeoutOptions } from '@/common';
 import { FakeStorage } from '@/testing';
 import { LogWatch } from '@/__tests__/support/log-watch';
 
@@ -118,7 +119,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
 
     return service.doRequest({
       paths: [path],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       headers: service.getRequestHeader({ resource: path }),
       signal,

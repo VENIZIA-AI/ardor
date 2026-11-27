@@ -1,4 +1,4 @@
-import { HTTP } from '@venizia/ignis-helpers/common';
+import { HTTP, type THttpMethod } from '@venizia/ignis-helpers/common';
 import { FetchSchemaError } from '@venizia/ignis-helpers/core';
 import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
@@ -17,9 +17,7 @@ import {
   RequestBodyTypes,
   RequestChannel,
   RequestCountData,
-  RequestMethods,
   RequestTypes,
-  type TRequestMethod,
 } from '@/common';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { LogWatch } from '@/__tests__/support/log-watch';
@@ -910,7 +908,7 @@ describe('DefaultNetworkRequestService', () => {
       const result = await RejectionUtility.rejectionOf({
         task: emptyBaseService.doRequest({
           paths: ['items'],
-          method: RequestMethods.GET,
+          method: HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
         }),
       });
@@ -935,7 +933,7 @@ describe('DefaultNetworkRequestService', () => {
       const result = await RejectionUtility.rejectionOf({
         task: service.doRequest({
           paths,
-          method: RequestMethods.GET,
+          method: HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
         }),
       });
@@ -961,7 +959,7 @@ describe('DefaultNetworkRequestService', () => {
           const result = await RejectionUtility.rejectionOf({
             task: service.doRequest({
               paths,
-              method: RequestMethods.GET,
+              method: HTTP.Methods.GET,
               type: RequestTypes.GET_ONE,
             }),
           });
@@ -992,7 +990,7 @@ describe('DefaultNetworkRequestService', () => {
       const service = createService({ baseUrl: base, isOpen: true });
 
       const result = await RejectionUtility.rejectionOf({
-        task: service.doRequest({ paths, method: RequestMethods.GET, type: RequestTypes.GET_ONE }),
+        task: service.doRequest({ paths, method: HTTP.Methods.GET, type: RequestTypes.GET_ONE }),
       });
 
       expect(result).toMatchObject({
@@ -1008,7 +1006,7 @@ describe('DefaultNetworkRequestService', () => {
 
       await service.doRequest({
         paths: ['/auth/refresh?grant=refresh'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
       });
 
@@ -1023,7 +1021,7 @@ describe('DefaultNetworkRequestService', () => {
 
       await service.doRequest({
         paths: ['/v1.2/items', 'a..b', '...'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
       });
 
@@ -1039,7 +1037,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const res = await service.doRequest({
         paths: ['records', '1'],
-        method: RequestMethods.DELETE,
+        method: HTTP.Methods.DELETE,
         type: RequestTypes.DELETE,
       });
 
@@ -1058,7 +1056,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const res = await service.doRequest({
         paths: ['records', '101'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
       });
 
@@ -1080,7 +1078,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const res = await service.doRequest({
         paths: ['export'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.SEND,
       });
 
@@ -1088,13 +1086,13 @@ describe('DefaultNetworkRequestService', () => {
       expect(res.data instanceof Blob).toBe(true);
     });
 
-    const captureRequestError = async (opts: { paths: string[]; method?: TRequestMethod }) => {
+    const captureRequestError = async (opts: { paths: string[]; method?: THttpMethod }) => {
       const service = createService({ baseUrl: serverBaseUrl });
 
       try {
         await service.doRequest({
           paths: opts.paths,
-          method: opts.method ?? RequestMethods.GET,
+          method: opts.method ?? HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
         });
       } catch (err: unknown) {
@@ -1152,7 +1150,7 @@ describe('DefaultNetworkRequestService', () => {
         });
       };
 
-      const err = await captureRequestError({ paths: ['validate'], method: RequestMethods.POST });
+      const err = await captureRequestError({ paths: ['validate'], method: HTTP.Methods.POST });
 
       expect(err.statusCode).toBe(422);
       expect(err.message).toBe('Validation failed');
@@ -1205,7 +1203,7 @@ describe('DefaultNetworkRequestService', () => {
 
       await service.doRequest({
         paths: ['get-no-body-test'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
         body: { notSent: 'drop me' },
       });
@@ -1228,7 +1226,7 @@ describe('DefaultNetworkRequestService', () => {
 
       await service.doRequest({
         paths: ['search-test'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_LIST,
         query: { filter: 'active', limit: '10' },
       });
@@ -1282,13 +1280,13 @@ describe('DefaultNetworkRequestService', () => {
       const [resA, resB] = await Promise.all([
         service.doRequest({
           paths: ['concurrent-a'],
-          method: RequestMethods.GET,
+          method: HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
           headers: service.getRequestHeader({ resource: 'concurrent-a' }),
         }),
         service.doRequest({
           paths: ['concurrent-b'],
-          method: RequestMethods.GET,
+          method: HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
           headers: service.getRequestHeader({ resource: 'concurrent-b' }),
         }),
@@ -1325,7 +1323,7 @@ describe('DefaultNetworkRequestService', () => {
       try {
         await service.doRequest({
           paths: ['api', 'auth', 'refresh-token'],
-          method: RequestMethods.POST,
+          method: HTTP.Methods.POST,
           type: RequestTypes.SEND,
         });
         expect(true).toBe(false);
@@ -1366,7 +1364,7 @@ describe('DefaultNetworkRequestService', () => {
       try {
         await service.doRequest({
           paths: ['public-data'],
-          method: RequestMethods.GET,
+          method: HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
         });
         expect(true).toBe(false);
@@ -1412,7 +1410,7 @@ describe('DefaultNetworkRequestService', () => {
       try {
         await service.doRequest({
           paths: ['protected-account'],
-          method: RequestMethods.GET,
+          method: HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
         });
         expect(true).toBe(false);
@@ -1464,7 +1462,7 @@ describe('DefaultNetworkRequestService', () => {
       try {
         await service.doRequest({
           paths: ['protected-account'],
-          method: RequestMethods.GET,
+          method: HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
         });
         expect(true).toBe(false);
@@ -1516,7 +1514,7 @@ describe('DefaultNetworkRequestService', () => {
       const [viaProvider, viaRepository] = await Promise.all([
         service.doRequest({
           paths: ['orders'],
-          method: RequestMethods.GET,
+          method: HTTP.Methods.GET,
           type: RequestTypes.GET_ONE,
           headers: service.getRequestHeader({ resource: 'orders' }),
         }),
@@ -1684,7 +1682,7 @@ describe('DefaultNetworkRequestService', () => {
 
       return service.doRequest({
         paths: ['tickets'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_LIST,
         headers: service.getRequestHeader({ resource: 'tickets' }),
         requestCountData: requestCountData as never,
@@ -1915,7 +1913,7 @@ describe('doRequest with a schema', () => {
     return service.doRequest({
       schema,
       type: RequestTypes.SEND,
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       paths: ['totals'],
     });
   };

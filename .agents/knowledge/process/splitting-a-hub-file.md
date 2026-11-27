@@ -13,7 +13,7 @@ exported classes, or as a `types.ts` / `constants.ts` outside `common/`. The cou
 criterion is topics. A file whose exports all serve one concept stays. Typical ARDOR candidates: a
 `services/` barrel that has grown several unrelated service classes, a `hooks/` file mixing data-hooks
 and UI-hooks, or `packages/kernel/src/common/constants.ts` if a new const class family (alongside
-`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`,
+`RequestTypes`, `RequestBodyTypes`, `RequestCountData`,
 `Environments`) grows large enough to deserve its own file.
 
 ## Steps
@@ -51,7 +51,7 @@ and UI-hooks, or `packages/kernel/src/common/constants.ts` if a new const class 
   or a provider registered on the react-admin data provider pipeline) lives in a module listed in
   `sideEffects`, not in a leaf file.
 - Moving a runtime helper out of a types file is part of the split: `common/<topic>.ts` for code,
-  `common/types/` for types, both behind the same barrel. A const class such as `RequestMethods` stays
+  `common/types/` for types, both behind the same barrel. A const class such as `RequestTypes` stays
   whole in its file, not split into a separate "helpers" file.
 - Error helpers built on `getError` / `ApplicationError` from `@venizia/ignis-inversion` stay with the
   domain they describe (network errors with network types, form errors with form types) - do not pull
