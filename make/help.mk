@@ -83,6 +83,7 @@ help:
 	@$(HELP_ROW) "preset-build" "Write the VULCAN app preset with this release's versions into packages/ardor/dist/presets/app. Run after the build."
 	@$(HELP_ROW) "preset-smoke" "Gate: an app created from the packed preset typechecks, lints, builds and starts. Needs make build-all; ARGS=... as in scripts/preset/preset-smoke.ts."
 	@$(HELP_ROW) "release ARGS=\"...\"" "Dispatch the release workflow once for the four packages (a prerelease from develop, a stable from main), e.g. ARGS=\"--yes\"."
+	@$(HELP_ROW) "layout-check" "Gate: no source folder mixes files and folders; a long file is a warning."
 	@$(HELP_ROW) "catalog-check" "Gate: every catalogued dep is referenced as \"catalog:\", none drifted, and no other @venizia/* dep is a range."
 	@echo ""
 	@echo "Development (use bun run directly):"
