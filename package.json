@@ -43,7 +43,7 @@
       "@tanstack/react-query": "^5.108.4",
       "@testing-library/react": "^16.3.3",
       "@types/bun": "^1.4.5",
-      "@types/node": "^25.9.12",
+      "@types/node": "^26.6.11",
       "@types/react": "^19.3.3",
       "@types/react-dom": "^19.3.0",
       "@venizia/dev-configs": "^0.5.0-8",

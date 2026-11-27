@@ -331,7 +331,7 @@ export class GuestAuthProvider extends DefaultAuthProvider {
 }
 ```
 
-The values follow ra-core (5.15.5):
+The values follow ra-core (5.15.7):
 
 | Rejects | Value | What ra-core does |
 | --- | --- | --- |
