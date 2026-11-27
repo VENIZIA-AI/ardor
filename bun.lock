@@ -298,7 +298,7 @@
     },
     "packages/react": {
       "name": "@venizia/ardor-react",
-      "version": "0.5.0-13",
+      "version": "0.5.0-14",
       "dependencies": {
         "@venizia/ardor-kernel": "workspace:*",
       },
