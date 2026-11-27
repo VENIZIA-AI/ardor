@@ -96,8 +96,8 @@ switch (type) {
 ## Strict TypeScript, avoid any
 
 No `any` unless truly unavoidable, and no cast (V-C-10): `consistent-type-assertions` is an error in
-the packages, the wiki scripts, the examples and `scripts/`, tests exempt. A boundary where one cannot
-be avoided carries `eslint-disable-next-line` with the reason on the same line.
+the packages, the wiki scripts and the examples, tests exempt (`scripts/` is not checked). A boundary
+where one cannot be avoided carries `eslint-disable-next-line` with the reason on the same line.
 
 ## State belongs to a class, not to the module
 

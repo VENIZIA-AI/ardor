@@ -99,7 +99,6 @@ const listPublishedVersions = async (opts: { packageName: string }): Promise<str
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- `npm view --json` prints a string for one version and an array for several.
   const parsed = JSON.parse(stdout) as string | string[];
 
   return Array.isArray(parsed) ? parsed : [parsed];
@@ -122,7 +121,6 @@ const collectState = async (opts: {
       continue;
     }
 
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- a package.json of this repository as the branch holds it.
     const manifest = JSON.parse(shown.stdout) as Record<string, string>;
 
     const result = await resolvePublishedVersion({ packageName: manifest.name });
@@ -225,7 +223,6 @@ const resolveLatestRunId = async (): Promise<string> => {
     ],
   });
 
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- `gh run list --json databaseId` prints exactly the fields asked for.
   const runs = JSON.parse(stdout) as Array<{ databaseId: number }>;
 
   return runs[0] ? String(runs[0].databaseId) : '';
@@ -256,7 +253,6 @@ const waitForRunCompletion = (opts: { runId: string }): Promise<string> =>
         command: ['gh', 'run', 'view', runId, '--json', 'status,conclusion'],
       });
 
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- `gh run view --json status,conclusion` prints exactly the fields asked for.
       return JSON.parse(stdout) as { status: string; conclusion: string };
     },
     // A run can wait in the queue behind another release (one at a time, repository-wide); keep waiting.

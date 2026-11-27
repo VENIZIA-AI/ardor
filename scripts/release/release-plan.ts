@@ -344,20 +344,16 @@ export class ReleasePlan {
     ReleasePlan.validate({ packages: names });
 
     const { target } = readReleaseArgs({ argv: argv.filter((arg) => arg !== '--packages') });
-    const packages = ReleasePlan.readLocalVersions({ root, names });
+    const packages = names.map((name) => ({
+      name,
+      localVersion: (
+        JSON.parse(readFileSync(`${root}/packages/${name}/package.json`, 'utf8')) as {
+          version: string;
+        }
+      ).version,
+    }));
 
     return ReleasePlan.resolveVersion({ target, packages }).version;
-  }
-
-  /** The version the manifest of each named package under `root` declares. */
-  static readLocalVersions(opts: { root: string; names: string[] }) {
-    return opts.names.map((name) => {
-      const path = `${opts.root}/packages/${name}/package.json`;
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- a package.json of this repository, whose version every release reads.
-      const manifest = JSON.parse(readFileSync(path, 'utf8')) as { version: string };
-
-      return { name, localVersion: manifest.version };
-    });
   }
 
   /** A version with a prerelease part (`0.4.9-1`) is a prerelease, anything else a stable. */
@@ -796,7 +792,12 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
       (arg, index) => arg !== '--packages' && argv[index - 1] !== '--ref' && arg !== '--ref',
     ),
   });
-  const packages = ReleasePlan.readLocalVersions({ root: '.', names });
+  const packages = names.map((name) => ({
+    name,
+    localVersion: (
+      JSON.parse(readFileSync(`packages/${name}/package.json`, 'utf8')) as { version: string }
+    ).version,
+  }));
   const { plan, problems } = ReleasePlan.plan({ target, packages, ref, issue });
 
   if (plan !== undefined) {

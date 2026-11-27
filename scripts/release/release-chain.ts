@@ -1047,7 +1047,6 @@ export const runChain = async (opts: {
           return { ok: false, detail: 'an unresolved protocol survives in the packed manifest' };
         }
 
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the package.json npm accepted into the tarball; the fields read are optional.
         const packed = JSON.parse(extracted.stdout) as {
           version?: string;
           dependencies?: Record<string, string>;
@@ -1494,7 +1493,6 @@ const realPorts = (): IChainPorts => ({
     return { exitCode, stdout };
   },
   readManifest: ({ path }) =>
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- a package.json of this repository, whose name and version every release reads.
     JSON.parse(readFileSync(path, 'utf8')) as { name: string; version: string },
   hasVersion: async ({ packageName, version }) => {
     const proc = Bun.spawnSync(
@@ -1524,7 +1522,6 @@ const realPorts = (): IChainPorts => ({
   sleep: (ms) => Bun.sleep(ms),
   log: (line) => console.log(line),
   readBuiltOn: () => {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the root package.json of this repository; the catalog read is optional.
     const root = JSON.parse(readFileSync('package.json', 'utf8')) as {
       workspaces?: { catalog?: Record<string, string> };
     };
@@ -1550,7 +1547,6 @@ const reportMain = async (opts: { argv: string[] }): Promise<void> => {
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the state file this script wrote with JSON.stringify.
   const state = JSON.parse(readFileSync(statePath, 'utf8')) as IChainState;
   const text = ReleaseChain.reportFromState({ state });
   console.log(text);

@@ -11,7 +11,6 @@ import { join } from 'node:path';
 
 type THolder = { name: string; peers: string[] };
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- cli.ts of this folder passes this argument, written by JSON.stringify of THolder objects.
 const { holders } = JSON.parse(process.argv[2]) as { holders: THolder[] };
 const sandbox = process.cwd();
 
