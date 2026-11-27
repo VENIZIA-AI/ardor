@@ -156,18 +156,19 @@ Moves RequestMethods and TRequestMethod of the ARDOR packages to HTTP.Methods an
 @venizia/ignis-helpers/common. Add @venizia/ignis-helpers to the dependencies of a package that
 does not list it.
 
-The old values are uppercase and HTTP.Methods is lowercase, so it rewrites a value only as a method
-property outside a fetch call:
+The old values are uppercase and HTTP.Methods is lowercase, so it rewrites a value only where ARDOR
+itself sends it: the method of a doRequest({ ... }) argument, of the params of a send({ params })
+argument, and of a literal declared as ISendParams (a type annotation or satisfies):
 
-  provider.send({ method: RequestMethods.PATCH })  ->  provider.send({ method: HTTP.Methods.PATCH })
+  provider.send({ resource, params: { method: RequestMethods.PATCH } })
+    ->  provider.send({ resource, params: { method: HTTP.Methods.PATCH } })
 
-A method of fetch or new Request is listed, and so is PATCH outside a send, doRequest or request
-call: it may reach your own fetch, which does not uppercase it.
-
-Listed with their line and left for you, with the old import: a comparison, a case clause, a list,
-a computed key or any other use of a value (ARDOR hands an override the uppercase method: compare
-method.toLowerCase() === HTTP.Methods.GET); isValid and values (HTTP.Methods is a plain object); a re-export; and a file that already
-uses the name HTTP or THttpMethod for something else.
+Listed with their line and left for you, with the old import: every other use of a value (a
+comparison, a case clause, a list, a computed key, another literal, a call of fetch or of
+this.request); isValid and values (HTTP.Methods is a plain object); a re-export; and a file that
+already uses the name HTTP or THttpMethod for something else. ARDOR hands an override of request or
+doRequest the uppercase method: compare method.toLowerCase() === HTTP.Methods.GET. An override of
+send, and of doRequest when your own code calls it, receives what the caller wrote.
 
   --write    write the changed files (without it, nothing is written)
   --allow-dirty  with --write, also write a file that has local changes, such as one another codemod

@@ -12,8 +12,6 @@ class HttpMethodNames {
   static readonly NEW_CLASS = 'HTTP';
   static readonly NEW_TYPE = 'THttpMethod';
 
-  static readonly SENDERS = new Set(['send', 'doRequest', 'request']);
-
   static readonly MEMBERS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
 }
 
@@ -21,8 +19,8 @@ class HttpMethodReasons {
   static readonly USE =
     'rewrite by hand: HTTP.Methods is lowercase and ARDOR hands an override the uppercase method, so compare method.toLowerCase() with HTTP.Methods.X';
 
-  static readonly FETCH =
-    'rewrite by hand: a browser fetch does not uppercase patch, so where this reaches your own fetch write HTTP.Methods.X.toUpperCase()';
+  static readonly ELSEWHERE =
+    'rewrite by hand: ARDOR may not be what sends this value, and a browser fetch does not uppercase patch: where it reaches your own code write HTTP.Methods.X.toUpperCase()';
 
   static readonly MEMBER =
     'HTTP.Methods is a plain object with no isValid or values(): use Object.values(HTTP.Methods), which is lowercase';
@@ -43,9 +41,9 @@ interface IOldImport {
 /**
  * Moves `RequestMethods` and `TRequestMethod` of the ARDOR packages to `HTTP.Methods` and
  * `THttpMethod` of `@venizia/ignis-helpers/common`. The old values are uppercase and the new ones
- * lowercase, so a value is rewritten only as a `method` property outside `fetch` and `new
- * Request`, and `PATCH` only inside a `send`, `doRequest` or `request` call; every other use is
- * listed, because it could change without an error.
+ * lowercase, so a value is rewritten only as the `method` of a literal ARDOR itself sends
+ * (`send({ params })`, `doRequest({ ... })`, an `ISendParams`); every other use is listed,
+ * because it could change without an error.
  */
 export class HttpMethodsTransform {
   static run(opts: ICodemodInput): ICodemodResult {
@@ -63,9 +61,14 @@ export class HttpMethodsTransform {
     };
 
     const imports = new Map<string, IOldImport>();
-    /** Every name the file binds, with the module it imports it from (`''`: declared here). */
-    const bound = new Map<string, string>();
+    /** Every name the file binds, other than the old names it imports from ARDOR. */
+    const bound = new Set<string>();
+    /** The imports of the new module, by the name they import. */
+    const present = new Map<string, { local: string; isTypeOnly: boolean }>();
     let target: TS.NamedImports | undefined;
+
+    const isOldName = (name: string): boolean =>
+      name === HttpMethodNames.CLASS || name === HttpMethodNames.TYPE;
 
     const visitBindings = (node: TS.Node): void => {
       if (
@@ -74,12 +77,21 @@ export class HttpMethodsTransform {
           ts.isBindingElement(node) ||
           ts.isClassDeclaration(node) ||
           ts.isFunctionDeclaration(node) ||
+          ts.isEnumDeclaration(node) ||
+          ts.isModuleDeclaration(node) ||
+          ts.isImportEqualsDeclaration(node) ||
+          ts.isNamespaceImport(node) ||
+          ts.isImportClause(node) ||
           ts.isTypeAliasDeclaration(node) ||
           ts.isInterfaceDeclaration(node)) &&
         node.name &&
         ts.isIdentifier(node.name)
       ) {
-        bound.set(node.name.text, '');
+        bound.add(node.name.text);
+
+        if (ts.isBindingElement(node) && isOldName(node.name.text)) {
+          list(node, node.name.text, HttpMethodReasons.USE);
+        }
       }
 
       ts.forEachChild(node, visitBindings);
@@ -96,7 +108,7 @@ export class HttpMethodsTransform {
           for (const element of clause && ts.isNamedExports(clause) ? clause.elements : []) {
             const name = (element.propertyName ?? element.name).getText(sourceFile);
 
-            if (name === HttpMethodNames.CLASS || name === HttpMethodNames.TYPE) {
+            if (isOldName(name)) {
               list(element, name, HttpMethodReasons.EXPORT);
             }
           }
@@ -116,16 +128,18 @@ export class HttpMethodsTransform {
         continue;
       }
 
-      if (module === HttpMethodNames.MODULE && !statement.importClause?.isTypeOnly) {
+      const isTypeOnly = statement.importClause?.isTypeOnly === true;
+
+      if (module === HttpMethodNames.MODULE && !isTypeOnly) {
         target ??= named;
       }
 
       for (const specifier of named.elements) {
         const imported = (specifier.propertyName ?? specifier.name).text;
         const local = specifier.name.text;
-        const isOld = imported === HttpMethodNames.CLASS || imported === HttpMethodNames.TYPE;
+        const isOld = isOldName(imported) && NamespaceModules.isValid(module);
 
-        if (isOld && NamespaceModules.isValid(module) && !bound.has(local)) {
+        if (isOld && !bound.has(local)) {
           imports.set(local, {
             declaration: statement,
             specifier,
@@ -133,27 +147,34 @@ export class HttpMethodsTransform {
             edits: [],
             isKept: false,
           });
-        } else {
-          if (isOld && NamespaceModules.isValid(module)) {
-            list(specifier, local, HttpMethodReasons.TAKEN);
-          }
+          continue;
+        }
 
-          bound.set(local, module);
+        if (isOld) {
+          list(specifier, local, HttpMethodReasons.TAKEN);
+        }
+
+        if (module === HttpMethodNames.MODULE) {
+          present.set(imported, { local, isTypeOnly: isTypeOnly || specifier.isTypeOnly });
+        }
+
+        // The module's own import of the replacement name is not "taken".
+        if (module !== HttpMethodNames.MODULE || imported !== local) {
+          bound.add(local);
         }
       }
     }
 
-    /** The local name of `name` from the new module, `undefined` when something else takes it. */
-    const localOf = (name: string): string | undefined => {
-      const existing = target?.elements.find(
-        (element) => (element.propertyName ?? element.name).text === name,
-      );
+    /** The local name of `name` from the new module, `undefined` when it cannot be used. */
+    const localOf = (wanted: { name: string; isValue: boolean }): string | undefined => {
+      const { name, isValue } = wanted;
+      const existing = present.get(name);
 
       if (existing) {
-        return existing.name.text;
+        return isValue && existing.isTypeOnly ? undefined : existing.local;
       }
 
-      return bound.has(name) && bound.get(name) !== HttpMethodNames.MODULE ? undefined : name;
+      return bound.has(name) ? undefined : name;
     };
 
     const needed = new Map<string, string>();
@@ -161,7 +182,7 @@ export class HttpMethodsTransform {
     const rewrite = (node: TS.Identifier, entry: IOldImport): void => {
       const isType = entry.imported === HttpMethodNames.TYPE;
       const name = isType ? HttpMethodNames.NEW_TYPE : HttpMethodNames.NEW_CLASS;
-      const local = localOf(name);
+      const local = localOf({ name, isValue: !isType });
       const access = node.parent;
       let reason: string | undefined;
 
@@ -186,7 +207,10 @@ export class HttpMethodsTransform {
         return;
       }
 
-      needed.set(name, isType ? `type ${name}` : name);
+      if (!present.has(name)) {
+        needed.set(name, isType ? `type ${name}` : name);
+      }
+
       entry.edits.push({
         start: node.getStart(sourceFile),
         end: node.getEnd(),
@@ -195,7 +219,24 @@ export class HttpMethodsTransform {
     };
 
     const visit = (node: TS.Node): void => {
-      if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      if (ts.isImportDeclaration(node)) {
+        return;
+      }
+
+      if (ts.isExportDeclaration(node)) {
+        const clause = node.exportClause;
+        const isLocal = !node.moduleSpecifier && clause && ts.isNamedExports(clause);
+
+        for (const element of isLocal ? clause.elements : []) {
+          const name = (element.propertyName ?? element.name).getText(sourceFile);
+          const entry = imports.get(name);
+
+          if (entry) {
+            entry.isKept = true;
+            list(element, name, HttpMethodReasons.EXPORT);
+          }
+        }
+
         return;
       }
 
@@ -208,6 +249,9 @@ export class HttpMethodsTransform {
 
         if (entry && !isMemberName) {
           rewrite(node, entry);
+        } else if (!entry && isOldName(node.text) && !bound.has(node.text)) {
+          // Reached another way: through a namespace import or an `import()` type.
+          list(node, node.text, HttpMethodReasons.USE);
         }
       }
 
@@ -243,34 +287,32 @@ export class HttpMethodsTransform {
       return HttpMethodReasons.USE;
     }
 
-    const holder = property.parent.parent;
-    const isBrowserCall =
-      (ts.isCallExpression(holder) && /(^|\.)fetch$/.test(holder.expression.getText())) ||
-      (ts.isNewExpression(holder) && holder.expression.getText() === 'Request');
-    const isUnsafePatch =
-      access.name.text === 'PATCH' && !HttpMethodsTransform.isSentByArdor({ ts, node: property });
-
-    return isBrowserCall || isUnsafePatch ? HttpMethodReasons.FETCH : undefined;
+    return HttpMethodsTransform.isSentByArdor({ ts, literal: property.parent })
+      ? undefined
+      : HttpMethodReasons.ELSEWHERE;
   }
 
-  /** Whether a call of `send`, `doRequest` or `request` holds the node: those uppercase it. */
-  private static isSentByArdor(opts: { ts: TTypeScript; node: TS.Node }): boolean {
-    const { ts } = opts;
-    let node: TS.Node = opts.node;
+  /**
+   * Whether ARDOR sends what the literal holds: the argument of `doRequest`, the `params` of a
+   * `send` argument, or a literal declared as `ISendParams`.
+   */
+  private static isSentByArdor(opts: { ts: TTypeScript; literal: TS.Node }): boolean {
+    const { ts, literal } = opts;
+    const holder = literal.parent;
+    const isCallOf = (call: TS.Node, name: string): boolean =>
+      ts.isCallExpression(call) &&
+      ts.isPropertyAccessExpression(call.expression) &&
+      call.expression.name.text === name;
 
-    while (!ts.isSourceFile(node)) {
-      if (
-        ts.isCallExpression(node) &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        HttpMethodNames.SENDERS.has(node.expression.name.text)
-      ) {
-        return true;
-      }
-
-      node = node.parent;
+    if (ts.isVariableDeclaration(holder) || ts.isSatisfiesExpression(holder)) {
+      return holder.type?.getText() === 'ISendParams';
     }
 
-    return false;
+    if (ts.isPropertyAssignment(holder) && holder.name.getText() === 'params') {
+      return isCallOf(holder.parent.parent, 'send');
+    }
+
+    return isCallOf(holder, 'doRequest');
   }
 
   /** Drops the old specifiers nothing uses any more and imports the new names. */
@@ -282,10 +324,7 @@ export class HttpMethodsTransform {
     needed: Map<string, string>;
   }): ISourceEdit[] {
     const { ts, sourceFile, entries, target, needed } = opts;
-    const present = new Set(
-      target?.elements.map((element) => (element.propertyName ?? element.name).text),
-    );
-    const names = [...needed].filter(([name]) => !present.has(name)).map(([, text]) => text);
+    const names = [...needed.values()];
     const edits: ISourceEdit[] = [];
     let insertion = '';
 
@@ -315,6 +354,19 @@ export class HttpMethodsTransform {
       );
       const kept = named.elements.filter((element) => !dropped.has(element));
       const start = declaration.getStart(sourceFile);
+
+      const defaultName = declaration.importClause?.name;
+
+      if (kept.length === 0 && defaultName) {
+        edits.push({ start: defaultName.getEnd(), end: named.getEnd(), text: '' });
+
+        if (insertion) {
+          edits.push({ start, end: start, text: insertion });
+          insertion = '';
+        }
+
+        continue;
+      }
 
       if (kept.length === 0) {
         const end = declaration.getEnd() + (sourceFile.text[declaration.getEnd()] === '\n' ? 1 : 0);

@@ -134,8 +134,8 @@ bun run ardor codemod no-auth src --write
 0.5.0 removes `RequestMethods` and `TRequestMethod`. Use `HTTP.Methods` and `THttpMethod` from `@venizia/ignis-helpers/common`, and add that package to your dependencies if yours does not list it.
 
 ```diff
--    return { method: RequestMethods.PATCH };
-+    return { method: HTTP.Methods.PATCH };
+-    dataProvider.send({ resource, params: { method: RequestMethods.PATCH } });
++    dataProvider.send({ resource, params: { method: HTTP.Methods.PATCH } });
 ```
 
 ```bash
@@ -143,9 +143,9 @@ bun run ardor codemod http-methods src
 bun run ardor codemod http-methods src --write
 ```
 
-- It rewrites a `method` property outside `fetch` and `new Request`, and the type `TRequestMethod`. It rewrites `PATCH` only inside a `send`, `doRequest` or `request` call: elsewhere the value may reach your own `fetch`, which does not uppercase it.
-- `HTTP.Methods` is lowercase, so it lists every other use and leaves the old import: a comparison, a `case`, a list, a computed key, a `fetch` or `new Request` call, any other `PATCH`, `isValid` and `values`, a re-export, and a file that already uses the name `HTTP` or `THttpMethod`.
-- ARDOR hands an override of `request` or `doRequest` the uppercase method: compare `method.toLowerCase() === HTTP.Methods.PATCH`.
+- It rewrites the type `TRequestMethod`, and a value only where ARDOR itself sends it: the `method` of a `doRequest({ ... })` argument, of the `params` of a `send` argument, and of a literal declared as `ISendParams`.
+- `HTTP.Methods` is lowercase, so it lists every other use and leaves the old import: a comparison, a `case`, a list, a computed key, any other literal, a `fetch` or `this.request` call, `isValid` and `values`, a re-export, and a file that already uses the name `HTTP` or `THttpMethod`.
+- Where ARDOR makes the call, an override of `request` or `doRequest` gets the uppercase method: compare `method.toLowerCase() === HTTP.Methods.PATCH`. A call your own code makes reaches your override as you wrote it.
 
 ### namespace
 
