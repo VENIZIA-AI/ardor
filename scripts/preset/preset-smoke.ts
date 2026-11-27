@@ -28,7 +28,7 @@
  *
  * Usage: bun scripts/preset/preset-smoke.ts [solo|refusal|pair|lib|docker]   (default: every scenario that can run)
  * Env:   VULCAN_CMD  how to run VULCAN (default `bun x @venizia/vulcan@<the version the root package.json pins>`,
- *                    never `latest`; to try a checkout: `bun <vulcan checkout>/packages/cli/src/cli.ts`)
+ *                    never `latest`; to try a checkout: `bun <vulcan checkout>/packages/cli/src/entry/cli.ts`)
  *        VULCAN_TGZ  comma-separated packed tarballs of @venizia/vulcan, vulcan-atlas and vulcan-okf,
  *                    used instead of the registry's
  *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed), for the pair scenario; without it

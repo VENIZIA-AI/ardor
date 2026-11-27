@@ -46,6 +46,7 @@ import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 import { WireMethods } from '@/utilities/wire-methods';
+import { ReactAdminDataFactory } from '@/utilities/react-admin-data';
 
 const recordLogger = LoggerFactory.getLogger(['DefaultRestDataProvider']);
 
@@ -564,43 +565,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       isOptional: true,
     });
 
-    return {
-      supportAbortSignal: true,
-      getList: (resource, params) => {
-        return this.getList({ resource, params: { ...params } });
-      },
-      getOne: (resource, params) => {
-        return this.getOne({ resource, params });
-      },
-      getMany: (resource, params) => {
-        return this.getMany({ resource, params });
-      },
-      getManyReference: (resource, params) => {
-        return this.getManyReference({ resource, params: { ...params } });
-      },
-      create: (resource, params) => {
-        return this.create({ resource, params });
-      },
-      update: (resource, params) => {
-        return this.update({ resource, params });
-      },
-      updateMany: (resource, params) => {
-        return this.updateMany({ resource, params });
-      },
-      delete: (resource, params) => {
-        return this.delete({ resource, params });
-      },
-      deleteMany: (resource, params) => {
-        return this.deleteMany({ resource, params });
-      },
-      // Bound, so both shapes of `send` stay on the provider react-admin and the app see.
-      send: this.send.bind(this),
-      getNetworkService: () => {
-        return this.getNetworkService();
-      },
-      getDataSourceAuth: () => {
-        return this.getDataSourceAuth();
-      },
-    };
+    return ReactAdminDataFactory.build({ provider: this });
   }
 }
