@@ -226,8 +226,6 @@ generated:
 - `IListFilter` interface
 - `ILoginParams` interface
 - `IMenuEntry` interface
-- `IReactAdminAuthProvider` type
-- `IReactAdminDataProvider` type
 - `IRestRequestOptions` interface
 - `IRouteAccess` interface
 - `ISendRequest` interface
@@ -241,6 +239,8 @@ generated:
 - `TFeatureMenuEntry` type
 - `TFeatureMessages` type
 - `TI18nSource` type
+- `TReactAdminAuthProvider` type
+- `TReactAdminDataProvider` type
 - `TSessionClearReason` type
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
@@ -337,8 +337,6 @@ generated:
 - `injectable` const
 - `INoAuthOptions` interface
 - `IPermissionProvider` interface
-- `IReactAdminAuthProvider` type
-- `IReactAdminDataProvider` type
 - `IRequestPayload` interface
 - `IResponseSchema` interface
 - `IRestDataProviderOptions` interface
@@ -416,6 +414,8 @@ generated:
 - `TNumberConstValue` type
 - `TPaths` type
 - `TPrettify` type
+- `TReactAdminAuthProvider` type
+- `TReactAdminDataProvider` type
 - `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type

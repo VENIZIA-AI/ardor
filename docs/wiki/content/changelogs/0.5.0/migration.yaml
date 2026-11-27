@@ -549,3 +549,21 @@ storage-prefix-checked:
     steps:
       - 'Pin the four ARDOR packages to 0.5.0-12 or earlier.'
   data: Nothing stored changes.
+
+react-admin-provider-types-rename:
+  symbols: [IReactAdminDataProvider, IReactAdminAuthProvider]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod namespace --write` inside the package; it renames both types, imported from an ARDOR package, to `TReactAdminDataProvider` and `TReactAdminAuthProvider`.'
+      - 'Run `bun check`; rename by hand what is left: a re-export by name, `import(...)` types and a namespace import.'
+    before: |-
+      import type { IReactAdminAuthProvider, IReactAdminDataProvider } from '@venizia/ardor';
+      export type TProviders = [IReactAdminDataProvider, IReactAdminAuthProvider];
+    after: |-
+      import type { TReactAdminAuthProvider, TReactAdminDataProvider } from '@venizia/ardor';
+      export type TProviders = [TReactAdminDataProvider, TReactAdminAuthProvider];
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-13 or earlier and rename the two types back.
+  data: Nothing stored changes. Only the names of the types change.
+  codemod: namespace

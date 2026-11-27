@@ -278,10 +278,10 @@ describe('login', () => {
   });
 });
 
-interface SentRequest {
+type TSentRequest = {
   resource: string;
   body: unknown;
-}
+};
 
 const defaultSession = { userId: 7, roles: ['admin'], token: { value: 'jwt', type: 'Bearer' } };
 
@@ -290,7 +290,7 @@ const signInWith = (opts: {
   providerClass?: TClass<DefaultAuthProvider>;
   options?: TAuthProviderOptions;
   data?: unknown;
-  sent?: Array<SentRequest>;
+  sent?: Array<TSentRequest>;
 }) => {
   const container = new Container();
   container
@@ -345,7 +345,7 @@ describe('login and the page after it', () => {
   });
 
   test('with sign-in off the provider reads no paths: the default route and page', async () => {
-    const sent: Array<SentRequest> = [];
+    const sent: Array<TSentRequest> = [];
     const outcome: unknown = await signInWith({ sent, options: { use: false } }).login({
       username: 'alice',
       password: 'secret-password',
@@ -439,7 +439,7 @@ describe('login against the sign-in response shapes', () => {
       }
     }
 
-    const sent: Array<SentRequest> = [];
+    const sent: Array<TSentRequest> = [];
     await signInWith({ providerClass: EmailAuthProvider, sent }).login({
       email: 'alice@example.com',
       password: 'secret-password',
@@ -465,7 +465,7 @@ describe('login against the sign-in response shapes', () => {
       }
     }
 
-    const sent: Array<SentRequest> = [];
+    const sent: Array<TSentRequest> = [];
     await signInWith({
       providerClass: FormAuthProvider,
       options: { use: true, paths: { signIn: '/auth/login' } },
@@ -1386,7 +1386,7 @@ describe('paths as protected getters', () => {
   }
 
   test('signInPath defaults to /auth/sign-in and follows paths.signIn; a subclass may override it', async () => {
-    const sent: Array<SentRequest> = [];
+    const sent: Array<TSentRequest> = [];
 
     await signInWith({ sent }).login({ username: 'alice' });
     await signInWith({ sent, options: { use: true, paths: { signIn: '/api/login' } } }).login({

@@ -41,7 +41,7 @@ To replace the provider with a subclass, bind the subclass class under the key i
 | `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
 | `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |
 | `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
-| `IReactAdminDataProvider<TResource>` | type | The standard nine-method react-admin data provider interface. |
+| `TReactAdminDataProvider<TResource>` | type | The standard nine-method react-admin data provider interface. |
 | `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
 | `INetworkResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
 | `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |

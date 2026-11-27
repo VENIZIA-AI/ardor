@@ -154,8 +154,8 @@ export class ShopApplication extends BaseArdorApplication {
 | `IPermissionProvider` | interface | `@venizia/ardor-kernel` | Contract for authorization checks: `canAccess({ resource, action, record })` |
 | `CoreBindings.PERMISSION_PROVIDER` | const | `@venizia/ardor-kernel` | Container key (`@app/application/permission/provider`) where the provider is bound |
 | `DefaultAuthProvider` | class | `@venizia/ardor-admin` | Auth provider that delegates `canAccess` to the bound `IPermissionProvider` |
-| `IReactAdminAuthProvider` | type | `@venizia/ardor-admin` | React-admin auth provider contract including optional `canAccess` |
-| `IAuthProvider` | interface | `@venizia/ardor-admin` | ARDOR auth provider extending `IReactAdminAuthProvider` with `getRoles` and `refreshToken` |
+| `TReactAdminAuthProvider` | type | `@venizia/ardor-admin` | React-admin auth provider contract including optional `canAccess` |
+| `IAuthProvider` | interface | `@venizia/ardor-admin` | ARDOR auth provider extending `TReactAdminAuthProvider` with `getRoles` and `refreshToken` |
 | `DefaultAuthService` | class | `@venizia/ardor-kernel` | Service providing `getRoles()` to inspect the signed-in user's roles |
 | `RolePermissionProvider` | class | `@venizia/ardor-kernel` | Opt-in `IPermissionProvider` over a table of role grants; ARDOR binds none by default |
 | `IRolePermissionProviderOptions` | interface | `@venizia/ardor-kernel` | The table: `{ grants }`, role name to grant patterns |
@@ -173,7 +173,7 @@ export class ShopApplication extends BaseArdorApplication {
 | `record` | `unknown` | `undefined` | The record being accessed; present for record-level actions and omitted for resource-level actions |
 | `signal` | `AbortSignal` | `undefined` | React-admin query cancellation signal |
 
-`signal` is received by `IReactAdminAuthProvider.canAccess` and not forwarded to `IPermissionProvider.canAccess` by `DefaultAuthProvider.value()` in `packages/admin/src/providers/auth.ts`.
+`signal` is received by `TReactAdminAuthProvider.canAccess` and not forwarded to `IPermissionProvider.canAccess` by `DefaultAuthProvider.value()` in `packages/admin/src/providers/auth.ts`.
 
 ## How react-admin consumes canAccess
 

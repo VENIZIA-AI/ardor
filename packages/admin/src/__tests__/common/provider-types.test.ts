@@ -11,8 +11,8 @@ import type { TUseTranslateFn } from '@/hooks/use-translate';
 import type {
   IAuthProvider,
   IDataProvider,
-  IReactAdminAuthProvider,
-  IReactAdminDataProvider,
+  TReactAdminAuthProvider,
+  TReactAdminDataProvider,
 } from '@/common';
 
 type TDataMethods =
@@ -32,7 +32,7 @@ type TMutuallyAssignable<A, B> = [A] extends [B] ? ([B] extends [A] ? true : fal
 describe('provider types', () => {
   test('the react-admin data provider is derived from ra-core DataProvider', () => {
     const same: TMutuallyAssignable<
-      IReactAdminDataProvider,
+      TReactAdminDataProvider,
       Pick<DataProvider, TDataMethods>
     > = true;
 
@@ -41,11 +41,11 @@ describe('provider types', () => {
 
   test('the react-admin auth provider is derived from ra-core AuthProvider', () => {
     const required: TMutuallyAssignable<
-      Pick<IReactAdminAuthProvider, 'login' | 'logout' | 'checkAuth' | 'checkError'>,
+      Pick<TReactAdminAuthProvider, 'login' | 'logout' | 'checkAuth' | 'checkError'>,
       Pick<AuthProvider, 'login' | 'logout' | 'checkAuth' | 'checkError'>
     > = true;
     const canAccess: TMutuallyAssignable<
-      IReactAdminAuthProvider['canAccess'],
+      TReactAdminAuthProvider['canAccess'],
       AuthProvider['canAccess']
     > = true;
 

@@ -51,7 +51,7 @@ To replace the provider, subclass it and bind the subclass under `CoreBindings.D
 | `TAuthProviderOptions` | type | `{ use: false }`, or `{ use: true }` with the `IAuthProviderOptions` fields: the value of `AUTH_PROVIDER_OPTIONS` |
 | `IAuthProviderOptions` | interface | Configuration options for authentication routes under `paths` |
 | `IAuthProvider` | interface | Extended react-admin auth provider including `getRoles` and `refreshToken` |
-| `IReactAdminAuthProvider` | type | Standard react-admin auth provider contract |
+| `TReactAdminAuthProvider` | type | Standard react-admin auth provider contract |
 | `ILoginParams` | interface | What the login form hands to `login`: `username`, `password` and any other form field |
 | `ISignInSession` | interface | Parsed sign-in session carrying `userId`, `token`, and `roles` |
 | `SessionClearReasons`, `TSessionClearReason` | class, type | Reasons `onSessionCleared` receives: `logout`, `unauthorized`, `rejected`, `external` |
