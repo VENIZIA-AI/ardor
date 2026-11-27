@@ -4,6 +4,7 @@ import { BaseApplicationTransform } from './base-application';
 import { DefaultProvidersTransform } from './default-providers';
 import { Migration } from './migrate';
 import { NoAuthTransform } from './no-auth';
+import { HttpMethodsTransform } from './http-methods';
 
 export { CodemodFlags, USAGE_ERROR_CODE };
 
@@ -149,6 +150,35 @@ Like every codemod it reads the files git knows (tracked, or untracked and not i
 refuses a file with local changes, so git can undo it. --write is all or nothing. Run your formatter
 afterwards.`;
 
+const HTTP_METHODS_USAGE = `Usage: ardor codemod http-methods [paths...] [--write [--allow-dirty] | --check]
+
+Moves RequestMethods and TRequestMethod of the ARDOR packages to HTTP.Methods and THttpMethod of
+@venizia/ignis-helpers/common. Add @venizia/ignis-helpers to the dependencies of a package that
+does not list it.
+
+The old values are uppercase and HTTP.Methods is lowercase, so it rewrites a value only as a method
+property outside a fetch call:
+
+  provider.send({ method: RequestMethods.PATCH })  ->  provider.send({ method: HTTP.Methods.PATCH })
+
+A method of fetch or new Request is listed, and so is PATCH outside a send, doRequest or request
+call: it may reach your own fetch, which does not uppercase it.
+
+Listed with their line and left for you, with the old import: a comparison, a case clause, a list,
+a computed key or any other use of a value (ARDOR hands an override the uppercase method: compare
+method.toLowerCase() === HTTP.Methods.GET); isValid and values (HTTP.Methods is a plain object); a re-export; and a file that already
+uses the name HTTP or THttpMethod for something else.
+
+  --write    write the changed files (without it, nothing is written)
+  --allow-dirty  with --write, also write a file that has local changes, such as one another codemod
+             just changed
+  --check    dry run that exits 1 when anything would change or is left (for CI)
+  --help     print this text and exit
+
+Like every codemod it reads the files git knows (tracked, or untracked and not ignored) and --write
+refuses a file with local changes, so git can undo it. --write is all or nothing. Run your formatter
+afterwards.`;
+
 /** `ardor codemod namespace`: the removed bare names move to the class members that replace them. */
 export class NamespaceCommand {
   static readonly NAME = 'namespace';
@@ -219,6 +249,24 @@ export class NoAuthCommand {
 
   static run(opts: { root: string; args: string[] }): Promise<number> {
     return CodemodCommand.run({ ...opts, spec: NoAuthCommand.SPEC });
+  }
+}
+
+/** `ardor codemod http-methods`: `RequestMethods` becomes IGNIS's `HTTP.Methods`. */
+export class HttpMethodsCommand {
+  static readonly NAME = 'http-methods';
+  static readonly USAGE = HTTP_METHODS_USAGE;
+  static readonly SPEC: ICodemodSpec = {
+    name: HttpMethodsCommand.NAME,
+    usage: HTTP_METHODS_USAGE,
+    unit: 'use',
+    extraFlags: [],
+    isDetectOnly: false,
+    transform: (opts) => HttpMethodsTransform.run(opts),
+  };
+
+  static run(opts: { root: string; args: string[] }): Promise<number> {
+    return CodemodCommand.run({ ...opts, spec: HttpMethodsCommand.SPEC });
   }
 }
 

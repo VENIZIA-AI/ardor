@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { BindingScopes, getError } from '@venizia/ignis-inversion';
 
 import {
@@ -16,7 +17,6 @@ import {
   type ISendParams,
   provide,
   RequestBodyEncoder,
-  RequestMethods,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
@@ -163,17 +163,17 @@ const dataProvider = application.get<IDataProvider>({
 
 const list = await dataProvider.send({
   resource: 'products',
-  params: { method: RequestMethods.GET },
+  params: { method: HTTP.Methods.GET },
   schema: schemaOf({ name: 'drink list', isValid: isDrinkList }),
 });
 const one = await dataProvider.send({
   resource: 'products',
-  params: { method: RequestMethods.GET, query: { id: 2 } },
+  params: { method: HTTP.Methods.GET, query: { id: 2 } },
   schema: schemaOf({ name: 'drink', isValid: isDrink }),
 });
 const login = await dataProvider.send({
   resource: 'auth/login',
-  params: { method: RequestMethods.POST, payload: { data: { username: 'barista' } } },
+  params: { method: HTTP.Methods.POST, payload: { data: { username: 'barista' } } },
   schema: schemaOf({ name: 'session', isValid: isSession }),
 });
 
@@ -182,7 +182,7 @@ console.log(
 );
 
 try {
-  await dataProvider.send({ resource: 'nope', params: { method: RequestMethods.GET } });
+  await dataProvider.send({ resource: 'nope', params: { method: HTTP.Methods.GET } });
 } catch (error) {
   console.log(`[ipc] unknown command rejected as expected: ${JSON.stringify(error)}`);
 }

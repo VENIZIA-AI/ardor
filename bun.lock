@@ -60,6 +60,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@venizia/ardor": "workspace:*",
+        "@venizia/ignis-helpers": "catalog:",
         "@venizia/ignis-inversion": "catalog:",
         "react": "catalog:",
         "reflect-metadata": "catalog:",
@@ -136,6 +137,7 @@
       "dependencies": {
         "@reduxjs/toolkit": "catalog:",
         "@venizia/ardor": "workspace:*",
+        "@venizia/ignis-helpers": "catalog:",
         "@venizia/ignis-inversion": "catalog:",
         "ra-core": "catalog:",
         "react": "catalog:",

@@ -549,3 +549,26 @@ storage-prefix-checked:
     steps:
       - 'Pin the four ARDOR packages to 0.5.0-12 or earlier.'
   data: Nothing stored changes.
+
+request-methods-removed:
+  symbols: [RequestMethods, TRequestMethod, DefaultNetworkRequestService]
+  upgrade:
+    steps:
+      - 'Add `@venizia/ignis-helpers` to the dependencies of each package that does not list it.'
+      - 'Run `bun run ardor codemod http-methods src` to preview, then add `--write`. It rewrites a `method` property outside `fetch` and `new Request` (`PATCH` only inside a `send`, `doRequest` or `request` call) and the type `TRequestMethod`, and lists with file and line what it left.'
+      - 'Fix what it listed. Where ARDOR hands you a method (an override of `request` or `doRequest`, a transport), it is uppercase: compare `method.toLowerCase() === HTTP.Methods.X`. In your own `fetch` call write `HTTP.Methods.X.toUpperCase()`. Replace `isValid` and `values()` with `Object.values(HTTP.Methods)`.'
+      - 'Search for comparisons with an uppercase text or `HTTP.Methods` in an override of `send`: it receives what the caller wrote, which is lowercase when the caller writes `HTTP.Methods.X`.'
+    before: |-
+      import { RequestMethods, type ISendParams } from '@venizia/ardor';
+      export const params: ISendParams = { method: RequestMethods.PATCH };
+      export const isPatch = (method: string) => method === RequestMethods.PATCH;
+    after: |-
+      import type { ISendParams } from '@venizia/ardor';
+      import { HTTP } from '@venizia/ignis-helpers/common';
+      export const params: ISendParams = { method: HTTP.Methods.PATCH };
+      export const isPatch = (method: string) => method.toLowerCase() === HTTP.Methods.PATCH;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-13 and import RequestMethods and TRequestMethod from ARDOR again.
+  data: Nothing stored changes. The same methods are sent.
+  codemod: http-methods

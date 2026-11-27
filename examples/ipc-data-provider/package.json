@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@venizia/ardor": "workspace:*",
+    "@venizia/ignis-helpers": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
     "react": "catalog:",
     "reflect-metadata": "catalog:"

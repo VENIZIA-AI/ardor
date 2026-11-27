@@ -1,15 +1,11 @@
 import { RecordUtility } from '@venizia/ignis-helpers/core';
 import type { RaRecord } from 'ra-core';
 
-import {
-  NetworkResponseReader,
-  RequestMethods,
-  RequestTypes,
-  type TRequestType,
-} from '@venizia/ardor-kernel';
+import { NetworkResponseReader, RequestTypes, type TRequestType } from '@venizia/ardor-kernel';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IListFilter } from './list-filter';
 import { DefaultRestDataProvider } from './rest-data';
+import { WireMethods } from '@/utilities/wire-methods';
 
 /**
  * For a backend whose list routes send no `Content-Range`: the list reads take their `total` from
@@ -44,7 +40,7 @@ export class CountRestDataProvider<
     const count = this.request({
       resource,
       type: RequestTypes.SEND,
-      method: RequestMethods.GET,
+      method: WireMethods.GET,
       paths: [resource, 'count'],
       query: { ...queryKey, where: filter?.where },
       signal,

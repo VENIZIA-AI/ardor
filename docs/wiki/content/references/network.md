@@ -17,7 +17,6 @@ import {
   inject,
   type IResponseSchema,
   RequestCountData,
-  RequestMethods,
   RequestTypes,
   service,
 } from '@venizia/ardor';
@@ -76,7 +75,7 @@ export class AuditReportService {
       // `data` is what the schema checked and typed; without one it is `unknown`.
       schema: auditReportSchema,
       type: RequestTypes.SEND,
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       paths: ['/audit/export'],
       body: JSON.stringify({ category }),
       headers: { ...headers, [HTTP.Headers.CONTENT_TYPE]: 'application/json' },
@@ -97,7 +96,6 @@ export class AuditReportService {
 | `NETWORK_TIMEOUT_CODE` | constant | `normalized.code` of the 504 a request rejects with when it outlives `timeout` |
 | `TRequestTimeoutOptions` | type | The `timeout` option: `{ use: false }` or `{ use: true; milliseconds }` |
 | `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
-| `RequestMethods` | class | HTTP method constants (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, etc.) |
 | `RequestTypes` | class | React-admin and kernel request type constants |
 | `RequestCountData` | class | Flag constants for count responses (`DATA_ONLY`, `DATA_WITH_COUNT`) |
 | `RequestChannel` | class | Default channel constant (`WEB`) |
@@ -193,7 +191,8 @@ export class ApiConfiguration {
 `doRequest` also takes a `signal` (an `AbortSignal`). An aborted request rejects with the signal's reason, an `AbortError` for `controller.abort()`. It is not a 401: it starts no refresh, and `DefaultAuthProvider.checkError` resolves for it. With a timeout on, a user abort still rejects with the abort, never with the timeout code.
 
 ```ts
-import { DefaultNetworkRequestService, RequestMethods, RequestTypes } from '@venizia/ardor';
+import { HTTP } from '@venizia/ignis-helpers/common';
+import { DefaultNetworkRequestService, RequestTypes } from '@venizia/ardor';
 
 export async function readHealth(controller: AbortController): Promise<unknown> {
   const network = new DefaultNetworkRequestService({
@@ -204,7 +203,7 @@ export async function readHealth(controller: AbortController): Promise<unknown> 
 
   const response = await network.doRequest({
     type: RequestTypes.SEND,
-    method: RequestMethods.GET,
+    method: HTTP.Methods.GET,
     paths: ['/health'],
     signal: controller.signal,
   });

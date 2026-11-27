@@ -5,50 +5,9 @@ import {
   RequestBodyTypes,
   RequestChannel,
   RequestCountData,
-  RequestMethods,
   RequestTypes,
 } from '@/common/constants';
 import { CoreBindings, LocalStorageKeys } from '@/common/keys';
-
-describe('RequestMethods scheme validation and members', () => {
-  test('RequestMethods.isValid accepts every declared method and rejects foreign strings', () => {
-    const declaredMethods = [
-      RequestMethods.HEAD,
-      RequestMethods.OPTIONS,
-      RequestMethods.GET,
-      RequestMethods.POST,
-      RequestMethods.PUT,
-      RequestMethods.PATCH,
-      RequestMethods.DELETE,
-    ];
-
-    for (const method of declaredMethods) {
-      expect(RequestMethods.isValid(method)).toBe(true);
-    }
-
-    expect(RequestMethods.isValid('INVALID')).toBe(false);
-    expect(RequestMethods.isValid('get')).toBe(false);
-    expect(RequestMethods.isValid('')).toBe(false);
-  });
-
-  test('RequestMethods.values() contains exactly the declared request methods', () => {
-    const declaredMethods = [
-      RequestMethods.HEAD,
-      RequestMethods.OPTIONS,
-      RequestMethods.GET,
-      RequestMethods.POST,
-      RequestMethods.PUT,
-      RequestMethods.PATCH,
-      RequestMethods.DELETE,
-    ];
-
-    expect(RequestMethods.values().length).toBe(declaredMethods.length);
-
-    for (const method of declaredMethods) {
-      expect(Array.from<string>(RequestMethods.values())).toContain(method);
-    }
-  });
-});
 
 describe('RequestTypes scheme validation and members', () => {
   test('RequestTypes.isValid accepts every declared request type and rejects foreign strings', () => {

@@ -12,7 +12,6 @@ import {
   type IStoredAuthUser,
   type ISignInSession,
   type IPermissionProvider,
-  RequestMethods,
   StorageAreas,
 } from '@venizia/ardor-kernel';
 import type { IAuthProvider, IAuthRejection, IDataProvider } from '@/common';
@@ -20,6 +19,7 @@ import { AuthSessionUtility } from '@/utilities/auth-session';
 import { ReactAdminAuthFactory } from '@/utilities/react-admin-auth';
 import { SignInUtility } from '@/utilities/sign-in';
 import { type ILoginParams, SessionClearReasons, type TSessionClearReason } from './auth-types';
+import { WireMethods } from '@/utilities/wire-methods';
 
 export { type ILoginParams, SessionClearReasons, type TSessionClearReason } from './auth-types';
 
@@ -393,7 +393,7 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
     const response = await this.restDataProvider.send({
       resource: this.signInPath,
       params: {
-        method: RequestMethods.POST,
+        method: WireMethods.POST,
         payload: { data: this.buildSignInBody({ params }) },
       },
     });

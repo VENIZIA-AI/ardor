@@ -23,7 +23,8 @@ You have an application whose container class extends `BaseArdorApplication` (`A
 | `IApplicationInfo` | interface | Injected under `CoreBindings.APPLICATION_INFO`. |
 | `CoreBindings` | class | Keys for the two base constructor injections and the provider slot you replace. |
 | `@configuration()`, `@provide()` | decorators | Bind the transport function under a key of your own. |
-| `TRequestType`, `TRequestMethod` | types | Types of the request type and method constants. |
+| `TRequestType` | type | The type of the request type constants. |
+| `THttpMethod` | type | An HTTP method, from `@venizia/ignis-helpers/common`. |
 
 ## What the base class does per call
 
@@ -46,6 +47,8 @@ declare class DefaultRestDataProvider<TResource extends string = string> {
 
 So there is one seam: override `request()` and every method moves to your transport, `send()` and the list methods included.
 
+The react-admin methods and `send()` hand `request()` the method in uppercase (`'PATCH'`), while `HTTP.Methods` holds lowercase values: compare `method.toLowerCase() === HTTP.Methods.PATCH`. A method your own subclass passes to `this.request()` reaches your override as you wrote it, so write it with `DefaultNetworkRequestService.toWireMethod({ method })` when your transport needs uppercase.
+
 ## What the filter mapping produces
 
 This is the part you keep. Your transport receives a `query` whose `filter` is already in the shape the base builds:
@@ -64,11 +67,12 @@ Keys of `filter.params` and of `meta` are lifted to the top level of `query`, ne
 Define a function type for your transport. It receives what the base would have handed to `doRequest` and resolves to an `INetworkResponse`.
 
 ```ts
-import { type INetworkResponse, type TRequestMethod, type TRequestType } from '@venizia/ardor';
+import { type THttpMethod } from '@venizia/ignis-helpers/common';
+import { type INetworkResponse, type TRequestType } from '@venizia/ardor';
 
 export interface ITransportRequest {
   type: TRequestType;
-  method: TRequestMethod;
+  method: THttpMethod;
   paths: string[];
   query?: { filter?: { limit?: number; skip?: number } } & Record<string, unknown>;
   headers?: HeadersInit;
@@ -111,6 +115,7 @@ The same type fits a Tauri `invoke` wrapper or a `postMessage` bridge to a Worke
 The subclass keeps the two base injections, adds a third for the transport, and overrides `request()`. The transport type from the previous section is repeated here so the snippet stands on its own.
 
 ```ts
+import { type THttpMethod } from '@venizia/ignis-helpers/common';
 import {
   BindingKeys,
   CoreBindings,
@@ -123,7 +128,6 @@ import {
   type IRestRequestOptions,
   NetworkResponseReader,
   RequestBodyEncoder,
-  type TRequestMethod,
   type TRequestType,
 } from '@venizia/ardor';
 import { HttpHeaders } from '@venizia/ignis-helpers/core';
@@ -131,7 +135,7 @@ import { HttpHeaders } from '@venizia/ignis-helpers/core';
 // Same contract as in "The transport contract" above.
 export interface ITransportRequest {
   type: TRequestType;
-  method: TRequestMethod;
+  method: THttpMethod;
   paths: string[];
   query?: { filter?: { limit?: number; skip?: number } } & Record<string, unknown>;
   headers?: HeadersInit;
@@ -242,6 +246,7 @@ What still comes from the base:
 Two of the three injections are options you bind: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` (with `url`) and, from the framework, `CoreBindings.APPLICATION_INFO`. Bind the third, `TransportBindings.TRANSPORT`, with a `@provide` method of a `@configuration()` class. Replace the default data provider with one line in `bindContext()`: your provider class under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, as a singleton.
 
 ```ts
+import { type THttpMethod } from '@venizia/ignis-helpers/common';
 import { BindingScopes, type TBindingKey } from '@venizia/ignis-inversion';
 
 import {
@@ -253,14 +258,13 @@ import {
   type INetworkResponse,
   type IRestDataProviderOptions,
   provide,
-  type TRequestMethod,
   type TRequestType,
 } from '@venizia/ardor';
 
 // Declared in the sections above.
 interface ITransportRequest {
   type: TRequestType;
-  method: TRequestMethod;
+  method: THttpMethod;
   paths: string[];
 }
 type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;

@@ -29,7 +29,7 @@ The wiki also runs a snippet gate that compiles every ```ts fence in the docs ag
 packages (kernel, react, admin, ardor). A code sample that references a service, provider, hook,
 or constant that does not exist - or that uses the wrong import path - fails the gate the same way
 a bad link does. Keep examples honest: reference real binding keys like `services.<ClassName>`,
-real constants like `RequestMethods` and `RequestTypes` from
+real constants like `RequestTypes` and `RequestBodyTypes` from
 `packages/kernel/src/common/constants.ts`, and real error helpers like `getError` from
 `@venizia/ignis-inversion`.
 

@@ -62,7 +62,7 @@ so a failed refresh surfaces as a real error instead of looping - the general sh
 documented in [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
 
 `IdentityService.whoAmI()` is decorated with `@api()` and calls
-`this.dataProvider.send(...)` with an explicit `RequestMethods`, following the pattern in
+`this.dataProvider.send(...)` with an explicit `HTTP.Methods` value, following the pattern in
 [Data provider pipeline](/architecture/data-provider-pipeline.md).
 
 ## configurations CRUD list

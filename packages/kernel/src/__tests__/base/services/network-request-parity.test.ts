@@ -11,7 +11,6 @@ import {
   RequestBodyTypes,
   RequestChannel,
   RequestCountData,
-  RequestMethods,
   RequestTypes,
   type TRequestType,
 } from '@/common';
@@ -112,7 +111,7 @@ describe('the headers a request carries', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
     });
 
@@ -128,7 +127,7 @@ describe('the headers a request carries', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       headers: { 'x-own': 'own-1' },
     });
@@ -149,12 +148,12 @@ describe('the headers a request carries', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
     });
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       headers: { 'x-own': 'own-1' },
     });
@@ -179,7 +178,7 @@ describe('the headers a request carries', () => {
     });
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_LIST,
       ...props,
     });
@@ -209,7 +208,7 @@ describe('the headers a request carries', () => {
     });
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_LIST,
       requestCountData: RequestCountData.DATA_WITH_COUNT,
       ...props,
@@ -239,7 +238,7 @@ describe('the headers a request carries', () => {
     });
     const response = await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       ...props,
     });
@@ -274,7 +273,7 @@ describe('the bodies a request carries', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       type: RequestTypes.CREATE,
       ...props,
     });
@@ -308,7 +307,7 @@ describe('the bodies a request carries', () => {
 
     await service.doRequest({
       paths: ['sign-in'],
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       type: RequestTypes.SEND,
       ...props,
     });
@@ -325,7 +324,7 @@ describe('the bodies a request carries', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       type: RequestTypes.CREATE,
       headers: { 'x-own': 'own-1' },
       body: { title: 'a' },
@@ -341,7 +340,7 @@ describe('the bodies a request carries', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.POST,
+      method: HTTP.Methods.POST,
       type: RequestTypes.SEND,
       headers: { 'content-type': 'application/json' },
       body: null,
@@ -357,7 +356,7 @@ describe('the query a request carries', () => {
 
     await service.doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_LIST,
       query: {
         filter: { where: { name: { like: '%a b%' } }, order: ['id DESC'], skip: 0 },
@@ -385,7 +384,7 @@ describe('the query a request carries', () => {
 
     await service.doRequest({
       paths: ['items?scope=mine'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_LIST,
       query: { page: 2 },
     });
@@ -403,7 +402,7 @@ describe('the totals and counts of a response', () => {
   const getList = (opts: { requestCountData?: string } = {}) => {
     return createService({ isOpen: true }).doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_LIST,
       requestCountData:
         opts.requestCountData === RequestCountData.DATA_WITH_COUNT
@@ -480,14 +479,14 @@ describe('the totals and counts of a response', () => {
 
     const counted = await service.doRequest({
       paths: ['items', '1'],
-      method: RequestMethods.PATCH,
+      method: HTTP.Methods.PATCH,
       type: RequestTypes.UPDATE,
     });
 
     handler = () => Response.json({ id: 1 });
     const uncounted = await service.doRequest({
       paths: ['items', '1'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
     });
 
@@ -500,7 +499,7 @@ describe('the totals and counts of a response', () => {
 
     const response = await createService({ isOpen: true }).doRequest({
       paths: ['items', '1'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_ONE,
       requestCountData: RequestCountData.DATA_WITH_COUNT,
     });
@@ -529,7 +528,7 @@ describe('the errors of a response', () => {
     const error = await RejectionUtility.rejectionOf({
       task: createService({ isOpen: true }).doRequest({
         paths: ['relay'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type: RequestTypes.GET_ONE,
       }),
     });
@@ -550,7 +549,7 @@ describe('the 2xx bodies as they are read today', () => {
 
     return createService({ isOpen: true }).doRequest({
       paths: ['body'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.SEND,
     });
   };
@@ -602,7 +601,7 @@ describe('the 2xx bodies as they are read today', () => {
 
       const response = await createService({ isOpen: true }).doRequest({
         paths: ['items'],
-        method: RequestMethods.GET,
+        method: HTTP.Methods.GET,
         type,
       });
 
@@ -615,7 +614,7 @@ describe('the 2xx bodies as they are read today', () => {
 
     const response = await createService({ isOpen: true }).doRequest({
       paths: ['items'],
-      method: RequestMethods.GET,
+      method: HTTP.Methods.GET,
       type: RequestTypes.GET_LIST,
     });
 

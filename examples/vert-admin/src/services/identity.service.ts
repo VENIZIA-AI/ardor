@@ -1,3 +1,4 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import {
   api,
   BaseService,
@@ -6,7 +7,6 @@ import {
   inject,
   type IResponseSchema,
   type ISendParams,
-  RequestMethods,
   service,
 } from '@venizia/ardor';
 import { getError } from '@venizia/ignis-inversion';
@@ -49,7 +49,7 @@ export class IdentityService extends BaseService {
 
   @api()
   async whoAmI(): Promise<IWhoAmI> {
-    const params: ISendParams = { method: RequestMethods.GET };
+    const params: ISendParams = { method: HTTP.Methods.GET };
     const response = await this.dataProvider.send({
       resource: VertPaths.WHO_AM_I,
       params,
