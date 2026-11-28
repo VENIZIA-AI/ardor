@@ -17,7 +17,14 @@ const Wrapper = ({ children }: IWrapperProps) => {
 
 const buildError = () => {
   return getError({
-    message: { code: 'auth.invalid', text: 'Invalid authentication', args: { name: 'x' } },
+    message: { code: 'app.failed', text: 'Something failed', args: { name: 'x' } },
+  });
+};
+
+const buildStatusError = (opts: { statusCode: number }) => {
+  return getError({
+    statusCode: opts.statusCode,
+    message: { code: 'app.failed', text: 'Something failed', args: { name: 'x' } },
   });
 };
 
@@ -44,7 +51,7 @@ describe('useNotifyError', () => {
 
     expect(result.current.notificationContext.notifications).toHaveLength(1);
     const [notification] = result.current.notificationContext.notifications;
-    expect(notification?.message).toBe('auth.invalid');
+    expect(notification?.message).toBe('app.failed');
     expect(notification?.type).toBe('error');
     expect(notification?.notificationOptions).toEqual({
       messageArgs: { name: 'x' },
@@ -61,7 +68,7 @@ describe('useNotifyError', () => {
 
     expect(result.current.notificationContext.notifications).toHaveLength(1);
     const [notification] = result.current.notificationContext.notifications;
-    expect(notification?.message).toBe('auth.invalid');
+    expect(notification?.message).toBe('app.failed');
     expect(notification?.type).toBe('warning');
     expect(notification?.notificationOptions).toEqual({
       messageArgs: { name: 'x' },
@@ -81,11 +88,65 @@ describe('useNotifyError', () => {
 
     expect(result.current.notificationContext.notifications).toHaveLength(1);
     const [notification] = result.current.notificationContext.notifications;
-    expect(notification?.message).toBe('auth.invalid');
+    expect(notification?.message).toBe('app.failed');
     expect(notification?.type).toBe('error');
     expect(notification?.notificationOptions).toEqual({
       messageArgs: { name: 'override' },
       autoHideDuration: 5000,
     });
+  });
+
+  test.each([500, 503, 504, 599])(
+    'a %i shows the generic server message, without arguments',
+    (statusCode) => {
+      const { result } = setupTest();
+
+      act(() => {
+        result.current.notifyError(buildStatusError({ statusCode }));
+      });
+
+      const [notification] = result.current.notificationContext.notifications;
+      expect(notification?.message).toBe('ra.notification.http_error');
+      expect(notification?.type).toBe('error');
+      expect(notification?.notificationOptions).toEqual({});
+    },
+  );
+
+  test.each([400, 422, 499])('a %i keeps its code and arguments', (statusCode) => {
+    const { result } = setupTest();
+
+    act(() => {
+      result.current.notifyError(buildStatusError({ statusCode }));
+    });
+
+    const [notification] = result.current.notificationContext.notifications;
+    expect(notification?.message).toBe('app.failed');
+    expect(notification?.notificationOptions).toEqual({ messageArgs: { name: 'x' } });
+  });
+
+  test('a response schema mismatch keeps its code', () => {
+    const { result } = setupTest();
+    const code = 'core.fetch.schema_mismatch';
+
+    act(() => {
+      result.current.notifyError(getError({ statusCode: 502, message: { code, text: 'failed' } }));
+    });
+
+    const [notification] = result.current.notificationContext.notifications;
+    expect(notification?.message).toBe(code);
+  });
+
+  test('options override the generic message arguments of a 5xx', () => {
+    const { result } = setupTest();
+
+    act(() => {
+      result.current.notifyError(buildStatusError({ statusCode: 500 }), {
+        messageArgs: { name: 'override' },
+      });
+    });
+
+    const [notification] = result.current.notificationContext.notifications;
+    expect(notification?.message).toBe('ra.notification.http_error');
+    expect(notification?.notificationOptions).toEqual({ messageArgs: { name: 'override' } });
   });
 });
