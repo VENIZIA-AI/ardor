@@ -1,7 +1,6 @@
 import React from 'react';
 import { describe, test, expect } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';
-import { NETWORK_TIMEOUT_CODE } from '@venizia/ardor-kernel';
 import { getError } from '@venizia/ignis-inversion';
 import { NotificationContextProvider, useNotificationContext } from 'ra-core';
 import { useNotifyError } from '@/hooks/use-notify-error';
@@ -97,7 +96,7 @@ describe('useNotifyError', () => {
     });
   });
 
-  test.each([500, 503, 599])(
+  test.each([500, 503, 504, 599])(
     'a %i shows the generic server message, without arguments',
     (statusCode) => {
       const { result } = setupTest();
@@ -125,14 +124,12 @@ describe('useNotifyError', () => {
     expect(notification?.notificationOptions).toEqual({ messageArgs: { name: 'x' } });
   });
 
-  test.each([
-    { statusCode: 502, code: 'core.fetch.schema_mismatch' },
-    { statusCode: 504, code: NETWORK_TIMEOUT_CODE },
-  ])('a $statusCode ARDOR raises itself keeps its code $code', ({ statusCode, code }) => {
+  test('a response schema mismatch keeps its code', () => {
     const { result } = setupTest();
+    const code = 'core.fetch.schema_mismatch';
 
     act(() => {
-      result.current.notifyError(getError({ statusCode, message: { code, text: 'failed' } }));
+      result.current.notifyError(getError({ statusCode: 502, message: { code, text: 'failed' } }));
     });
 
     const [notification] = result.current.notificationContext.notifications;
