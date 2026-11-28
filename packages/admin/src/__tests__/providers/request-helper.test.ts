@@ -8,7 +8,7 @@ import {
 } from '@venizia/ardor-kernel';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { FetchSchemaError } from '@venizia/ignis-helpers/core';
-import { Container, getError } from '@venizia/ignis-inversion';
+import { Container, getError, isApplicationError } from '@venizia/ignis-inversion';
 import type { RaRecord } from 'ra-core';
 import type { IRestRequestOptions } from '@/common';
 import { CountRestDataProvider } from '@/providers/count-rest-data';
@@ -68,6 +68,24 @@ beforeAll(() => {
         headers: req.headers,
         body: text ? JSON.parse(text) : undefined,
       });
+
+      const isBroken = url.pathname.startsWith('/broken');
+
+      if (isBroken || url.pathname === '/invalid') {
+        const statusCode = isBroken ? 500 : 422;
+
+        return Response.json(
+          {
+            error: {
+              statusCode,
+              message: 'The server text',
+              normalized: { code: 'app.failed', text: 'The server text', args: { name: 'x' } },
+              requestId: 'req-1',
+            },
+          },
+          { status: statusCode },
+        );
+      }
 
       if (url.pathname === '/posts/count') {
         return Response.json({ count: 7 });
@@ -256,5 +274,44 @@ describe('CountRestDataProvider.requestList', () => {
     expect(count?.headers.has('x-request-extra')).toBe(false);
     expect(JSON.parse(count?.query.where ?? 'null')).toEqual({ status: 'open' });
     expect(count?.headers.get('x-request-id')).not.toBe(list?.headers.get('x-request-id'));
+  });
+});
+
+describe('a failed request', () => {
+  const fail = (resource: string) => {
+    return RejectionUtility.rejectionOf({
+      task: create().request({ resource, type: RequestTypes.SEND, method: HTTP.Methods.GET }),
+    });
+  };
+
+  test('a 5xx rejects with the generic message key, the rest kept and the error as cause', async () => {
+    const error = await fail('broken');
+
+    if (!isApplicationError(error)) {
+      throw getError({ message: 'not an ApplicationError' });
+    }
+
+    expect(error.message).toBe('ra.notification.http_error');
+    expect(error.statusCode).toBe(500);
+    expect(error.normalized.code).toBe('app.failed');
+    expect(error.normalized.args).toEqual({ name: 'x' });
+    expect(error.extra?.requestId).toBe('req-1');
+    expect(error.cause instanceof Error ? error.cause.message : undefined).toBe('The server text');
+  });
+
+  test('a react-admin method rejects the same way', async () => {
+    const error = await RejectionUtility.rejectionOf({
+      task: create().value(new Container()).getOne('broken', { id: 1 }),
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toMatchObject({ message: 'ra.notification.http_error', statusCode: 500 });
+  });
+
+  test('a 4xx keeps the server text and has no new cause', async () => {
+    const error = await fail('invalid');
+
+    expect(error).toMatchObject({ message: 'The server text', statusCode: 422 });
+    expect(error instanceof Error ? error.cause : null).toBeUndefined();
   });
 });

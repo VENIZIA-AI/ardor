@@ -626,3 +626,19 @@ notify-server-error:
     steps:
       - 'Pin the four ARDOR packages to 0.5.0-15 or earlier. The branch you added keeps working there, so it can stay.'
   data: Nothing stored changes. Only the text of the notification changes.
+
+provider-server-error-message:
+  symbols: [DefaultRestDataProvider, CountRestDataProvider]
+  upgrade:
+    steps:
+      - 'Find where you show or compare `error.message` of a data provider call (`useGetOne` and its siblings, a mutation `onError`, a `catch` around `send`).'
+      - "Where the message is shown, pass it through react-admin's `translate`, or call `useNotifyError`. Where a 5xx needs the server's text, read `error.cause`."
+      - 'To tell 5xx errors apart, compare `error.statusCode` or `error.normalized.code`; both are unchanged.'
+    before: |-
+      return <p>{error.message}</p>;
+    after: |-
+      return <p>{translate(error.message, { _: error.message })}</p>;
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-15 or earlier. Translating the message keeps working there, and `error.cause` is no longer the failed request.'
+  data: Nothing stored changes. Only the message of the rejected error changes.
