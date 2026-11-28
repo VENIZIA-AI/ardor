@@ -19,4 +19,4 @@ export const agent = {
       },
     },
   },
-} satisfies VulcanConfig.Agent;
+} satisfies VulcanConfig.AgentType;

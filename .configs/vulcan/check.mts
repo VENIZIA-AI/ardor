@@ -27,4 +27,4 @@ export const check = {
       ],
     },
   },
-} satisfies NonNullable<VulcanConfig.Check>;
+} satisfies NonNullable<VulcanConfig.CheckType>;

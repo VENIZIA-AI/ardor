@@ -11,4 +11,4 @@ export const project = {
     { dir: 'ardor', name: '@venizia/ardor' },
     { dir: 'ui-kit', name: '@venizia/ardor-ui-kit', retired: true },
   ],
-} satisfies VulcanConfig.Project;
+} satisfies VulcanConfig.ProjectType;

@@ -1,4 +1,4 @@
-import type { VulcanConfig } from '@venizia/vulcan';
+import type { VulcanConfigType } from '@venizia/vulcan';
 import { project, agent, guard, board, knowledge, check, common } from './vulcan/index.mts';
 
 // ARDOR's project config for VULCAN (agent, knowledge and atlas tooling). okf, atlas and the manifest read
@@ -11,4 +11,4 @@ export default {
   knowledge,
   check,
   common,
-} satisfies VulcanConfig;
+} satisfies VulcanConfigType;
