@@ -1,11 +1,8 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { shallowEqual, useSelector } from 'react-redux';
 
 const isPlain = (value: unknown): value is object => {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (Array.isArray(value) || [Object.prototype, null].includes(Object.getPrototypeOf(value)))
-  );
+  return Array.isArray(value) || RecordUtility.isPlainObject(value);
 };
 
 /**

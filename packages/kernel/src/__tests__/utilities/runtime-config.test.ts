@@ -68,7 +68,9 @@ describe('RuntimeConfig.get', () => {
   });
 
   test('a missing, null or non-object global does not throw', () => {
-    for (const value of [undefined, null, 'text', 7, []]) {
+    const keyedArray = Object.assign([], { VITE_API_URL: 'https://api.test' });
+
+    for (const value of [undefined, null, 'text', 7, [], keyedArray]) {
       setRuntimeConfig(value);
 
       expect(RuntimeConfig.get({ key: 'VITE_API_URL', defaultValue: 'fallback' })).toBe('fallback');

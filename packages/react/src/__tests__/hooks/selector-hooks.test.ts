@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { configureStore, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { act, cleanup, renderHook } from '@testing-library/react';
+import { getError } from '@venizia/ignis-inversion';
 import React from 'react';
 import { Provider } from 'react-redux';
 
@@ -168,6 +169,31 @@ describe('SelectorHooks useDeepEqualSelector', () => {
 
     expect(zero.renders.count).toBe(before.zero);
     expect(bad.renders.count).toBe(before.bad);
+  });
+
+  // Only a new value that follows a plain one: on the earlier side, `instanceof Date` throws first.
+  test('reads a new value whose prototype cannot be read as changed, without throwing', () => {
+    const store = createStore();
+    const unreadable = new Proxy(
+      {},
+      {
+        getPrototypeOf: () => {
+          throw getError({ message: 'no prototype' });
+        },
+      },
+    );
+    const { result } = mount({
+      store,
+      selector: (state) => {
+        return state.tick === 0 ? {} : unreadable;
+      },
+    });
+
+    act(() => {
+      store.dispatch(slice.actions.tick());
+    });
+
+    expect(Object.is(result.current, unreadable)).toBe(true);
   });
 
   test('differs from the shallow selector, which renders again for the same new object', () => {

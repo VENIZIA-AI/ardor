@@ -1,5 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 import type { TNullable } from '@venizia/ignis-helpers/common';
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 
 /**
  * The name `config.js` writes the runtime config under: `window.__APP_CONFIG__`, a record of strings.
@@ -20,16 +21,10 @@ export const RUNTIME_CONFIG_INVALID_CODE = 'ardor.runtime_config.invalid';
 const readString = (opts: { source: unknown; key: string }): string | undefined => {
   const { source, key } = opts;
 
-  if (typeof source !== 'object' || source === null || Array.isArray(source)) {
-    return undefined;
-  }
-
-  // Own keys only: `toString` and `constructor` are not config values.
-  if (!Object.prototype.hasOwnProperty.call(source, key)) {
-    return undefined;
-  }
-
-  const value: unknown = Reflect.get(source, key);
+  // `read` takes own keys only: `toString` and `constructor` are not config values.
+  const value = Array.isArray(source)
+    ? undefined
+    : RecordUtility.read({ value: source, path: [key] });
 
   return typeof value === 'string' && value.trim() !== '' ? value : undefined;
 };
