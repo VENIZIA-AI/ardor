@@ -37,4 +37,4 @@ export const knowledge = {
     // this is its public half, which a reader that declares ARDOR as a source trusts (a key list, so a key can rotate).
     index: { keys: ['gqQ8Wtlk6KiZpnCDafb3deR/VqhW2aBaDqqnKJLblZc='] },
   },
-} satisfies VulcanConfig.Knowledge;
+} satisfies VulcanConfig.KnowledgeType;

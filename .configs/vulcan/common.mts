@@ -10,4 +10,4 @@ export const common = {
   },
 
   remove: { 'knowledge.atlas.sources': ['ardor'] },
-} satisfies VulcanConfig.Common;
+} satisfies VulcanConfig.CommonType;
