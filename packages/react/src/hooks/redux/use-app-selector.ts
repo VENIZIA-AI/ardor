@@ -1,10 +1,10 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { shallowEqual, useSelector } from 'react-redux';
 
 const isPlain = (value: unknown): value is object => {
+  // `isRecord` first: `Array.isArray` throws on a revoked Proxy of a function.
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    (Array.isArray(value) || [Object.prototype, null].includes(Object.getPrototypeOf(value)))
+    RecordUtility.isRecord(value) && (Array.isArray(value) || RecordUtility.isPlainObject(value))
   );
 };
 
