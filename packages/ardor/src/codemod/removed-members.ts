@@ -1,6 +1,7 @@
 import type * as TS from 'typescript';
 
-import { NamespaceModules, RemovedNames } from './renames';
+import { RemovedNames } from './renames';
+import { CodemodSource } from './source';
 import type { IFinding, TTypeScript } from './transform';
 
 /** The uses of a member an ARDOR class no longer has, which the codemod lists and leaves alone. */
@@ -10,24 +11,8 @@ export class RemovedMembers {
     const { ts, sourceFile, findings } = opts;
     const owners = new Map<string, string>();
 
-    for (const statement of sourceFile.statements) {
-      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
-        continue;
-      }
-
-      const named = statement.importClause?.namedBindings;
-
-      if (
-        !NamespaceModules.isValid(statement.moduleSpecifier.text) ||
-        !named ||
-        !ts.isNamedImports(named)
-      ) {
-        continue;
-      }
-
-      for (const specifier of named.elements) {
-        owners.set(specifier.name.text, (specifier.propertyName ?? specifier.name).text);
-      }
+    for (const { local, imported } of CodemodSource.ardorImports({ ts, sourceFile })) {
+      owners.set(local, imported);
     }
 
     if (owners.size === 0) {
@@ -62,7 +47,7 @@ export class RemovedMembers {
 
       if (key && property && [...property.owners].some((owner) => imported.has(owner))) {
         findings.push({
-          line: sourceFile.getLineAndCharacterOfPosition(key.getStart(sourceFile)).line + 1,
+          line: CodemodSource.lineOf({ sourceFile, node: key }),
           name: `.${key.text}`,
           reason: `removed: ${property.reason}`,
         });
@@ -76,7 +61,7 @@ export class RemovedMembers {
 
         if (reason) {
           findings.push({
-            line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+            line: CodemodSource.lineOf({ sourceFile, node }),
             name: `${node.expression.text}.${node.name.text}`,
             reason: `removed: ${reason}`,
           });

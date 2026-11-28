@@ -182,6 +182,37 @@ describe('BaseApplicationTransform: re-exports', () => {
   });
 });
 
+describe('BaseApplicationTransform: two edits at one position', () => {
+  const sameLine = (type: string) => {
+    return [
+      `import { Other } from '${ADMIN}';`,
+      `export ${type}{ BaseArdorApplication, Foo } from '${KERNEL}';import ${type}{ BaseArdorApplication } from '${KERNEL}';`,
+      '',
+    ].join('\n');
+  };
+
+  test('a kept re-export on the line of an import that moves away stays whole', () => {
+    expect(run(sameLine('')).text).toBe(
+      [
+        `import { Other, BaseArdorApplication } from '${ADMIN}';`,
+        `export { Foo } from '${KERNEL}';`,
+        `export { BaseArdorApplication } from '${ADMIN}';`,
+      ].join('\n'),
+    );
+  });
+
+  test('the same with type-only statements', () => {
+    expect(run(sameLine('type ')).text).toBe(
+      [
+        `import { Other } from '${ADMIN}';`,
+        `export type { Foo } from '${KERNEL}';`,
+        `export type { BaseArdorApplication } from '${ADMIN}';import type { BaseArdorApplication } from '${ADMIN}';`,
+        '',
+      ].join('\n'),
+    );
+  });
+});
+
 describe('BaseApplicationTransform: what it lists', () => {
   test('lists a namespace import that reads BaseArdorApplication, and notes export *', () => {
     const before = [

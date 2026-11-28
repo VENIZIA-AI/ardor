@@ -1,17 +1,9 @@
 import type * as TS from 'typescript';
 
 import type { IFinding, TTypeScript } from './transform';
-import { LoggerRenames, NamespaceModules } from './renames';
+import { LoggerRenames } from './renames';
 import type { ICodemodResult } from './command';
-import type { ISourceEdit } from './source';
-
-interface IArdorImport {
-  declaration: TS.ImportDeclaration;
-  specifier: TS.ImportSpecifier;
-  imported: string;
-  local: string;
-  typeOnly: boolean;
-}
+import { CodemodSource, type IArdorImport, type ISourceEdit } from './source';
 
 /**
  * Moves a project off the kernel logger, which IGNIS's `ILogger` replaces:
@@ -36,14 +28,8 @@ export class LoggerTransform {
       return unchanged;
     }
 
-    const sourceFile = ts.createSourceFile(
-      fileName,
-      text,
-      ts.ScriptTarget.Latest,
-      true,
-      fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-    );
-    const imports = LoggerTransform.collectImports({ ts, sourceFile });
+    const sourceFile = CodemodSource.parse({ ts, fileName, text });
+    const imports = CodemodSource.ardorImports({ ts, sourceFile });
     const findings: IFinding[] = [];
 
     LoggerTransform.findEnableDebugProp({ ts, sourceFile, imports, findings });
@@ -100,47 +86,10 @@ export class LoggerTransform {
     }
 
     return {
-      text: LoggerTransform.apply({ text, edits: [...edits, ...importEdits] }),
+      text: CodemodSource.apply({ text, edits: [...edits, ...importEdits] }),
       renamed,
       findings,
     };
-  }
-
-  private static collectImports(opts: {
-    ts: TTypeScript;
-    sourceFile: TS.SourceFile;
-  }): IArdorImport[] {
-    const { ts, sourceFile } = opts;
-    const entries: IArdorImport[] = [];
-
-    for (const statement of sourceFile.statements) {
-      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
-        continue;
-      }
-
-      const clause = statement.importClause;
-      const named = clause?.namedBindings;
-
-      if (
-        !NamespaceModules.isValid(statement.moduleSpecifier.text) ||
-        !named ||
-        !ts.isNamedImports(named)
-      ) {
-        continue;
-      }
-
-      for (const specifier of named.elements) {
-        entries.push({
-          declaration: statement,
-          specifier,
-          imported: (specifier.propertyName ?? specifier.name).text,
-          local: specifier.name.text,
-          typeOnly: Boolean(clause?.isTypeOnly) || specifier.isTypeOnly,
-        });
-      }
-    }
-
-    return entries;
   }
 
   /** `<ArdorApplication enableDebug />`: the prop is gone, the logger is passed instead. */
@@ -169,8 +118,7 @@ export class LoggerTransform {
               attribute.name.getText(sourceFile) === 'enableDebug'
             ) {
               findings.push({
-                line:
-                  sourceFile.getLineAndCharacterOfPosition(attribute.getStart(sourceFile)).line + 1,
+                line: CodemodSource.lineOf({ sourceFile, node: attribute }),
                 name: 'enableDebug',
                 reason:
                   'removed: debug lines are off by default now (a browser, or `DEBUG` unset); turn them on with `LoggerFactory.use({ level: LogLevels.DEBUG })` at startup, or pass `logger={...}` to ArdorApplication',
@@ -207,8 +155,7 @@ export class LoggerTransform {
     let isFullyMoved = true;
     const handled = new Set<TS.Node>();
 
-    const lineOf = (node: TS.Node): number =>
-      sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+    const lineOf = (node: TS.Node): number => CodemodSource.lineOf({ sourceFile, node });
 
     const leave = (node: TS.Node, reason: string): void => {
       isFullyMoved = false;
@@ -511,17 +458,5 @@ export class LoggerTransform {
     }
 
     return edits;
-  }
-
-  private static apply(opts: { text: string; edits: ISourceEdit[] }): string {
-    // Equal starts: the longer edit first, so an insertion lands before what it precedes.
-    const ordered = [...opts.edits].sort((a, b) => b.start - a.start || b.end - a.end);
-    let result = opts.text;
-
-    for (const edit of ordered) {
-      result = result.slice(0, edit.start) + edit.text + result.slice(edit.end);
-    }
-
-    return result;
   }
 }

@@ -22,12 +22,7 @@ const KEY_OF_CLASS: Record<string, string> = {
 };
 
 /** What 0.4.8 binds itself. */
-const DEFAULT_CLASSES = new Set([
-  'DefaultRestDataProvider',
-  'DefaultAuthProvider',
-  'DefaultI18nProvider',
-  'DefaultAuthService',
-]);
+const DEFAULT_CLASSES = new Set(Object.keys(KEY_OF_CLASS));
 
 const DROP_INJECTION = 'the APPLICATION_INSTANCE it injects if nothing else uses it';
 
@@ -116,11 +111,22 @@ export class DefaultProvidersTransform {
 
     const value = CodemodSource.unwrap({ ts, node });
 
-    return (
-      ts.isCallExpression(value) &&
-      ts.isPropertyAccessExpression(value.expression) &&
-      value.expression.name.text === 'value'
-    );
+    return DefaultProvidersTransform.receiverOf({ ts, node: value, method: 'value' }) !== undefined;
+  }
+
+  /** The `<expr>` of a call `<expr>.method(...)`, if that is what the node is. */
+  private static receiverOf(opts: {
+    ts: TTypeScript;
+    node: TS.Expression;
+    method: string;
+  }): TS.Expression | undefined {
+    const { ts, node, method } = opts;
+
+    return ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === method
+      ? node.expression.expression
+      : undefined;
   }
 
   /** The class of `<expr>.instantiate(Class).value(<expr>)` or `<expr>.instantiate(Class)`, if that is what the node is. */
@@ -136,21 +142,14 @@ export class DefaultProvidersTransform {
 
     const value = CodemodSource.unwrap({ ts, node: opts.node });
 
-    let instantiate: TS.Expression = value;
-
     // `.value(<expr>)` is optional: a bare `<expr>.instantiate(Class)` is built the same way.
-    if (
-      ts.isCallExpression(value) &&
-      ts.isPropertyAccessExpression(value.expression) &&
-      value.expression.name.text === 'value'
-    ) {
-      instantiate = value.expression.expression;
-    }
+    const instantiate =
+      DefaultProvidersTransform.receiverOf({ ts, node: value, method: 'value' }) ?? value;
 
     if (
       !ts.isCallExpression(instantiate) ||
-      !ts.isPropertyAccessExpression(instantiate.expression) ||
-      instantiate.expression.name.text !== 'instantiate'
+      DefaultProvidersTransform.receiverOf({ ts, node: instantiate, method: 'instantiate' }) ===
+        undefined
     ) {
       return undefined;
     }

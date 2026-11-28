@@ -1,7 +1,7 @@
 import type * as TS from 'typescript';
 
 import type { TConstValue } from '@venizia/ignis-helpers/common';
-import { NamespaceModules } from './renames';
+import { CodemodSource } from './source';
 import type { TTypeScript } from './transform';
 
 /** The calls that uppercase the method they are handed. */
@@ -118,25 +118,13 @@ export class HttpMethodReceivers {
   }
 
   private readImports(opts: { sourceFile: TS.SourceFile }): void {
-    const { ts } = this;
+    const imports = CodemodSource.ardorImports({ ts: this.ts, sourceFile: opts.sourceFile });
 
-    for (const statement of opts.sourceFile.statements) {
-      if (
-        !ts.isImportDeclaration(statement) ||
-        !ts.isStringLiteral(statement.moduleSpecifier) ||
-        !NamespaceModules.isValid(statement.moduleSpecifier.text)
-      ) {
-        continue;
-      }
+    for (const { imported, local } of imports) {
+      const kind = ReceiverKinds.BY_TYPE.get(imported);
 
-      const named = statement.importClause?.namedBindings;
-
-      for (const element of named && ts.isNamedImports(named) ? named.elements : []) {
-        const kind = ReceiverKinds.BY_TYPE.get((element.propertyName ?? element.name).text);
-
-        if (kind) {
-          this.types.set(element.name.text, kind);
-        }
+      if (kind) {
+        this.types.set(local, kind);
       }
     }
   }
