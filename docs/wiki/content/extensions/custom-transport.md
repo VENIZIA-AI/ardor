@@ -53,7 +53,7 @@ The react-admin methods and `send()` hand `request()` the method in uppercase (`
 
 This is the part you keep. Your transport receives a `query` whose `filter` is already in the shape the base builds:
 
-- `filter.where` - the react-admin filter with `include`, `params`, `noLimit` and `fields` removed. If the incoming filter already has a `where`, its other filter keys stay beside it. Any other key, of the filter or of the list params, is a `where` entry.
+- `filter.where` - the react-admin filter with `include`, `params`, `noLimit` and `fields` removed. If the incoming filter already has a `where`, its other filter keys stay beside it. Any other key, of the filter or of the list params, is a `where` entry; a `null` or `undefined` one beside `where` is dropped.
 - `filter.include`, `filter.fields` - copied from the react-admin filter.
 - `filter.order` - `[\`${sort.field} ${sort.order}\`]` when `sort.field` is set.
 - `filter.limit`, `filter.skip` - from `pagination`: `limit` is `perPage` and `skip` is `(page - 1) * perPage`, with the page defaulting to 1. No `perPage` (or 0) sends neither. When `filter.noLimit` is truthy, both are cleared.

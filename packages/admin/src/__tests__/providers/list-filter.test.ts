@@ -183,6 +183,12 @@ describe('ListFilterBuilder.build, the keys IGNIS takes', () => {
     expect(sent(params)).toEqual({ where });
   });
 
+  test('drops a null key beside where, as a null list param, and keeps a null where entry', () => {
+    expect(sent({ filter: { where: { deletedAt: null }, q: null }, tenantId: null })).toEqual({
+      where: { deletedAt: null },
+    });
+  });
+
   // A list param named like a filter key, or like a key beside `where`, replaces it.
   test.each([
     ['a key beside where', { filter: { where: {}, id: 1 }, id: 2 }, { where: { id: 2 } }],
