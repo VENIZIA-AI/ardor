@@ -642,3 +642,22 @@ provider-server-error-message:
     steps:
       - 'Pin the four ARDOR packages to 0.5.0-15 or earlier. Translating the message keeps working there, and `error.cause` is no longer the failed request.'
   data: Nothing stored changes. Only the message of the rejected error changes.
+
+list-filter-keys:
+  symbols: [ListFilterBuilder, IListFilter, DefaultRestDataProvider, CountRestDataProvider]
+  upgrade:
+    steps:
+      - 'Find the lists that send a key which is not a column of the model: a key in `filter` beside `filter.where` (a search input such as `q`), or an extra param of `getList` or `getManyReference`. The key is now a `where` entry, and the server refuses it.'
+      - 'Replace such a key with a condition on a column. For a value the route reads from the query string, put it in `filter.params` or `meta`.'
+      - 'In a `buildListFilter` or `requestList` override, or a transport, that reads such a key off the filter, read it from `filter.where`.'
+      - 'With `CountRestDataProvider`, check the count route accepts the keys: they are now in the `where` it receives.'
+    before: |-
+      // sent as { where: { status: 'open' }, tenantId: 't1' }
+      dataProvider.getList('orders', { filter: { where: { status: 'open' }, tenantId: 't1' } });
+    after: |-
+      // tenantId is a query string value, not a column
+      dataProvider.getList('orders', { filter: { where: { status: 'open' }, params: { tenantId: 't1' } } });
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-15 or earlier, and keep an IGNIS release that still ignores unknown filter keys.'
+  data: Nothing stored changes.
