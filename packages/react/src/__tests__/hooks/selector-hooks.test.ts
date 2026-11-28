@@ -196,6 +196,24 @@ describe('SelectorHooks useDeepEqualSelector', () => {
     expect(Object.is(result.current, unreadable)).toBe(true);
   });
 
+  test('reads a revoked function Proxy as changed, without throwing', () => {
+    const store = createStore();
+    const { proxy: revoked, revoke } = Proxy.revocable(() => undefined, {});
+    revoke();
+    const { result } = mount({
+      store,
+      selector: (state) => {
+        return state.tick === 0 ? { items: state.items } : revoked;
+      },
+    });
+
+    act(() => {
+      store.dispatch(slice.actions.tick());
+    });
+
+    expect(Object.is(result.current, revoked)).toBe(true);
+  });
+
   test('differs from the shallow selector, which renders again for the same new object', () => {
     const store = createStore();
     const renders = { count: 0 };

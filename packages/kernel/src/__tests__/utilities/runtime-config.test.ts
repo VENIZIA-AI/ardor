@@ -70,7 +70,10 @@ describe('RuntimeConfig.get', () => {
   test('a missing, null or non-object global does not throw', () => {
     const keyedArray = Object.assign([], { VITE_API_URL: 'https://api.test' });
 
-    for (const value of [undefined, null, 'text', 7, [], keyedArray]) {
+    const { proxy: revoked, revoke } = Proxy.revocable(() => undefined, {});
+    revoke();
+
+    for (const value of [undefined, null, 'text', 7, [], keyedArray, revoked]) {
       setRuntimeConfig(value);
 
       expect(RuntimeConfig.get({ key: 'VITE_API_URL', defaultValue: 'fallback' })).toBe('fallback');

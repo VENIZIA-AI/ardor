@@ -22,9 +22,9 @@ const readString = (opts: { source: unknown; key: string }): string | undefined 
   const { source, key } = opts;
 
   // `read` takes own keys only: `toString` and `constructor` are not config values.
-  const value = Array.isArray(source)
-    ? undefined
-    : RecordUtility.read({ value: source, path: [key] });
+  const value = RecordUtility.isPlainRecord(source)
+    ? RecordUtility.read({ value: source, path: [key] })
+    : undefined;
 
   return typeof value === 'string' && value.trim() !== '' ? value : undefined;
 };
