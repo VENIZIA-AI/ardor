@@ -254,9 +254,7 @@ describe('getList behavior', () => {
     const filter = parseFilterQuery({ raw: recordedRequests[0].query['filter'] });
 
     // A falsy value is a value: dropping it sends a different query than the caller wrote.
-    expect(filter['archived']).toBe(false);
-    expect(filter['revision']).toBe(0);
-    expect(filter['note']).toBe('');
+    expect(filter['where']).toEqual({ archived: false, revision: 0, note: '' });
     expect('omitted' in filter).toBe(false);
   });
 

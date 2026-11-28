@@ -15,11 +15,12 @@ ARDOR has no controllers, repositories or datasources. Instead, all data access 
 1. **react-admin call.** react-admin invokes a method like `getList`, `getOne`, `getMany`, `create`, `update`, `delete`, always positionally: `dataProvider.getList(resource, params)`.
 2. **DefaultRestDataProvider method.** Internally the class implements each call as an options object (`getList({ resource, params })`), not positional arguments. This is the class's own internal convention, distinct from what react-admin sees.
 3. **Filter mapping to the IGNIS vocabulary.** For `getList` and `getManyReference`, react-admin's `pagination`, `sort`, `filter`, and `meta` are rewritten into the IGNIS filter shape: `{ where, order, limit, skip, offset, include, fields }`, serialised as JSON under a single `filter` query key. Rules of note:
-   - If `filter.where` already exists, the whole filter is used as-is - the caller is writing raw IGNIS filter.
+   - If `filter.where` already exists, the caller is writing a raw IGNIS filter: a key beside `where` that is no filter key becomes a `where` entry (the last rule below).
    - Otherwise every key of `filter` except `include`, `params`, `noLimit`, `fields` becomes `where`; those four are lifted to the top level.
    - `sort.field`/`sort.order` become `order: ["<field> <ASC|DESC>"]`.
    - `pagination` becomes `limit = perPage` and `skip = (page - 1) * perPage` (`skip` only: IGNIS reads `offset` as its alias), with the page defaulting to 1 and a page below 1 read as page 1. No `perPage`, a `perPage` of 0 or below, or a missing `pagination` (ra-core types it as required, but a JavaScript caller can omit it) sends no limit and no skip. `noLimit` clears limit, skip and offset.
-   - Every other top-level `params` key (beyond `pagination`, `sort`, `filter`, `meta`, react-admin's abort `signal`, and `target`/`id` for `getManyReference`) is then copied onto the top level of the filter object, after sort and pagination, so a same-named key wins. Only `undefined` and `null` are skipped.
+   - Every other top-level `params` key (beyond `pagination`, `sort`, `filter`, `meta`, react-admin's abort `signal`, and `target`/`id` for `getManyReference`) is then copied onto the filter object, after sort and pagination, so a same-named key wins. Only `undefined` and `null` are skipped.
+   - Last, only `fields`, `include`, `order`, `limit`, `offset` and `skip` stay beside `where` (IGNIS refuses a filter key it does not have): `params` goes to the query, `noLimit` is not sent, and every other key becomes a `where` entry. An entry `where` already has wins.
    - `filter.params` is pulled out into top-level query keys (not part of the filter object), and every key of `meta` except `meta.extra` also becomes a query key. `meta.extra` (a `TExtraRequest`) asks for list extras: it goes to `getRequestProps({ extra })`, which sends it in `x-request-extra`.
    - `getManyReference` additionally sets `where[target] = id`.
 

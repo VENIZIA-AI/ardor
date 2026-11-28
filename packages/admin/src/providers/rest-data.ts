@@ -292,7 +292,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     params: GetListParams & QueryFunctionContext & ICustomParams;
   }): Promise<GetListResult<RecordType>> {
     const { resource, params } = opts;
-    // A `buildListFilter` override copies unknown keys into the filter: it never sees the signal.
+    // A `buildListFilter` override could send an unknown key on, so it never sees the signal.
     const { signal, ...listParams } = params;
     const { filter, queryKey, extra } = this.buildListFilter({ params: listParams });
 

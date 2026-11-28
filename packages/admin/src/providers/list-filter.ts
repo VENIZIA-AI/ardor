@@ -5,7 +5,7 @@ import type { GetListParams } from 'ra-core';
 import { type ICustomParams, ValueUtility } from '@venizia/ardor-kernel';
 
 /**
- * The IGNIS filter a list request sends. Any other key of the list params is a filter key too.
+ * The IGNIS filter a list request sends. IGNIS refuses a filter key it does not have.
  * Each `order` entry is `'<field> <ASC|DESC>'`, and `ListFilterBuilder.build` pages with `skip`.
  */
 export interface IListFilter extends Pick<TFilter, 'order' | 'limit' | 'skip'> {
@@ -30,9 +30,10 @@ export class ListFilterBuilder {
 
   /**
    * The filter, query and list extras a list request sends, from react-admin's list params:
-   * pagination into `limit`/`skip`, sort into `order`, `noLimit` lifting both, the remaining params
-   * into the filter (except `signal`), `filter.params` and `meta` into the query, and `meta.extra`
-   * into the list extras (sent in a header).
+   * pagination into `limit`/`skip`, sort into `order`, `noLimit` lifting both, `filter.params` and
+   * `meta` into the query, and `meta.extra` into the list extras (sent in a header). A remaining list
+   * param (except `signal`) named like a filter key sets that key. Every other key, of the list
+   * params or beside `filter.where`, becomes a `where` entry; an entry of `where` wins over it.
    */
   static build(opts: { params: GetListParams & ICustomParams }): {
     filter: IListFilter;
@@ -61,7 +62,6 @@ export class ListFilterBuilder {
       filter['limit'] = undefined;
       filter['skip'] = undefined;
       filter['offset'] = undefined;
-      filter['noLimit'] = undefined;
     } else {
       const { page = 1, perPage = 0 } = pagination ?? {};
 
@@ -81,11 +81,20 @@ export class ListFilterBuilder {
       filter[key] = rest[key];
     }
 
-    const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
-
-    if (filter?.params) {
-      filter['params'] = undefined;
-    }
+    // Only the keys of an IGNIS filter stay beside `where`; every other key is a column.
+    const {
+      where,
+      fields,
+      include,
+      order,
+      limit,
+      offset,
+      skip,
+      params,
+      noLimit: _,
+      ...columns
+    } = filter;
+    const queryKey = ListFilterBuilder.extractQueryParams({ params });
 
     // `meta.extra` asks for list extras, in a header; every other `meta` key goes into the query.
     const { extra, ...queryMeta } = meta ?? {};
@@ -94,6 +103,10 @@ export class ListFilterBuilder {
       queryKey[key] = queryMeta[key];
     }
 
-    return { filter, queryKey, extra };
+    return {
+      filter: { where: { ...columns, ...where }, fields, include, order, limit, offset, skip },
+      queryKey,
+      extra,
+    };
   }
 }
