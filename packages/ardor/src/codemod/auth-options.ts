@@ -277,8 +277,7 @@ export class AuthOptionsTransform {
     const openLine = sourceFile.getLineAndCharacterOfPosition(open - 1);
 
     if (firstLine.line !== openLine.line) {
-      const lineStart = sourceFile.getPositionOfLineAndCharacter(firstLine.line, 0);
-      const indent = /^[ \t]*/.exec(text.slice(lineStart))?.[0] ?? '';
+      const indent = CodemodSource.indentOf({ sourceFile, node: first });
 
       return { start: open, end: open, text: `\n${indent}${USE}: true,` };
     }

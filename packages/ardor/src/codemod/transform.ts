@@ -11,7 +11,7 @@ import {
 } from './renames';
 import type { ICodemodInput, ICodemodResult } from './command';
 import { RemovedMembers } from './removed-members';
-import type { ISourceEdit } from './source';
+import { CodemodSource, type ISourceEdit } from './source';
 
 export type TTypeScript = typeof TS;
 
@@ -61,13 +61,7 @@ export class NamespaceTransform {
       return { text, renamed: 0, findings: [] };
     }
 
-    const sourceFile = ts.createSourceFile(
-      fileName,
-      text,
-      ts.ScriptTarget.Latest,
-      true,
-      fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-    );
+    const sourceFile = CodemodSource.parse({ ts, fileName, text });
     const findings: IFinding[] = [];
     const renames = NamespaceTransform.collectRenames({ ts, sourceFile, hooks, findings });
 
@@ -95,7 +89,7 @@ export class NamespaceTransform {
     edits.push(...NamespaceTransform.importEdits({ ts, sourceFile, used, bindings }));
 
     return {
-      text: NamespaceTransform.apply({ text, edits }),
+      text: CodemodSource.apply({ text, edits }),
       renamed: used.reduce((sum, rename) => sum + rename.references.length, 0),
       findings,
     };
@@ -111,70 +105,53 @@ export class NamespaceTransform {
     const { ts, sourceFile, hooks, findings } = opts;
     const renames: IRename[] = [];
 
-    for (const statement of sourceFile.statements) {
-      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+    for (const entry of CodemodSource.ardorImports({ ts, sourceFile })) {
+      const { declaration, specifier, module, imported } = entry;
+      const removed = RemovedNames.findExport({ name: imported });
+
+      if (removed) {
+        findings.push({
+          line: CodemodSource.lineOf({ sourceFile, node: specifier }),
+          name: specifier.name.text,
+          reason: `removed: ${removed}`,
+        });
         continue;
       }
 
-      const module = statement.moduleSpecifier.text;
-      const clause = statement.importClause;
+      const exportName = TypeExportRenames.find({ name: imported });
+      const typeText = exportName ?? TypeRenames.find({ name: imported });
 
-      if (!NamespaceModules.isValid(module) || !clause) {
+      if (typeText) {
+        renames.push({
+          specifier,
+          declaration,
+          local: specifier.name.text,
+          typeText,
+          importName: exportName,
+          references: [],
+        });
         continue;
       }
 
-      if (!clause.namedBindings || !ts.isNamedImports(clause.namedBindings)) {
+      // A function or a hook is a value: an import that is type-only cannot carry it.
+      if (entry.typeOnly) {
         continue;
       }
 
-      for (const specifier of clause.namedBindings.elements) {
-        const imported = (specifier.propertyName ?? specifier.name).text;
-        const removed = RemovedNames.findExport({ name: imported });
+      let target = FunctionRenames.find({ name: imported });
 
-        if (removed) {
-          findings.push({
-            line: sourceFile.getLineAndCharacterOfPosition(specifier.getStart(sourceFile)).line + 1,
-            name: specifier.name.text,
-            reason: `removed: ${removed}`,
-          });
-          continue;
-        }
+      if (!target && hooks && module === NamespaceModules.UMBRELLA) {
+        target = HookRenames.find({ name: imported });
+      }
 
-        const exportName = TypeExportRenames.find({ name: imported });
-        const typeText = exportName ?? TypeRenames.find({ name: imported });
-
-        if (typeText) {
-          renames.push({
-            specifier,
-            declaration: statement,
-            local: specifier.name.text,
-            typeText,
-            importName: exportName,
-            references: [],
-          });
-          continue;
-        }
-
-        // A function or a hook is a value: an import that is type-only cannot carry it.
-        if (clause.isTypeOnly || specifier.isTypeOnly) {
-          continue;
-        }
-
-        let target = FunctionRenames.find({ name: imported });
-
-        if (!target && hooks && module === NamespaceModules.UMBRELLA) {
-          target = HookRenames.find({ name: imported });
-        }
-
-        if (target) {
-          renames.push({
-            specifier,
-            declaration: statement,
-            local: specifier.name.text,
-            target,
-            references: [],
-          });
-        }
+      if (target) {
+        renames.push({
+          specifier,
+          declaration,
+          local: specifier.name.text,
+          target,
+          references: [],
+        });
       }
     }
 
@@ -258,8 +235,7 @@ export class NamespaceTransform {
     const { renames, bindings, sourceFile, findings } = opts;
 
     return renames.filter((rename) => {
-      const line =
-        sourceFile.getLineAndCharacterOfPosition(rename.specifier.getStart(sourceFile)).line + 1;
+      const line = CodemodSource.lineOf({ sourceFile, node: rename.specifier });
       const owner = rename.target?.owner;
 
       if (bindings.declared.has(rename.local)) {
@@ -557,16 +533,5 @@ export class NamespaceTransform {
     }
 
     return { start, end, text: '' };
-  }
-
-  private static apply(opts: { text: string; edits: ISourceEdit[] }): string {
-    const ordered = [...opts.edits].sort((a, b) => b.start - a.start);
-    let result = opts.text;
-
-    for (const edit of ordered) {
-      result = result.slice(0, edit.start) + edit.text + result.slice(edit.end);
-    }
-
-    return result;
   }
 }

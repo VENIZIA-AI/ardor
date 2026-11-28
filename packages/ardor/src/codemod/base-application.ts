@@ -200,7 +200,7 @@ export class BaseApplicationTransform {
       }
 
       const separator = BaseApplicationTransform.isMultiLine({ sourceFile, bindings: target })
-        ? `,${eol}${BaseApplicationTransform.indentOf({ sourceFile, node: last })}`
+        ? `,${eol}${CodemodSource.indentOf({ sourceFile, node: last })}`
         : ', ';
 
       edits.push({
@@ -249,14 +249,6 @@ export class BaseApplicationTransform {
     return bindings.getText(sourceFile).includes('\n');
   }
 
-  private static indentOf(opts: { sourceFile: TS.SourceFile; node: TS.Node }): string {
-    const { sourceFile, node } = opts;
-    const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-    const lineStart = sourceFile.getPositionOfLineAndCharacter(line, 0);
-
-    return /^[ \t]*/.exec(sourceFile.text.slice(lineStart))?.[0] ?? '';
-  }
-
   /** The `{ ... }` of an import or export with the moved members taken out, in the layout it had. */
   private static braces(opts: {
     sourceFile: TS.SourceFile;
@@ -271,8 +263,8 @@ export class BaseApplicationTransform {
       return `{ ${texts.join(', ')} }`;
     }
 
-    const indent = BaseApplicationTransform.indentOf({ sourceFile, node: first });
-    const closing = BaseApplicationTransform.indentOf({ sourceFile, node: bindings });
+    const indent = CodemodSource.indentOf({ sourceFile, node: first });
+    const closing = CodemodSource.indentOf({ sourceFile, node: bindings });
     const trailing = bindings.elements.hasTrailingComma ? ',' : '';
     const eol = sourceFile.text.includes('\r\n') ? '\r\n' : '\n';
 

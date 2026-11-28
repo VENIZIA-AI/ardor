@@ -9,6 +9,16 @@ export interface ISourceEdit {
   text: string;
 }
 
+/** One name a file imports from an ARDOR package. */
+export interface IArdorImport {
+  declaration: TS.ImportDeclaration;
+  specifier: TS.ImportSpecifier;
+  module: string;
+  imported: string;
+  local: string;
+  typeOnly: boolean;
+}
+
 /** Parsing, positions and edits the codemods that read one file share. */
 export class CodemodSource {
   static parse(opts: { ts: TTypeScript; fileName: string; text: string }): TS.SourceFile {
@@ -30,8 +40,18 @@ export class CodemodSource {
     return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
   }
 
+  /** The indentation of the line a node starts on. */
+  static indentOf(opts: { sourceFile: TS.SourceFile; node: TS.Node }): string {
+    const { sourceFile, node } = opts;
+    const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+    const lineStart = sourceFile.getPositionOfLineAndCharacter(line, 0);
+
+    return /^[ \t]*/.exec(sourceFile.text.slice(lineStart))?.[0] ?? '';
+  }
+
   static apply(opts: { text: string; edits: ISourceEdit[] }): string {
-    const ordered = [...opts.edits].sort((a, b) => b.start - a.start);
+    // Equal starts: the longer edit first, so an insertion lands before what it precedes.
+    const ordered = [...opts.edits].sort((a, b) => b.start - a.start || b.end - a.end);
     let result = opts.text;
 
     for (const edit of ordered) {
@@ -58,34 +78,51 @@ export class CodemodSource {
     return node;
   }
 
+  /** The names a file imports from ARDOR packages, in file order. */
+  static ardorImports(opts: { ts: TTypeScript; sourceFile: TS.SourceFile }): IArdorImport[] {
+    const { ts, sourceFile } = opts;
+    const entries: IArdorImport[] = [];
+
+    for (const statement of sourceFile.statements) {
+      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+        continue;
+      }
+
+      const module = statement.moduleSpecifier.text;
+      const clause = statement.importClause;
+      const named = clause?.namedBindings;
+
+      if (!NamespaceModules.isValid(module) || !named || !ts.isNamedImports(named)) {
+        continue;
+      }
+
+      for (const specifier of named.elements) {
+        entries.push({
+          declaration: statement,
+          specifier,
+          module,
+          imported: (specifier.propertyName ?? specifier.name).text,
+          local: specifier.name.text,
+          typeOnly: Boolean(clause?.isTypeOnly) || specifier.isTypeOnly,
+        });
+      }
+    }
+
+    return entries;
+  }
+
   /** The local names a file imports `exportName` under from an ARDOR package, `exportName` itself included. */
   static localNames(opts: {
     ts: TTypeScript;
     sourceFile: TS.SourceFile;
     exportName: string;
   }): Set<string> {
-    const { ts, sourceFile, exportName } = opts;
+    const { exportName } = opts;
     const names = new Set([exportName]);
 
-    for (const statement of sourceFile.statements) {
-      const bindings = ts.isImportDeclaration(statement)
-        ? statement.importClause?.namedBindings
-        : undefined;
-
-      if (
-        !ts.isImportDeclaration(statement) ||
-        !ts.isStringLiteral(statement.moduleSpecifier) ||
-        !NamespaceModules.isValid(statement.moduleSpecifier.text) ||
-        bindings === undefined ||
-        !ts.isNamedImports(bindings)
-      ) {
-        continue;
-      }
-
-      for (const element of bindings.elements) {
-        if ((element.propertyName ?? element.name).text === exportName) {
-          names.add(element.name.text);
-        }
+    for (const { imported, local } of CodemodSource.ardorImports(opts)) {
+      if (imported === exportName) {
+        names.add(local);
       }
     }
 
