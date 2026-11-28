@@ -75,7 +75,7 @@ drift.
 ONLY home for the code and the interpolation args. `useNotifyError` renders an `ApplicationError`
 with one lookup on `error.normalized.code` (a `doRequest` failure carries the server's code and
 args, `core.system_error` when it sent none), letting [i18n](/architecture/i18n.md) resolve the message from
-the translation table. Pass `transform` to build `normalized` yourself from a snapshot
+the translation table (a server 5xx shows a generic one). Pass `transform` to build `normalized` yourself from a snapshot
 (`{ message: TErrorNormalized, statusCode, extra }`):
 
 ```typescript

@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, test, expect } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';
+import { NETWORK_TIMEOUT_CODE } from '@venizia/ardor-kernel';
 import { getError } from '@venizia/ignis-inversion';
 import { NotificationContextProvider, useNotificationContext } from 'ra-core';
 import { useNotifyError } from '@/hooks/use-notify-error';
@@ -17,6 +18,13 @@ const Wrapper = ({ children }: IWrapperProps) => {
 
 const buildError = () => {
   return getError({
+    message: { code: 'auth.invalid', text: 'Invalid authentication', args: { name: 'x' } },
+  });
+};
+
+const buildStatusError = (opts: { statusCode: number }) => {
+  return getError({
+    statusCode: opts.statusCode,
     message: { code: 'auth.invalid', text: 'Invalid authentication', args: { name: 'x' } },
   });
 };
@@ -87,5 +95,60 @@ describe('useNotifyError', () => {
       messageArgs: { name: 'override' },
       autoHideDuration: 5000,
     });
+  });
+
+  test.each([500, 503, 599])(
+    'a %i shows the generic server message, without arguments',
+    (statusCode) => {
+      const { result } = setupTest();
+
+      act(() => {
+        result.current.notifyError(buildStatusError({ statusCode }));
+      });
+
+      const [notification] = result.current.notificationContext.notifications;
+      expect(notification?.message).toBe('ra.notification.http_error');
+      expect(notification?.type).toBe('error');
+      expect(notification?.notificationOptions).toEqual({});
+    },
+  );
+
+  test.each([400, 422, 499])('a %i keeps its code and arguments', (statusCode) => {
+    const { result } = setupTest();
+
+    act(() => {
+      result.current.notifyError(buildStatusError({ statusCode }));
+    });
+
+    const [notification] = result.current.notificationContext.notifications;
+    expect(notification?.message).toBe('auth.invalid');
+    expect(notification?.notificationOptions).toEqual({ messageArgs: { name: 'x' } });
+  });
+
+  test.each([
+    { statusCode: 502, code: 'core.fetch.schema_mismatch' },
+    { statusCode: 504, code: NETWORK_TIMEOUT_CODE },
+  ])('a $statusCode ARDOR raises itself keeps its code $code', ({ statusCode, code }) => {
+    const { result } = setupTest();
+
+    act(() => {
+      result.current.notifyError(getError({ statusCode, message: { code, text: 'failed' } }));
+    });
+
+    const [notification] = result.current.notificationContext.notifications;
+    expect(notification?.message).toBe(code);
+  });
+
+  test('options override the generic message arguments of a 5xx', () => {
+    const { result } = setupTest();
+
+    act(() => {
+      result.current.notifyError(buildStatusError({ statusCode: 500 }), {
+        messageArgs: { name: 'override' },
+      });
+    });
+
+    const [notification] = result.current.notificationContext.notifications;
+    expect(notification?.notificationOptions).toEqual({ messageArgs: { name: 'override' } });
   });
 });
