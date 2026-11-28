@@ -1,19 +1,10 @@
 import React from 'react';
 
-import { HTTP } from '@venizia/ignis-helpers/common';
 import type { ApplicationError } from '@venizia/ignis-inversion';
 import type { NotificationOptions, NotificationType } from 'ra-core';
 import { useNotify } from 'ra-core';
 
-/** A 502 raised where the response is read, with a text of its own in ARDOR's catalogues. */
-const SCHEMA_MISMATCH_CODE = 'core.fetch.schema_mismatch';
-
-const isServerFailure = (error: ApplicationError) => {
-  return (
-    error.statusCode >= HTTP.ResultCodes.RS_5.InternalServerError &&
-    error.normalized?.code !== SCHEMA_MISMATCH_CODE
-  );
-};
+import { ServerErrorUtility } from '@/utilities/server-error';
 
 /**
  * Returns a stable function that shows an error notification for an `ApplicationError`: the message
@@ -31,9 +22,9 @@ export const useNotifyError = () => {
         type?: NotificationType;
       },
     ) => {
-      const isGeneric = isServerFailure(error);
+      const isGeneric = ServerErrorUtility.isHidden({ error });
 
-      notify(isGeneric ? 'ra.notification.http_error' : error.normalized?.code, {
+      notify(isGeneric ? ServerErrorUtility.MESSAGE_KEY : error.normalized?.code, {
         type: 'error',
         messageArgs: isGeneric ? undefined : error.normalized?.args,
         ...options,

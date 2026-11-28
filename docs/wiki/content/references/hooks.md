@@ -404,7 +404,7 @@ export function DeleteAction(props: { onDelete: () => Promise<void> }) {
 
 - **Parameters**: None. The returned callback accepts `(error: ApplicationError, options?: NotificationOptions & { type?: NotificationType }) => void`.
 - **Return value**: Notification callback function.
-- **Gotcha**: Reads `error.normalized?.code` as the translation key and `error.normalized?.args` as `messageArgs`. An error with a `statusCode` of 500 or higher shows `ra.notification.http_error` with no arguments instead, because a server hides what failed. A response schema mismatch (`core.fetch.schema_mismatch`) keeps its code, and `options.messageArgs` still applies. Passing an error without a `normalized` property results in an `undefined` notification message. Defined in `packages/admin/src/hooks/use-notify-error.ts`.
+- **Gotcha**: Reads `error.normalized?.code` as the translation key and `error.normalized?.args` as `messageArgs`. An error with a `statusCode` of 500 or higher shows `ra.notification.http_error` with no arguments instead, because a server hides what failed (`DefaultRestDataProvider` rejects such an error with that key as its `message` too). A response schema mismatch (`core.fetch.schema_mismatch`) keeps its code, and `options.messageArgs` still applies. Passing an error without a `normalized` property results in an `undefined` notification message. Defined in `packages/admin/src/hooks/use-notify-error.ts`.
 
 ### useRequestHeaderLocale
 

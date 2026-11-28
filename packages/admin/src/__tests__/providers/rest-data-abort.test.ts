@@ -188,7 +188,8 @@ describe('DefaultRestDataProvider, timeout', () => {
 
     expect(codeOf(error)).toBe(NETWORK_TIMEOUT_CODE);
     expect(isApplicationError(error) ? error.statusCode : undefined).toBe(504);
-    expect(error instanceof Error ? error.message : '').toContain('slow');
+    const cause = error instanceof Error ? error.cause : undefined;
+    expect(cause instanceof Error ? cause.message : '').toContain('slow');
     expect(performance.now() - startedAt).toBeLessThan(SLOW_MS / 2);
   });
 

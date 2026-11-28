@@ -47,6 +47,7 @@ import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 import { WireMethods } from '@/utilities/wire-methods';
 import { ReactAdminDataFactory } from '@/utilities/react-admin-data';
+import { ServerErrorUtility } from '@/utilities/server-error';
 
 const recordLogger = LoggerFactory.getLogger(['DefaultRestDataProvider']);
 
@@ -180,7 +181,9 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   /**
    * The one request every method makes: the headers and body from `getRequestProps`, then
    * `doRequest`. `paths` default to `[resource]`; headers in `headers` win over the computed
-   * ones, because a caller that names a header means it.
+   * ones, because a caller that names a header means it. A 5xx rejects with
+   * `ra.notification.http_error` as its message and the failed request's error as its `cause`; a
+   * response schema mismatch rejects as it is.
    */
   protected request<TResult>(
     opts: IRestRequestOptions<TResource> & { schema: IResponseSchema<TResult> },
@@ -217,7 +220,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       extra,
     });
 
-    return this.networkService.doRequest({
+    const response = this.networkService.doRequest({
       schema,
       requestCountData,
       type,
@@ -233,6 +236,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
             }),
           )
         : props.headers,
+    });
+
+    return response.catch((error: unknown) => {
+      return Promise.reject(ServerErrorUtility.toDisplayed({ error }));
     });
   }
 
