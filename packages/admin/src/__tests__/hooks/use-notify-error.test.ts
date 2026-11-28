@@ -17,14 +17,14 @@ const Wrapper = ({ children }: IWrapperProps) => {
 
 const buildError = () => {
   return getError({
-    message: { code: 'auth.invalid', text: 'Invalid authentication', args: { name: 'x' } },
+    message: { code: 'app.failed', text: 'Something failed', args: { name: 'x' } },
   });
 };
 
 const buildStatusError = (opts: { statusCode: number }) => {
   return getError({
     statusCode: opts.statusCode,
-    message: { code: 'auth.invalid', text: 'Invalid authentication', args: { name: 'x' } },
+    message: { code: 'app.failed', text: 'Something failed', args: { name: 'x' } },
   });
 };
 
@@ -51,7 +51,7 @@ describe('useNotifyError', () => {
 
     expect(result.current.notificationContext.notifications).toHaveLength(1);
     const [notification] = result.current.notificationContext.notifications;
-    expect(notification?.message).toBe('auth.invalid');
+    expect(notification?.message).toBe('app.failed');
     expect(notification?.type).toBe('error');
     expect(notification?.notificationOptions).toEqual({
       messageArgs: { name: 'x' },
@@ -68,7 +68,7 @@ describe('useNotifyError', () => {
 
     expect(result.current.notificationContext.notifications).toHaveLength(1);
     const [notification] = result.current.notificationContext.notifications;
-    expect(notification?.message).toBe('auth.invalid');
+    expect(notification?.message).toBe('app.failed');
     expect(notification?.type).toBe('warning');
     expect(notification?.notificationOptions).toEqual({
       messageArgs: { name: 'x' },
@@ -88,7 +88,7 @@ describe('useNotifyError', () => {
 
     expect(result.current.notificationContext.notifications).toHaveLength(1);
     const [notification] = result.current.notificationContext.notifications;
-    expect(notification?.message).toBe('auth.invalid');
+    expect(notification?.message).toBe('app.failed');
     expect(notification?.type).toBe('error');
     expect(notification?.notificationOptions).toEqual({
       messageArgs: { name: 'override' },
@@ -120,7 +120,7 @@ describe('useNotifyError', () => {
     });
 
     const [notification] = result.current.notificationContext.notifications;
-    expect(notification?.message).toBe('auth.invalid');
+    expect(notification?.message).toBe('app.failed');
     expect(notification?.notificationOptions).toEqual({ messageArgs: { name: 'x' } });
   });
 
@@ -146,6 +146,7 @@ describe('useNotifyError', () => {
     });
 
     const [notification] = result.current.notificationContext.notifications;
+    expect(notification?.message).toBe('ra.notification.http_error');
     expect(notification?.notificationOptions).toEqual({ messageArgs: { name: 'override' } });
   });
 });

@@ -607,3 +607,22 @@ react-admin-provider-types-rename:
       - Pin the four ARDOR packages to 0.5.0-13 or earlier and rename the two types back.
   data: Nothing stored changes. Only the names of the types change.
   codemod: namespace
+
+notify-server-error:
+  symbols: [useNotifyError, NETWORK_TIMEOUT_CODE]
+  upgrade:
+    steps:
+      - 'Search your messages for codes that come with a status of 500 or higher, `ardor.network.timeout` (`NETWORK_TIMEOUT_CODE`) included. If you have none, change nothing.'
+      - "Where `useNotifyError` showed one of them, read `error.normalized.code` and call react-admin's `notify` with it; pass every other error to `notifyError` as before."
+    before: |-
+      notifyError(error);
+    after: |-
+      if (error.normalized.code === NETWORK_TIMEOUT_CODE) {
+        notify(error.normalized.code, { type: 'error', messageArgs: error.normalized.args });
+      } else {
+        notifyError(error);
+      }
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-15 or earlier. The branch you added keeps working there, so it can stay.'
+  data: Nothing stored changes. Only the text of the notification changes.
