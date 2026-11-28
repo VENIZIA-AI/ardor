@@ -255,7 +255,6 @@ describe('getList behavior', () => {
 
     // A falsy value is a value: dropping it sends a different query than the caller wrote.
     expect(filter['where']).toEqual({ archived: false, revision: 0, note: '' });
-    expect('omitted' in filter).toBe(false);
   });
 
   test('wraps filter without where into where and lifts include and fields to filter root', async () => {

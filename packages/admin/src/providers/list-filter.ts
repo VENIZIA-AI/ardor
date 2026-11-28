@@ -33,7 +33,8 @@ export class ListFilterBuilder {
    * pagination into `limit`/`skip`, sort into `order`, `noLimit` lifting both, `filter.params` and
    * `meta` into the query, and `meta.extra` into the list extras (sent in a header). A remaining list
    * param (except `signal`) named like a filter key sets that key. Every other key, of the list
-   * params or beside `filter.where`, becomes a `where` entry; an entry of `where` wins over it.
+   * params or beside `filter.where`, becomes a `where` entry unless it is `null` or `undefined`; an
+   * entry of `where` wins over it.
    */
   static build(opts: { params: GetListParams & ICustomParams }): {
     filter: IListFilter;
@@ -81,7 +82,7 @@ export class ListFilterBuilder {
       filter[key] = rest[key];
     }
 
-    // Only the keys of an IGNIS filter stay beside `where`; every other key is a column.
+    // Only the keys of an IGNIS filter stay beside `where`; every other defined key is a column.
     const {
       where,
       fields,
@@ -91,7 +92,7 @@ export class ListFilterBuilder {
       offset,
       skip,
       params,
-      noLimit: _,
+      noLimit: _noLimit,
       ...columns
     } = filter;
     const queryKey = ListFilterBuilder.extractQueryParams({ params });
@@ -103,8 +104,20 @@ export class ListFilterBuilder {
       queryKey[key] = queryMeta[key];
     }
 
+    const definedColumns = Object.fromEntries(
+      Object.entries(columns).filter(([, value]) => ValueUtility.isDefined(value)),
+    );
+
     return {
-      filter: { where: { ...columns, ...where }, fields, include, order, limit, offset, skip },
+      filter: {
+        where: { ...definedColumns, ...where },
+        fields,
+        include,
+        order,
+        limit,
+        offset,
+        skip,
+      },
       queryKey,
       extra,
     };
